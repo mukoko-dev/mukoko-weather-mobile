@@ -8,16 +8,15 @@
     "scheme": "mukoko",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/icon.png",
       "bundleIdentifier": "africa.nyuchi.mukoko.weather",
       "supportsTablet": true
     },
     "android": {
       "package": "africa.nyuchi.mukoko.weather",
       "adaptiveIcon": {
-        "backgroundColor": "#FAF9F5",
+        "backgroundColor": "#F3E5F5",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
@@ -38,9 +37,12 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#FAF9F5",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 220,
+          "dark": {
+            "backgroundColor": "#1A0033",
+            "image": "./assets/images/splash-icon-dark.png",
+            "imageWidth": 220
           }
         }
       ],
