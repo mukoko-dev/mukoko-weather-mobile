@@ -31,7 +31,7 @@ export default function SignInCallback() {
     void (async () => {
       try {
         await completeSignIn(code);
-        router.replace('/(tabs)/my');
+        router.replace('/my');
       } catch {
         router.replace('/sign-in');
       }

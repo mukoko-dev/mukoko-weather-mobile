@@ -53,18 +53,21 @@ export type Palette = {
 };
 
 export const lightPalette: Palette = {
+  // Paper-warm — matches web `--color-paper` (#FAF9F5)
   background: '#FAF9F5',
+  // Surface-card — clean white for `.baobab` chrome
   surface: '#FFFFFF',
   surfaceElevated: '#FFFFFF',
   surfaceDim: SURFACE.paper,
 
-  text: SURFACE.ink,
-  textSecondary: '#52524E',
-  textTertiary: '#706F6A',
+  // Near-black ink — matches web `--color-text-primary` (#1a1a1a)
+  text: '#1A1A1A',
+  textSecondary: 'rgba(0, 0, 0, 0.65)',
+  textTertiary: 'rgba(0, 0, 0, 0.45)',
   textInverse: '#FFFFFF',
 
-  border: 'rgba(20, 20, 19, 0.08)',
-  borderStrong: 'rgba(20, 20, 19, 0.16)',
+  border: 'rgba(0, 0, 0, 0.08)',
+  borderStrong: 'rgba(0, 0, 0, 0.16)',
 
   primary: MINERALS.cobalt.light,
   onPrimary: '#FFFFFF',
@@ -86,18 +89,20 @@ export const lightPalette: Palette = {
 };
 
 export const darkPalette: Palette = {
-  background: '#0F0F0E',
-  surface: '#1A1A18',
-  surfaceElevated: '#222220',
-  surfaceDim: SURFACE.stone,
+  // Tanzanite-dark scrim — matches web dark `--color-paper` zone (#1A0033 mood)
+  background: '#0A0A0A',
+  // Translucent surface — lifts cards without flatness
+  surface: 'rgba(255, 255, 255, 0.05)',
+  surfaceElevated: 'rgba(255, 255, 255, 0.08)',
+  surfaceDim: '#141414',
 
-  text: '#F5F5F4',
-  textSecondary: '#B0B4BA',
-  textTertiary: '#8A8E94',
+  text: '#F5F5F5',
+  textSecondary: 'rgba(255, 255, 255, 0.7)',
+  textTertiary: 'rgba(255, 255, 255, 0.5)',
   textInverse: SURFACE.ink,
 
-  border: 'rgba(245, 245, 244, 0.10)',
-  borderStrong: 'rgba(245, 245, 244, 0.20)',
+  border: 'rgba(255, 255, 255, 0.1)',
+  borderStrong: 'rgba(255, 255, 255, 0.2)',
 
   primary: MINERALS.cobalt.dark,
   onPrimary: SURFACE.ink,

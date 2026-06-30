@@ -1,33 +1,46 @@
 /**
- * Brand header — wordmark + optional right action.
- * Renders the seven-mineral stripe along the bottom (1px tall on phones)
- * to echo the web header.
+ * Brand header — Seed of Life mark + "mukoko" wordmark with optional
+ * subtitle and trailing action. The 7-mineral BrandStripe runs flush
+ * along the bottom edge, mirroring the web Header layout.
+ *
+ * Bottom tabs (not top nav) live in `src/app/(tabs)/_layout.tsx` — this
+ * component only renders the brand row.
  */
 
 import { ReactNode } from 'react';
 import { StyleSheet, View, type ViewProps } from 'react-native';
 
-import { MINERALS, RADIUS, SPACING } from '@/brand/tokens';
+import { SPACING } from '@/brand/tokens';
 import { BrandText } from '@/components/BrandText';
+import { MukokoLogo } from '@/components/MukokoLogo';
 import { usePalette } from '@/hooks/usePalette';
 
+// Note: the 7-mineral BrandStripe is a fixed VERTICAL left-edge accent
+// mounted once in src/app/_layout.tsx — it does not belong inside the Header.
+
 export type HeaderProps = ViewProps & {
+  /**
+   * Optional page label rendered below the mukoko wordmark in subtitle
+   * weight. Use this for the current page name (e.g. "Explore", "Shamwari").
+   * The wordmark itself is always "mukoko" per brand doctrine.
+   */
   title?: string;
+  /** Tertiary subtitle — typically a status line (location, count, etc.). */
   subtitle?: string;
+  /** Optional right-side action node (icon button, etc.). */
   trailing?: ReactNode;
+  /** Hide the wordmark text (mark only). Default false. */
+  markOnly?: boolean;
 };
 
-const STRIPE_ORDER = [
-  MINERALS.cobalt.light,
-  MINERALS.gold.light,
-  MINERALS.malachite.light,
-  MINERALS.copper.light,
-  MINERALS.sodalite.light,
-  MINERALS.terracotta.light,
-  MINERALS.tanzanite.light,
-] as const;
-
-export function Header({ title = 'mukoko', subtitle, trailing, style, ...rest }: HeaderProps) {
+export function Header({
+  title,
+  subtitle,
+  trailing,
+  markOnly = false,
+  style,
+  ...rest
+}: HeaderProps) {
   const palette = usePalette();
   return (
     <View
@@ -39,21 +52,19 @@ export function Header({ title = 'mukoko', subtitle, trailing, style, ...rest }:
       ]}>
       <View style={styles.row}>
         <View style={styles.titleBlock}>
-          <BrandText variant="title" tone="tanzanite">
-            {title}
-          </BrandText>
+          <MukokoLogo size={32} showWordmark={!markOnly} />
+          {title ? (
+            <BrandText variant="bodyBold" tone="text" style={styles.pageLabel}>
+              {title}
+            </BrandText>
+          ) : null}
           {subtitle ? (
-            <BrandText variant="small" tone="textSecondary">
+            <BrandText variant="small" tone="textSecondary" style={styles.subtitle}>
               {subtitle}
             </BrandText>
           ) : null}
         </View>
         {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
-      </View>
-      <View style={styles.stripe} accessibilityElementsHidden>
-        {STRIPE_ORDER.map((color) => (
-          <View key={color} style={[styles.stripeSegment, { backgroundColor: color }]} />
-        ))}
       </View>
     </View>
   );
@@ -63,31 +74,27 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: SPACING.md,
     paddingTop: SPACING.md,
-    paddingBottom: SPACING.xs,
+    paddingBottom: SPACING.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderTopLeftRadius: RADIUS.sm,
-    borderTopRightRadius: RADIUS.sm,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: SPACING.md,
+    paddingBottom: SPACING.sm,
   },
   titleBlock: {
     flexShrink: 1,
   },
+  pageLabel: {
+    marginTop: 2,
+    marginLeft: 40, // align with wordmark (mark 32 + gap 8)
+  },
+  subtitle: {
+    marginLeft: 40, // align with wordmark
+  },
   trailing: {
     flexShrink: 0,
-  },
-  stripe: {
-    flexDirection: 'row',
-    marginTop: SPACING.sm,
-    height: 2,
-    overflow: 'hidden',
-    borderRadius: 1,
-  },
-  stripeSegment: {
-    flex: 1,
   },
 });

@@ -1,20 +1,32 @@
 /**
  * Root layout. Loads brand fonts, wires the auth token resolver, kicks off
- * device registration (idempotent), and mounts the navigation stack.
+ * device registration (idempotent), mounts the navigation stack, and pins
+ * the 7-mineral BrandStripe to the LEFT edge of the viewport.
  *
- * We use a Stack here so /location/[slug], /sign-in, and /sign-in-callback
- * push above the tabs. The (tabs) group renders the actual NativeTabs.
+ * Layout shape:
+ *   <SafeAreaProvider>
+ *     <ThemeProvider>
+ *       <Row>
+ *         <BrandStripe />     ← 3dp vertical, full-height, ALWAYS left edge
+ *         <Stack>             ← all routes (tabs + modals + detail pages)
+ *       </Row>
+ *     </ThemeProvider>
+ *   </SafeAreaProvider>
+ *
+ * /location/[slug], /sign-in, and /sign-in-callback push above the tabs.
+ * The (tabs) group renders the actual bottom Tabs.
  */
 
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initAuth } from '@/api/auth';
 import { BRAND_FONTS } from '@/brand/fonts';
+import { BrandStripe } from '@/components/BrandStripe';
 import { registerDevice } from '@/device/register';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -47,21 +59,26 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="location/[slug]"
-            options={{ title: 'Location', presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="sign-in"
-            options={{ title: 'Sign in', presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="sign-in-callback"
-            options={{ title: 'Signing in...', presentation: 'modal' }}
-          />
-        </Stack>
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          <BrandStripe width={3} />
+          <View style={{ flex: 1 }}>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="location/[slug]"
+                options={{ title: 'Location', presentation: 'card' }}
+              />
+              <Stack.Screen
+                name="sign-in"
+                options={{ title: 'Sign in', presentation: 'modal' }}
+              />
+              <Stack.Screen
+                name="sign-in-callback"
+                options={{ title: 'Signing in...', presentation: 'modal' }}
+              />
+            </Stack>
+          </View>
+        </View>
       </ThemeProvider>
     </SafeAreaProvider>
   );

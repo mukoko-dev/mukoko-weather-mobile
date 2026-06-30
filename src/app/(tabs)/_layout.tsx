@@ -1,14 +1,21 @@
 /**
  * Bottom tab navigator — Weather, Explore, Shamwari, My.
  *
- * Uses expo-router's NativeTabs (UITabBarController on iOS, BottomNavigationView
- * on Android) so we get platform-correct gestures, haptics, and large-title
- * collapse. Tab icons are simple PNG glyphs in assets/images/tabIcons.
+ * Uses expo-router's standard `<Tabs>` (powered by @react-navigation/bottom-tabs)
+ * rather than `NativeTabs`, because:
+ *   - it renders a real bottom tab bar on web (NativeTabs is iOS/Android only),
+ *   - we control active/inactive tint exactly (cobalt active, text-tertiary
+ *     inactive), matching the web Header's mobile bottom nav.
+ *
+ * Active tab pill uses cobalt (`palette.primary`). Tab bar background uses
+ * `palette.surface` with a hairline top border in `palette.border`.
  */
 
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
+import { Tabs } from 'expo-router';
+import { Platform, useColorScheme } from 'react-native';
 
+import { FONT_FAMILY } from '@/brand/tokens';
+import { TabIcon } from '@/components/TabIcon';
 import { paletteFor } from '@/theme/colors';
 
 export default function TabsLayout() {
@@ -16,41 +23,65 @@ export default function TabsLayout() {
   const palette = paletteFor(scheme === 'dark' ? 'dark' : 'light');
 
   return (
-    <NativeTabs
-      backgroundColor={palette.surface}
-      indicatorColor={palette.surfaceDim}
-      labelStyle={{ selected: { color: palette.primary } }}>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Weather</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="shamwari">
-        <NativeTabs.Trigger.Label>Shamwari</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="my">
-        <NativeTabs.Trigger.Label>My</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: palette.primary,
+        tabBarInactiveTintColor: palette.textTertiary,
+        tabBarStyle: {
+          backgroundColor: palette.surface,
+          borderTopColor: palette.border,
+          borderTopWidth: 1,
+          // Slightly taller on web so it reads as a real nav bar, not a strip.
+          height: Platform.OS === 'web' ? 64 : undefined,
+          paddingTop: 6,
+          paddingBottom: Platform.OS === 'web' ? 8 : undefined,
+        },
+        tabBarLabelStyle: {
+          fontFamily: FONT_FAMILY.bodyBold,
+          fontSize: 11,
+          letterSpacing: 0.1,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 4,
+        },
+      }}>
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Weather',
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name="weather" color={color} size={size} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name="explore" color={color} size={size} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="shamwari"
+        options={{
+          title: 'Shamwari',
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name="shamwari" color={color} size={size} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="my"
+        options={{
+          title: 'My',
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name="my" color={color} size={size} focused={focused} />
+          ),
+        }}
+      />
+    </Tabs>
   );
 }

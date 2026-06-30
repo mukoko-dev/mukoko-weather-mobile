@@ -34,7 +34,7 @@ export default function SignInScreen() {
     }
     try {
       await completeSignIn(result.code);
-      router.replace('/(tabs)/my');
+      router.replace('/my');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-in failed');
     } finally {

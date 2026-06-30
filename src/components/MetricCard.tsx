@@ -1,32 +1,54 @@
 /**
  * Mobile metric card — mirrors mukoko-weather's MetricCard.
- * Shows a label, a primary value (mono), an optional unit, and an optional
- * supporting line. Tap target is full-card so it can be linked.
+ *
+ * Renders a label (small, secondary), a primary value (display weight), an
+ * optional unit, and an optional supporting line. Wraps the canonical
+ * `BaobabCard` so every metric inherits the brand chrome (surface-card bg,
+ * border, shadow, radius).
+ *
+ * Optional severity prop tints the value via a mineral token (success,
+ * accent, terracotta, primary, sodalite) for quick at-a-glance reading.
  */
 
 import { StyleSheet, View, type ViewProps } from 'react-native';
 
-import { RADIUS, SPACING } from '@/brand/tokens';
+import { SPACING } from '@/brand/tokens';
+import { BaobabCard } from '@/components/BaobabCard';
 import { BrandText } from '@/components/BrandText';
-import { usePalette } from '@/hooks/usePalette';
+
+export type MetricSeverity = 'low' | 'moderate' | 'high' | 'severe' | 'extreme' | 'cold';
 
 export type MetricCardProps = ViewProps & {
   label: string;
   value: string | number | null | undefined;
   unit?: string;
+  /** Single-glyph icon shown in the top-right corner. */
+  icon?: string;
+  /** Supporting context line shown below the value (e.g. "Cooler than actual"). */
   supporting?: string;
+  /** Severity colour for the value text. Maps to a mineral token. */
+  severity?: MetricSeverity;
+};
+
+const SEVERITY_TONE: Record<MetricSeverity, 'success' | 'accent' | 'terracotta' | 'frostSevere' | 'primary'> = {
+  low: 'success',
+  moderate: 'accent',
+  high: 'terracotta',
+  severe: 'frostSevere',
+  extreme: 'frostSevere',
+  cold: 'primary',
 };
 
 export function MetricCard({
   label,
   value,
   unit,
+  icon,
   supporting,
+  severity,
   style,
   ...rest
 }: MetricCardProps) {
-  const palette = usePalette();
-
   const displayValue =
     value === null || value === undefined || value === ''
       ? '—'
@@ -34,21 +56,30 @@ export function MetricCard({
         ? Math.round(value).toString()
         : value;
 
+  const valueTone = severity ? SEVERITY_TONE[severity] : 'text';
+
   return (
-    <View
+    <BaobabCard
       {...rest}
-      style={[
-        styles.card,
-        { backgroundColor: palette.surface, borderColor: palette.border },
-        style,
-      ]}
+      style={[styles.card, style]}
       accessibilityRole="summary"
       accessibilityLabel={`${label}: ${displayValue}${unit ? ' ' + unit : ''}`}>
-      <BrandText variant="small" tone="textSecondary">
-        {label}
-      </BrandText>
+      <View style={styles.headRow}>
+        <BrandText variant="small" tone="textSecondary" style={styles.label}>
+          {label}
+        </BrandText>
+        {icon ? (
+          <BrandText
+            variant="body"
+            tone="textTertiary"
+            importantForAccessibility="no-hide-descendants"
+            accessible={false}>
+            {icon}
+          </BrandText>
+        ) : null}
+      </View>
       <View style={styles.valueRow}>
-        <BrandText variant="display" tone="text">
+        <BrandText variant="display" tone={valueTone}>
           {displayValue}
         </BrandText>
         {unit ? (
@@ -62,19 +93,24 @@ export function MetricCard({
           {supporting}
         </BrandText>
       ) : null}
-    </View>
+    </BaobabCard>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    padding: SPACING.md,
-    borderRadius: RADIUS.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: SPACING.xs,
     minHeight: 96,
     flexGrow: 1,
     flexBasis: 0,
+    gap: SPACING.xs,
+  },
+  headRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  label: {
+    flexShrink: 1,
   },
   valueRow: {
     flexDirection: 'row',
