@@ -3,9 +3,11 @@
  *
  * Flow:
  *   1. Ask for foreground location permission.
- *   2. If granted, get GPS coords and POST /api/py/geo?autoCreate=true so the
- *      server creates a community location for first-time visits.
- *   3. Fetch /api/py/weather?lat=&lon= and render current + 7-day forecast.
+ *   2. If granted, get a fine-grained GPS fix (High accuracy) and resolve the
+ *      specific place name via GET /api/py/geo?lat=&lon=&autoCreate=true (the
+ *      backend reverse-geocodes to road/shop/suburb level and creates a
+ *      community location on first visit).
+ *   3. Fetch /api/py/weather?lat=&lon= and render hourly + current + 7-day.
  *   4. Pull-to-refresh re-runs the weather fetch (skips re-geolocating).
  *
  * If permission is denied or no GPS fix is available we fall back to Harare
@@ -14,9 +16,10 @@
  * Layout follows the web WeatherDashboard visual hierarchy:
  *   - Header (Seed of Life mark + wordmark + subtitle + 7-mineral stripe)
  *   - Centered container, max 768dp on web — full width on phone
- *   - Hero card: big temp + condition + feels-like, wrapped in `BaobabCard`
- *   - Atmospheric grid: 8 metric cards (temp, humidity, wind, pressure,
- *     UV, visibility, dewpoint, AQI). Each gets a severity tint and icon.
+ *   - Condition hero: big temp + condition + feels-like over a subtle,
+ *     weather-code-driven animated background (`ConditionHero`)
+ *   - Hourly strip: horizontal 24h forecast (`HourlyStrip`)
+ *   - Atmospheric grid: metric cards. Each gets a severity tint and icon.
  *   - 7-day forecast list inside a single baobab card
  */
 
@@ -34,26 +37,37 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { type LocationSummary, geoLookup } from '@/api/locations';
 import { fetchWeather, type WeatherResponse } from '@/api/weather';
 import { RADIUS, SPACING } from '@/brand/tokens';
 import { BaobabCard } from '@/components/BaobabCard';
 import { BrandText } from '@/components/BrandText';
 import { Header } from '@/components/Header';
+import { ConditionHero } from '@/components/home/ConditionHero';
+import { HourlyStrip } from '@/components/home/HourlyStrip';
+import { isDaytime } from '@/components/home/hourly';
 import { MetricCard, type MetricSeverity } from '@/components/MetricCard';
 import { WeatherIcon } from '@/components/WeatherIcon';
 import { usePalette } from '@/hooks/usePalette';
-import {
-  cloudLabel,
-  feelsLikeContext,
-  humidityLabel,
-  pressureLabel,
-} from '@/shared';
+import { cloudLabel, humidityLabel, pressureLabel } from '@/shared';
 
 /** Harare — Mukoko's editorial default. Used when geolocation is unavailable. */
 const FALLBACK = { lat: -17.8252, lon: 31.0335, label: 'Harare, ZW' };
 
 /** Web max-width — matches the web `max-w-3xl` (768px) reading column. */
 const WEB_MAX_WIDTH = 768;
+
+type Coords = { lat: number; lon: number; label?: string };
+
+/**
+ * `/api/py/geo` response. The read-only `geoLookup` helper types the payload
+ * as `{ location }`, but the current backend returns the resolved place under
+ * `nearest` (with `redirectTo`/`isNew`). Read both defensively.
+ */
+type GeoResult = {
+  location?: LocationSummary | null;
+  nearest?: LocationSummary | null;
+};
 
 type LoadState =
   | { kind: 'loading' }
@@ -63,20 +77,20 @@ type LoadState =
 export default function WeatherHome() {
   const palette = usePalette();
   const { width } = useWindowDimensions();
-  const [coords, setCoords] = useState<{ lat: number; lon: number; label?: string } | null>(
-    null,
-  );
+  const [coords, setCoords] = useState<Coords | null>(null);
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
 
-  const resolveLocation = useCallback(async () => {
+  const resolveLocation = useCallback(async (): Promise<Coords> => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         return { ...FALLBACK };
       }
+      // High accuracy so the backend can reverse-geocode to a specific
+      // road / shop / suburb rather than the nearest city centroid.
       const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+        accuracy: Location.Accuracy.High,
       });
       return { lat: pos.coords.latitude, lon: pos.coords.longitude };
     } catch {
@@ -84,7 +98,17 @@ export default function WeatherHome() {
     }
   }, []);
 
-  const load = useCallback(async (loc: { lat: number; lon: number }) => {
+  /** Resolve (and auto-create) the fine-grained place name for a GPS fix. */
+  const resolveName = useCallback(async (loc: Coords): Promise<string | null> => {
+    try {
+      const res = (await geoLookup(loc.lat, loc.lon, true)) as unknown as GeoResult;
+      return res.nearest?.name ?? res.location?.name ?? null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const load = useCallback(async (loc: Coords) => {
     try {
       const weather = await fetchWeather({ lat: loc.lat, lon: loc.lon });
       setState({ kind: 'ready', weather });
@@ -98,9 +122,16 @@ export default function WeatherHome() {
     void (async () => {
       const loc = await resolveLocation();
       setCoords(loc);
-      await load(loc);
+      // Kick off the weather fetch immediately; resolve the specific place
+      // name in parallel so a slow geocode never blocks first paint.
+      void load(loc);
+      if (loc.label) return; // fallback (Harare) already has a label
+      const name = await resolveName(loc);
+      if (name) {
+        setCoords((prev) => ({ ...(prev ?? loc), label: name }));
+      }
     })();
-  }, [load, resolveLocation]);
+  }, [load, resolveLocation, resolveName]);
 
   const onRefresh = useCallback(async () => {
     if (!coords) return;
@@ -114,15 +145,16 @@ export default function WeatherHome() {
   const isWideWeb = Platform.OS === 'web' && width > WEB_MAX_WIDTH;
   const contentWidth = isWideWeb ? WEB_MAX_WIDTH : width;
 
+  // Prefer the fine-grained geolocated name; fall back to the weather API's
+  // resolved location, then a neutral placeholder.
+  const subtitle =
+    coords?.label ??
+    (state.kind === 'ready' ? state.weather.location?.name : undefined) ??
+    'Finding location…';
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]} edges={['top']}>
-      <Header
-        subtitle={
-          state.kind === 'ready'
-            ? (state.weather.location?.name ?? coords?.label ?? 'Your location')
-            : (coords?.label ?? 'Finding location...')
-        }
-      />
+      <Header subtitle={subtitle} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -194,27 +226,12 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 function WeatherView({ weather }: { weather: WeatherResponse }) {
   const { current, daily } = weather;
-  const hasFeels = current.feelsLike !== null && current.feelsLike !== undefined;
-  const hasTemp = current.temperature !== null && current.temperature !== undefined;
+  const isDay = isDaytime(new Date());
   return (
     <>
-      <BaobabCard style={styles.heroBlock}>
-        <WeatherIcon code={current.weatherCode} variant="hero" />
-        <BrandText variant="hero" tone="text">
-          {hasTemp ? `${Math.round(current.temperature!)}°` : '—'}
-        </BrandText>
-        {current.description ? (
-          <BrandText variant="subtitle" tone="textSecondary">
-            {current.description}
-          </BrandText>
-        ) : null}
-        {hasFeels && hasTemp ? (
-          <BrandText variant="small" tone="textTertiary">
-            {feelsLikeContext(current.feelsLike!, current.temperature!)} —
-            feels like {Math.round(current.feelsLike!)}°
-          </BrandText>
-        ) : null}
-      </BaobabCard>
+      <ConditionHero current={current} isDay={isDay} />
+
+      <HourlyStrip weather={weather} />
 
       <BrandText variant="subtitle" tone="text" style={styles.sectionHeading}>
         Atmospheric summary
@@ -346,11 +363,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.button,
-  },
-  heroBlock: {
-    alignItems: 'center',
-    paddingVertical: SPACING.xl,
-    gap: SPACING.xs,
   },
   metricGrid: {
     flexDirection: 'row',
