@@ -1,0 +1,25 @@
+# Lint CI for nyuchi/mukoko-weather-mobile.
+#
+# Thin caller of the org's reusable lint workflow. Produces the five
+# required status checks (actionlint, JSON validity, prettier,
+# markdownlint, yamllint) that the org-wide main-branch ruleset
+# requires. CI never auto-fixes; fix locally and push.
+
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    uses: nyuchi/.github/.github/workflows/reusable-lint.yml@main

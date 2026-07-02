@@ -1,0 +1,29 @@
+// markdownlint-cli2 config for nyuchi/mukoko-weather-mobile.
+//
+// Relaxed defaults matching the org standard.
+// See https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+{
+  "default": true,
+
+  // Line length — we wrap for readability, not at a fixed column.
+  "MD013": false,
+
+  // Inline HTML in READMEs is intentional.
+  "MD033": false,
+
+  // First line need not be an H1 (CLAUDE.md is a single @AGENTS.md import).
+  "MD041": false,
+
+  // Fenced code blocks without a language are acceptable.
+  "MD040": false,
+
+  // Duplicate headings fine unless siblings.
+  "MD024": { "siblings_only": true },
+
+  // Unordered list indentation — 2 spaces.
+  "MD007": { "indent": 2 },
+
+  // Table-column-style — disabled (Prettier only reformats tables
+  // preceded by a blank line, so it can't reconcile all doc tables).
+  "MD060": false,
+}

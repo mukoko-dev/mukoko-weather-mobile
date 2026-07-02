@@ -1,0 +1,35 @@
+# yamllint config for nyuchi/mukoko-weather-mobile.
+#
+# Relaxed defaults matching the org standard — accommodates GitHub
+# Actions workflows (the `on:` YAML 1.1 boolean), long shell lines,
+# and files without `---` document-start markers.
+#
+# See https://yamllint.readthedocs.io/en/stable/configuration.html
+
+extends: default
+
+ignore: |
+  node_modules/
+  .expo/
+  dist/
+  android/
+  ios/
+
+rules:
+  line-length:
+    max: 140
+    level: error
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+  truthy:
+    check-keys: false
+    level: error
+  document-start: disable
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+  empty-lines:
+    max-end: 1
