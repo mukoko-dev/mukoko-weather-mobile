@@ -1,25 +1,35 @@
 /**
- * Location detail screen — same shape as the Weather home tab, but driven
- * by a slug from the route params instead of GPS.
+ * Location detail screen — a full weather page for a saved/community location,
+ * driven by a `slug` route param instead of GPS.
+ *
+ * Layout (mirrors the web location page's hierarchy, on the Mukoko brand kit):
+ *   - Brand Header (mark + wordmark + location name / country)
+ *   - Hero current conditions  → HeroConditions (BaobabCard + WeatherIcon)
+ *   - 24-hour forecast          → HourlyForecast (horizontal scroll)
+ *   - Atmospheric conditions    → AtmosphericMetrics (MetricCard grid)
+ *   - 7-day forecast            → DailyForecast
+ *
+ * States: loading skeleton, error + retry, pull-to-refresh. Content fades in on
+ * load unless the OS "reduce motion" preference is set (then it appears
+ * instantly). All spacing/radii/colours come from brand tokens + the palette.
  */
 
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Animated, RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { fetchWeather, type WeatherResponse } from '@/api/weather';
-import { RADIUS, SPACING } from '@/brand/tokens';
-import { BrandText } from '@/components/BrandText';
+import { SPACING } from '@/brand/tokens';
 import { Header } from '@/components/Header';
-import { MetricCard } from '@/components/MetricCard';
-import { WeatherIcon } from '@/components/WeatherIcon';
+import { AtmosphericMetrics } from '@/components/detail/AtmosphericMetrics';
+import { DailyForecast } from '@/components/detail/DailyForecast';
+import { DetailError } from '@/components/detail/DetailError';
+import { DetailSkeleton } from '@/components/detail/DetailSkeleton';
+import { HeroConditions } from '@/components/detail/HeroConditions';
+import { HourlyForecast } from '@/components/detail/HourlyForecast';
+import { extractHourly } from '@/components/detail/hourly';
+import { useReducedMotion } from '@/components/detail/useReducedMotion';
 import { usePalette } from '@/hooks/usePalette';
 
 type LoadState =
@@ -27,28 +37,49 @@ type LoadState =
   | { kind: 'ready'; weather: WeatherResponse }
   | { kind: 'error'; message: string };
 
+function titleCaseSlug(slug: string | undefined): string {
+  if (!slug) return 'Location';
+  return slug
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
 export default function LocationScreen() {
   const palette = usePalette();
+  const reduceMotion = useReducedMotion();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!slug) return;
-    try {
-      const weather = await fetchWeather({ slug });
-      setState({ kind: 'ready', weather });
-    } catch (err) {
-      setState({
-        kind: 'error',
-        message: err instanceof Error ? err.message : 'Unable to load weather',
-      });
-    }
-  }, [slug]);
+  // Never calls setState synchronously — every update lands after the awaited
+  // fetch, keeping the mount effect free of the react-hooks/set-state-in-effect
+  // cascade warning.
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      try {
+        const weather = await fetchWeather({ slug }, signal);
+        setState({ kind: 'ready', weather });
+      } catch (err) {
+        if (signal?.aborted) return;
+        setState({
+          kind: 'error',
+          message: err instanceof Error ? err.message : 'Unable to load weather',
+        });
+      }
+    },
+    [slug],
+  );
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!slug) return;
+    const controller = new AbortController();
+    void (async () => {
+      await load(controller.signal);
+    })();
+    return () => controller.abort();
+  }, [load, slug]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -56,101 +87,92 @@ export default function LocationScreen() {
     setRefreshing(false);
   }, [load]);
 
-  const title = state.kind === 'ready' ? (state.weather.location?.name ?? slug) : slug;
+  const onRetry = useCallback(() => {
+    setState({ kind: 'loading' });
+    void load();
+  }, [load]);
+
+  const fallbackTitle = titleCaseSlug(slug);
+  const title =
+    state.kind === 'ready' ? (state.weather.location?.name ?? fallbackTitle) : fallbackTitle;
+  const subtitle =
+    state.kind === 'ready'
+      ? [state.weather.location?.province, state.weather.location?.country]
+          .filter(Boolean)
+          .join(', ') || undefined
+      : undefined;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]} edges={['top']}>
-      <Stack.Screen options={{ title: title ?? 'Location' }} />
-      <Header title={title ?? 'Location'} subtitle={state.kind === 'ready' ? state.weather.location?.country : undefined} />
+      <Stack.Screen options={{ title }} />
+      <Header title={title} subtitle={subtitle} />
       <ScrollView
         contentContainerStyle={styles.scroll}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={palette.primary}
+            colors={[palette.primary]}
+          />
         }>
-        {state.kind === 'loading' ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={palette.primary} />
-          </View>
+        {!slug ? (
+          <DetailError message="No location was specified." onRetry={onRetry} />
+        ) : state.kind === 'loading' ? (
+          <DetailSkeleton />
         ) : state.kind === 'error' ? (
-          <View style={styles.center}>
-            <BrandText variant="bodyBold" tone="terracotta">
-              {state.message}
-            </BrandText>
-          </View>
+          <DetailError message={state.message} onRetry={onRetry} />
         ) : (
-          <>
-            <View style={styles.heroBlock}>
-              <WeatherIcon code={state.weather.current.weatherCode} variant="hero" />
-              <BrandText variant="hero" tone="text">
-                {state.weather.current.temperature !== null && state.weather.current.temperature !== undefined
-                  ? `${Math.round(state.weather.current.temperature)}°`
-                  : '—'}
-              </BrandText>
-              {state.weather.current.description ? (
-                <BrandText variant="subtitle" tone="textSecondary">
-                  {state.weather.current.description}
-                </BrandText>
-              ) : null}
-            </View>
-
-            <View style={styles.metricGrid}>
-              <MetricCard label="Humidity" value={state.weather.current.humidity} unit="%" />
-              <MetricCard label="Wind" value={state.weather.current.windSpeed} unit="km/h" />
-            </View>
-
-            <BrandText variant="subtitle" tone="text" style={styles.heading}>
-              7-day forecast
-            </BrandText>
-            <View style={styles.dailyList}>
-              {state.weather.daily.slice(0, 7).map((d, idx) => {
-                const date = d.date ? new Date(d.date) : null;
-                const label = date
-                  ? date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })
-                  : '—';
-                return (
-                  <View key={d.date ?? idx} style={[styles.dailyRow, { borderColor: palette.border }]}>
-                    <View style={styles.dailyLeft}>
-                      <WeatherIcon code={d.weatherCode} variant="title" />
-                      <BrandText variant="bodyBold" tone="text">
-                        {label}
-                      </BrandText>
-                    </View>
-                    <View style={styles.dailyRight}>
-                      <BrandText variant="mono" tone="textSecondary">
-                        {d.tempMin !== null && d.tempMin !== undefined ? `${Math.round(d.tempMin)}°` : '—'}
-                      </BrandText>
-                      <BrandText variant="monoLarge" tone="text">
-                        {d.tempMax !== null && d.tempMax !== undefined ? `${Math.round(d.tempMax)}°` : '—'}
-                      </BrandText>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </>
+          <ReadyContent weather={state.weather} reduceMotion={reduceMotion} />
         )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+function ReadyContent({
+  weather,
+  reduceMotion,
+}: {
+  weather: WeatherResponse;
+  reduceMotion: boolean;
+}) {
+  const [opacity] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+
+  useEffect(() => {
+    if (reduceMotion) {
+      opacity.setValue(1);
+      return;
+    }
+    const anim = Animated.timing(opacity, {
+      toValue: 1,
+      duration: 350,
+      useNativeDriver: true,
+    });
+    anim.start();
+    return () => anim.stop();
+  }, [opacity, reduceMotion]);
+
+  const hours = extractHourly(weather);
+
+  return (
+    <Animated.View style={[styles.content, { opacity }]}>
+      <HeroConditions weather={weather} />
+      <HourlyForecast hours={hours} />
+      <AtmosphericMetrics weather={weather} />
+      <DailyForecast weather={weather} />
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: SPACING.md, gap: SPACING.md },
-  center: { paddingVertical: SPACING.xxl, alignItems: 'center', gap: SPACING.sm },
-  heroBlock: { alignItems: 'center', paddingVertical: SPACING.xl, gap: SPACING.xs },
-  metricGrid: { flexDirection: 'row', gap: SPACING.sm },
-  heading: { marginTop: SPACING.md },
-  dailyList: { gap: SPACING.xs },
-  dailyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: RADIUS.sm,
-    borderWidth: StyleSheet.hairlineWidth,
+  scroll: {
+    padding: SPACING.md,
+    gap: SPACING.md,
+    paddingBottom: SPACING.xxl,
   },
-  dailyLeft: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  dailyRight: { flexDirection: 'row', alignItems: 'baseline', gap: SPACING.sm },
+  content: {
+    gap: SPACING.md,
+  },
 });
