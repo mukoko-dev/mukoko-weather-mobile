@@ -1,0 +1,24 @@
+# Prettier ignore for nyuchi/mukoko-weather-mobile.
+
+# Standard ignores
+node_modules/
+.git/
+.expo/
+dist/
+android/
+ios/
+
+# Backup / generated assets
+assets/images/expo-defaults-backup/
+
+# Files with structural meaning that Prettier would harm
+LICENSE
+CODEOWNERS
+
+# YAML is handled by yamllint and actionlint, not Prettier.
+*.yml
+*.yaml
+
+# Lockfiles
+*-lock.json
+package-lock.json

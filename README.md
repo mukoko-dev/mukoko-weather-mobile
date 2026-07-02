@@ -92,16 +92,16 @@ mukoko-mobile/
 
 ## What's wired vs. stubbed
 
-| Surface | Status | Notes |
-|---|---|---|
-| Weather home (current + 7-day) | Live | Calls `GET /api/py/weather?lat&lon` |
-| Location detail (`/location/[slug]`) | Live | Calls `GET /api/py/weather?location=<slug>` |
-| Explore / add location | Live | Calls `POST /api/py/locations/add` |
-| Shamwari AI tab | Placeholder | Coming in a follow-up phase |
-| Brand fonts (Noto Serif + Noto Sans + JetBrains Mono) | Live | Bundled via `@expo-google-fonts/*` |
-| Device identity (SecureStore UUID) | Live | Generated on first launch |
-| Device registration (`device.devices`) | **Stubbed** | Server endpoint `POST /api/py/devices/register` doesn't exist yet — payload is logged in dev. Flip `REGISTER_ENABLED` in `src/device/register.ts` once it lands. |
-| WorkOS AuthKit sign-in | **Stubbed exchange** | The hosted page + redirect work end-to-end, but code exchange returns a stub session. Wire `POST /api/py/auth/mobile/exchange` in mukoko-weather and flip `EXCHANGE_ENABLED` in `src/api/auth.ts`. |
+| Surface                                               | Status               | Notes                                                                                                                                                                                              |
+| ----------------------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Weather home (current + 7-day)                        | Live                 | Calls `GET /api/py/weather?lat&lon`                                                                                                                                                                |
+| Location detail (`/location/[slug]`)                  | Live                 | Calls `GET /api/py/weather?location=<slug>`                                                                                                                                                        |
+| Explore / add location                                | Live                 | Calls `POST /api/py/locations/add`                                                                                                                                                                 |
+| Shamwari AI tab                                       | Placeholder          | Coming in a follow-up phase                                                                                                                                                                        |
+| Brand fonts (Noto Serif + Noto Sans + JetBrains Mono) | Live                 | Bundled via `@expo-google-fonts/*`                                                                                                                                                                 |
+| Device identity (SecureStore UUID)                    | Live                 | Generated on first launch                                                                                                                                                                          |
+| Device registration (`device.devices`)                | **Stubbed**          | Server endpoint `POST /api/py/devices/register` doesn't exist yet — payload is logged in dev. Flip `REGISTER_ENABLED` in `src/device/register.ts` once it lands.                                   |
+| WorkOS AuthKit sign-in                                | **Stubbed exchange** | The hosted page + redirect work end-to-end, but code exchange returns a stub session. Wire `POST /api/py/auth/mobile/exchange` in mukoko-weather and flip `EXCHANGE_ENABLED` in `src/api/auth.ts`. |
 
 ### Why is auth/registration stubbed?
 
@@ -112,6 +112,7 @@ local device id and short-circuit the network calls so the rest of the UI
 can be developed and reviewed.
 
 When mukoko-weather ships either endpoint, the changes here are tiny:
+
 - `src/device/register.ts` -> set `REGISTER_ENABLED = true`
 - `src/api/auth.ts` -> set `EXCHANGE_ENABLED = true`
 
@@ -148,6 +149,7 @@ npm test
 ```
 
 Smoke tests cover:
+
 - API client URL builder (`src/api/client.test.ts`)
 - Device identity persistence (`src/device/identity.test.ts`)
 - Device registration payload shape (`src/device/register.test.ts`)
