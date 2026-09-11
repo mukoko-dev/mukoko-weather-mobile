@@ -1,18 +1,50 @@
-# Mukoko Mobile
+# Mukoko Weather (mobile)
 
-Expo (React Native, SDK 56) client for [Mukoko Weather](https://weather.mukoko.com).
-This app is a thin shell around the existing Python API in `../mukoko-weather` —
-no weather logic is duplicated here.
+> The Expo / React Native client for
+> [Mukoko Weather](https://weather.mukoko.com) — iOS and Android.
 
-- **Bundle ID (iOS):** `africa.nyuchi.mukoko.weather`
-- **Package (Android):** `africa.nyuchi.mukoko.weather`
-- **URL scheme:** `mukoko://`
-- **Display name:** Mukoko Weather
+[![Lint](https://github.com/nyuchi/mukoko-weather-mobile/actions/workflows/lint.yml/badge.svg)](https://github.com/nyuchi/mukoko-weather-mobile/actions/workflows/lint.yml)
+![Expo](https://img.shields.io/badge/Expo-SDK_56-000020?style=flat-square&logo=expo&logoColor=white)
+![React Native](https://img.shields.io/badge/React_Native-0.85-61DAFB?style=flat-square&logo=react&logoColor=000)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Platforms](https://img.shields.io/badge/Platforms-iOS_%7C_Android-lightgrey?style=flat-square)
+
+**Backend:** [weather.mukoko.com](https://weather.mukoko.com) | **Version:**
+1.0.0 | **Distribution:** not yet in either store
+
+---
+
+## What it is
+
+A thin client over the Python API in
+[`nyuchi/mukoko-weather`](https://github.com/nyuchi/mukoko-weather). No weather
+logic is duplicated here: every call goes to that app's `/api/py/*` endpoints,
+and the repo owns only presentation, navigation, device identity and sign-in.
+
+Five surfaces: the weather home (GPS plus a 7-day forecast), explore/search,
+Shamwari AI chat, a preferences tab, and a per-location detail route.
+
+| Fact              | Value                                                                           |
+| ----------------- | ------------------------------------------------------------------------------- |
+| Display name      | Mukoko Weather                                                                  |
+| npm package name  | `mukoko-mobile` (the repo and app are `mukoko-weather-mobile` / Mukoko Weather) |
+| Bundle ID (iOS)   | `africa.nyuchi.mukoko.weather`                                                  |
+| Package (Android) | `africa.nyuchi.mukoko.weather`                                                  |
+| URL scheme        | `mukoko://`                                                                     |
+| EAS project       | `97f6eb48-2aac-42c2-b13d-5f68f1a86174` (owner `nyuchi-web-services`)            |
+| API base          | `https://weather.mukoko.com`, override with `EXPO_PUBLIC_API_URL`               |
+
+**Not yet released.** `eas.json` defines `development`, `preview` and
+`production` build profiles, but the only submit target is Android → Play
+Console **internal track, `draft` status**. There is no iOS submit
+configuration, and the app is in neither store. Note also that `app.json`
+declares no `updates` block or `runtimeVersion` even though `eas.json` names
+`preview` and `production` EAS Update channels.
 
 ## Setup
 
 ```bash
-cd mukoko-mobile
+cd mukoko-weather-mobile
 npm install
 cp .env.example .env
 # Edit .env: set EXPO_PUBLIC_API_URL and EXPO_PUBLIC_WORKOS_CLIENT_ID
@@ -51,7 +83,7 @@ npx expo-doctor     # SDK version + dependency checks
 ## Project layout
 
 ```
-mukoko-mobile/
+mukoko-weather-mobile/
   app.json                       # Expo config — bundle IDs, plugins, scheme
   src/
     app/                         # Expo Router (file-based)
@@ -97,7 +129,7 @@ mukoko-mobile/
 | Weather home (current + 7-day)                        | Live                 | Calls `GET /api/py/weather?lat&lon`                                                                                                                                                                |
 | Location detail (`/location/[slug]`)                  | Live                 | Calls `GET /api/py/weather?location=<slug>`                                                                                                                                                        |
 | Explore / add location                                | Live                 | Calls `POST /api/py/locations/add`                                                                                                                                                                 |
-| Shamwari AI tab                                       | Placeholder          | Coming in a follow-up phase                                                                                                                                                                        |
+| Shamwari AI tab                                       | Live                 | Full-viewport chat screen (`src/app/(tabs)/shamwari.tsx`) against `POST /api/py/chat`; mirrors the server's message-length, history and rate limits                                                |
 | Brand fonts (Noto Serif + Noto Sans + JetBrains Mono) | Live                 | Bundled via `@expo-google-fonts/*`                                                                                                                                                                 |
 | Device identity (SecureStore UUID)                    | Live                 | Generated on first launch                                                                                                                                                                          |
 | Device registration (`device.devices`)                | **Stubbed**          | Server endpoint `POST /api/py/devices/register` doesn't exist yet — payload is logged in dev. Flip `REGISTER_ENABLED` in `src/device/register.ts` once it lands.                                   |
@@ -134,6 +166,10 @@ Tokens mirror `mukoko-weather/src/app/globals.css`. If you change a mineral
 hex or spacing value in `src/brand/tokens.ts`, update the web token at the
 same time so the apps stay in lock-step.
 
+These are the **seven minerals** — one of the three families in the
+[Mzizi](https://mzizi.dev) palette's twenty-one. The heritage and experimental
+families are not used here.
+
 - Cobalt `#0047AB` — primary CTAs, links
 - Tanzanite `#4B0082` — brand mark, AI premium
 - Malachite `#004D40` — success, growth
@@ -148,16 +184,14 @@ same time so the apps stay in lock-step.
 npm test
 ```
 
-Smoke tests cover:
+28 test files, covering the API client and chat client, device identity and
+registration payloads, the shared weather/i18n/locations/ICAO helpers, brand
+tokens, and component render tests via `@testing-library/react-native`
+(`src/__tests__/` plus colocated `*.test.ts(x)` files).
 
-- API client URL builder (`src/api/client.test.ts`)
-- Device identity persistence (`src/device/identity.test.ts`)
-- Device registration payload shape (`src/device/register.test.ts`)
-- WMO code -> icon mapping (`src/components/WeatherIcon.test.ts`)
-- Brand token sanity (`src/brand/tokens.test.ts`)
-
-Screen-level render tests will arrive when we wire `react-native-testing-library`
-into a CI workflow.
+> **These do not run in CI.** The only workflow in this repo is the org lint
+> gate; nothing runs `npm test`, `npm run typecheck`, or any EAS build. Run
+> them locally before pushing.
 
 ## Native build
 
@@ -170,3 +204,15 @@ npx expo run:android            # build + launch Android app
 ```
 
 Both folders are gitignored — regenerate them whenever `app.json` changes.
+
+## Licence
+
+⚠️ **The `LICENSE` file in this repository is unmodified `create-expo-app`
+boilerplate** — it is the MIT licence with copyright attributed to _650
+Industries, Inc. (aka Expo)_, not to Nyuchi. `package.json` declares no
+`license` field and is marked `private`.
+
+Nothing here is licensed to anyone yet. The LICENSE file needs replacing with
+whichever licence is actually intended before this README can claim one.
+
+© Nyuchi Africa (PVT) Ltd.
