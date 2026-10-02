@@ -3,7 +3,6 @@
 > The Expo / React Native client for
 > [Mukoko Weather](https://weather.mukoko.com) — iOS and Android.
 
-[![Lint](https://github.com/nyuchi/mukoko-weather-mobile/actions/workflows/lint.yml/badge.svg)](https://github.com/nyuchi/mukoko-weather-mobile/actions/workflows/lint.yml)
 ![Expo](https://img.shields.io/badge/Expo-SDK_56-000020?style=flat-square&logo=expo&logoColor=white)
 ![React Native](https://img.shields.io/badge/React_Native-0.85-61DAFB?style=flat-square&logo=react&logoColor=000)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?style=flat-square&logo=typescript&logoColor=white)
