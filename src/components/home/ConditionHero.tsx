@@ -15,18 +15,18 @@
  * shadow) with `overflow: hidden` so the background clips to the card.
  */
 
-import { useEffect, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from "react";
+import { Animated, Easing, StyleSheet, View } from "react-native";
 
-import { type CurrentConditions } from '@/api/weather';
-import { RADIUS, SPACING } from '@/brand/tokens';
-import { BrandText } from '@/components/BrandText';
-import { WeatherIcon } from '@/components/WeatherIcon';
-import { usePalette } from '@/hooks/usePalette';
-import { feelsLikeContext } from '@/shared';
+import { type CurrentConditions } from "@/api/weather";
+import { RADIUS, SPACING } from "@/brand/tokens";
+import { BrandText } from "@/components/BrandText";
+import { WeatherIcon } from "@/components/WeatherIcon";
+import { usePalette } from "@/hooks/usePalette";
+import { feelsLikeContext } from "@/shared";
 
-import { heroMoodFor, moodColors } from './condition-theme';
-import { useReducedMotion } from './useReducedMotion';
+import { heroMoodFor, moodColors } from "./condition-theme";
+import { useReducedMotion } from "./useReducedMotion";
 
 // Mzizi motion tokens (src: get_brand_tokens('motion')).
 const EASE_ENTRANCE = Easing.bezier(0, 0, 0.2, 1); // --motion-ease-entrance
@@ -48,8 +48,10 @@ export function ConditionHero({ current, isDay = true }: ConditionHeroProps) {
   const mood = heroMoodFor(current.weatherCode, isDay);
   const colors = moodColors(mood, palette);
 
-  const hasTemp = current.temperature !== null && current.temperature !== undefined;
-  const hasFeels = current.feelsLike !== null && current.feelsLike !== undefined;
+  const hasTemp =
+    current.temperature !== null && current.temperature !== undefined;
+  const hasFeels =
+    current.feelsLike !== null && current.feelsLike !== undefined;
 
   // Ambient orb drift (0 <-> 1), and a one-shot content entrance.
   // Held in state (stable instances) rather than refs so they are not read
@@ -91,15 +93,27 @@ export function ConditionHero({ current, isDay = true }: ConditionHeroProps) {
     return () => loop.stop();
   }, [reduced, drift, entrance]);
 
-  const orbATranslate = drift.interpolate({ inputRange: [0, 1], outputRange: [-14, 14] });
-  const orbBTranslate = drift.interpolate({ inputRange: [0, 1], outputRange: [12, -12] });
-  const orbScale = drift.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
+  const orbATranslate = drift.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-14, 14],
+  });
+  const orbBTranslate = drift.interpolate({
+    inputRange: [0, 1],
+    outputRange: [12, -12],
+  });
+  const orbScale = drift.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.12],
+  });
 
   const contentStyle = {
     opacity: entrance,
     transform: [
       {
-        translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }),
+        translateY: entrance.interpolate({
+          inputRange: [0, 1],
+          outputRange: [8, 0],
+        }),
       },
     ],
   };
@@ -110,15 +124,17 @@ export function ConditionHero({ current, isDay = true }: ConditionHeroProps) {
         styles.card,
         {
           backgroundColor: palette.surface,
-          borderColor: palette.primary + '40',
+          borderColor: palette.primary + "40",
         },
-      ]}>
+      ]}
+    >
       {/* Decorative animated background — never intercepts touches. */}
       <View
         pointerEvents="none"
         style={[StyleSheet.absoluteFill, { backgroundColor: colors.base }]}
         accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants">
+        importantForAccessibility="no-hide-descendants"
+      >
         <Animated.View
           style={[
             styles.orb,
@@ -144,7 +160,7 @@ export function ConditionHero({ current, isDay = true }: ConditionHeroProps) {
       <Animated.View style={[styles.content, contentStyle]}>
         <WeatherIcon code={current.weatherCode} isDay={isDay} variant="hero" />
         <BrandText variant="hero" tone="text">
-          {hasTemp ? `${Math.round(current.temperature!)}°` : '—'}
+          {hasTemp ? `${Math.round(current.temperature!)}°` : "—"}
         </BrandText>
         {current.description ? (
           <BrandText variant="subtitle" tone="textSecondary">
@@ -153,8 +169,8 @@ export function ConditionHero({ current, isDay = true }: ConditionHeroProps) {
         ) : null}
         {hasFeels && hasTemp ? (
           <BrandText variant="small" tone="textTertiary">
-            {feelsLikeContext(current.feelsLike!, current.temperature!)} — feels like{' '}
-            {Math.round(current.feelsLike!)}°
+            {feelsLikeContext(current.feelsLike!, current.temperature!)} — feels
+            like {Math.round(current.feelsLike!)}°
           </BrandText>
         ) : null}
       </Animated.View>
@@ -166,22 +182,22 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: RADIUS.card,
     borderWidth: 1,
-    overflow: 'hidden',
+    overflow: "hidden",
     // Baobab shadow-sm equivalent.
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   content: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: SPACING.xl,
     paddingHorizontal: SPACING.md,
     gap: SPACING.xs,
   },
   orb: {
-    position: 'absolute',
+    position: "absolute",
     width: 220,
     height: 220,
     borderRadius: 110,

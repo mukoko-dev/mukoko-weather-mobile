@@ -6,17 +6,17 @@
  * added (e.g. lucide-react-native), only this component needs to change.
  */
 
-import { StyleSheet, Text, View, type ColorValue } from 'react-native';
+import { StyleSheet, Text, View, type ColorValue } from "react-native";
 
-import { FONT_FAMILY } from '@/brand/tokens';
+import { FONT_FAMILY } from "@/brand/tokens";
 
-export type TabIconName = 'weather' | 'explore' | 'shamwari' | 'my';
+export type TabIconName = "weather" | "explore" | "shamwari" | "my";
 
 const GLYPHS: Record<TabIconName, string> = {
-  weather: '☀',     // ☀ sun — for the home/weather tab
-  explore: '◉',     // ◉ fisheye / compass dial
-  shamwari: '✨',    // ✨ sparkles — Shamwari AI surface
-  my: '☸',          // ☸ wheel — settings / my locations
+  weather: "☀", // ☀ sun — for the home/weather tab
+  explore: "◉", // ◉ fisheye / compass dial
+  shamwari: "✨", // ✨ sparkles — Shamwari AI surface
+  my: "☸", // ☸ wheel — settings / my locations
 };
 
 export type TabIconProps = {
@@ -27,7 +27,12 @@ export type TabIconProps = {
   focused?: boolean;
 };
 
-export function TabIcon({ name, color, size = 22, focused = false }: TabIconProps) {
+export function TabIcon({
+  name,
+  color,
+  size = 22,
+  focused = false,
+}: TabIconProps) {
   return (
     <View style={styles.wrap}>
       {/*
@@ -45,7 +50,8 @@ export function TabIcon({ name, color, size = 22, focused = false }: TabIconProp
             lineHeight: size + 2,
             opacity: focused ? 1 : 0.85,
           },
-        ]}>
+        ]}
+      >
         {GLYPHS[name]}
       </Text>
     </View>
@@ -54,11 +60,11 @@ export function TabIcon({ name, color, size = 22, focused = false }: TabIconProp
 
 const styles = StyleSheet.create({
   wrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   glyph: {
     fontFamily: FONT_FAMILY.body,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

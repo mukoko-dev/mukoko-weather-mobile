@@ -6,13 +6,15 @@
  *   cobalt → tanzanite → malachite → gold → terracotta → sodalite → copper
  */
 
-import { render } from '@testing-library/react-native';
+import { render } from "@testing-library/react-native";
 
-import { MINERALS } from '@/brand/tokens';
-import { BrandStripe } from '@/components/BrandStripe';
+import { MINERALS } from "@/brand/tokens";
+import { BrandStripe } from "@/components/BrandStripe";
 
 type StyleObj = Record<string, unknown>;
-type JsonNode = string | { type: string; props: Record<string, unknown>; children: JsonNode[] };
+type JsonNode =
+  | string
+  | { type: string; props: Record<string, unknown>; children: JsonNode[] };
 
 function flatten(style: unknown): StyleObj {
   if (Array.isArray(style)) {
@@ -22,8 +24,9 @@ function flatten(style: unknown): StyleObj {
 }
 
 function findViews(node: JsonNode | null): { props: { style?: unknown } }[] {
-  if (!node || typeof node === 'string') return [];
-  const here = node.type === 'View' ? [{ props: node.props as { style?: unknown } }] : [];
+  if (!node || typeof node === "string") return [];
+  const here =
+    node.type === "View" ? [{ props: node.props as { style?: unknown } }] : [];
   const deeper = (node.children ?? []).flatMap(findViews);
   return [...here, ...deeper];
 }
@@ -34,8 +37,8 @@ async function viewsOf(element: React.ReactElement) {
   return findViews(json);
 }
 
-describe('BrandStripe', () => {
-  it('renders exactly 7 equal-flex segments', async () => {
+describe("BrandStripe", () => {
+  it("renders exactly 7 equal-flex segments", async () => {
     const all = await viewsOf(<BrandStripe />);
     // 1 column wrapper + 7 segments
     expect(all.length).toBe(8);
@@ -47,10 +50,12 @@ describe('BrandStripe', () => {
     }
   });
 
-  it('renders the canonical ring order (cobalt → tanzanite → malachite → gold → terracotta → sodalite → copper)', async () => {
+  it("renders the canonical ring order (cobalt → tanzanite → malachite → gold → terracotta → sodalite → copper)", async () => {
     const segments = (await viewsOf(<BrandStripe />)).slice(1);
-    const colors = segments.map(
-      (s) => (flatten(s.props.style).backgroundColor as string | undefined)?.toUpperCase(),
+    const colors = segments.map((s) =>
+      (
+        flatten(s.props.style).backgroundColor as string | undefined
+      )?.toUpperCase(),
     );
     expect(colors).toEqual([
       MINERALS.cobalt.light,
@@ -63,15 +68,15 @@ describe('BrandStripe', () => {
     ]);
   });
 
-  it('is oriented as a vertical column with 100% height and 3dp default width', async () => {
+  it("is oriented as a vertical column with 100% height and 3dp default width", async () => {
     const all = await viewsOf(<BrandStripe />);
     const style = flatten(all[0].props.style);
-    expect(style.flexDirection).toBe('column');
-    expect(style.height).toBe('100%');
+    expect(style.flexDirection).toBe("column");
+    expect(style.height).toBe("100%");
     expect(style.width).toBe(3);
   });
 
-  it('honours a custom width', async () => {
+  it("honours a custom width", async () => {
     const all = await viewsOf(<BrandStripe width={6} />);
     const style = flatten(all[0].props.style);
     expect(style.width).toBe(6);

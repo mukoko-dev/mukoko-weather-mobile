@@ -6,9 +6,9 @@
  * variants). The wordmark is Noto Serif 600, lowercase always.
  */
 
-import { Image, StyleSheet, View, useColorScheme } from 'react-native';
+import { Image, StyleSheet, View, useColorScheme } from "react-native";
 
-import { BrandText } from '@/components/BrandText';
+import { BrandText } from "@/components/BrandText";
 
 export type MukokoLogoProps = {
   /** Mark size in dp. Default 32 — matches the web header. */
@@ -17,17 +17,21 @@ export type MukokoLogoProps = {
   showWordmark?: boolean;
 };
 
-const LIGHT_MARK = require('../../assets/images/mukoko-mark-light.png');
-const DARK_MARK = require('../../assets/images/mukoko-mark-dark.png');
+const LIGHT_MARK = require("../../assets/images/mukoko-mark-light.png");
+const DARK_MARK = require("../../assets/images/mukoko-mark-dark.png");
 
-export function MukokoLogo({ size = 32, showWordmark = true }: MukokoLogoProps) {
+export function MukokoLogo({
+  size = 32,
+  showWordmark = true,
+}: MukokoLogoProps) {
   const scheme = useColorScheme();
-  const source = scheme === 'dark' ? DARK_MARK : LIGHT_MARK;
+  const source = scheme === "dark" ? DARK_MARK : LIGHT_MARK;
   return (
     <View
       style={styles.row}
       accessibilityRole="image"
-      accessibilityLabel="mukoko">
+      accessibilityLabel="mukoko"
+    >
       <Image
         source={source}
         style={{ width: size, height: size }}
@@ -45,8 +49,8 @@ export function MukokoLogo({ size = 32, showWordmark = true }: MukokoLogoProps) 
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   wordmark: {

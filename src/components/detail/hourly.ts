@@ -17,7 +17,7 @@
  * section — never a crash.
  */
 
-import type { WeatherResponse } from '@/api/weather';
+import type { WeatherResponse } from "@/api/weather";
 
 export type HourlyPoint = {
   /** ISO timestamp for the hour. */
@@ -54,7 +54,7 @@ type OpenMeteoHourly = {
 };
 
 function num(v: unknown): number | null {
-  return typeof v === 'number' && Number.isFinite(v) ? v : null;
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
 function truthyDay(v: unknown): boolean {
@@ -64,7 +64,7 @@ function truthyDay(v: unknown): boolean {
 }
 
 function fromEntry(entry: NormalizedHourEntry): HourlyPoint | null {
-  if (!entry || typeof entry.time !== 'string') return null;
+  if (!entry || typeof entry.time !== "string") return null;
   return {
     time: entry.time,
     temperature: num(entry.temperature ?? entry.temp ?? entry.temperature_2m),
@@ -79,15 +79,18 @@ function fromEntry(entry: NormalizedHourEntry): HourlyPoint | null {
 function fromColumns(hourly: OpenMeteoHourly): HourlyPoint[] {
   const times = hourly.time;
   if (!Array.isArray(times)) return [];
-  const temps = (hourly.temperature_2m ?? hourly.temperature) as unknown[] | undefined;
-  const precip = (hourly.precipitation_probability ?? hourly.precipitationProbability) as
+  const temps = (hourly.temperature_2m ?? hourly.temperature) as
     | unknown[]
     | undefined;
-  const codes = (hourly.weather_code ?? hourly.weatherCode) as unknown[] | undefined;
+  const precip = (hourly.precipitation_probability ??
+    hourly.precipitationProbability) as unknown[] | undefined;
+  const codes = (hourly.weather_code ?? hourly.weatherCode) as
+    | unknown[]
+    | undefined;
   const day = (hourly.is_day ?? hourly.isDay) as unknown[] | undefined;
 
   return times.flatMap((time, i) => {
-    if (typeof time !== 'string') return [];
+    if (typeof time !== "string") return [];
     return [
       {
         time,
@@ -107,7 +110,10 @@ function fromColumns(hourly: OpenMeteoHourly): HourlyPoint[] {
  * timestamp is in the past (or unparseable) it falls back to the head of the
  * series so the section still renders something sensible.
  */
-export function extractHourly(weather: WeatherResponse, limit = 24): HourlyPoint[] {
+export function extractHourly(
+  weather: WeatherResponse,
+  limit = 24,
+): HourlyPoint[] {
   const raw = (weather as unknown as { hourly?: unknown }).hourly;
 
   let points: HourlyPoint[] = [];
@@ -115,7 +121,7 @@ export function extractHourly(weather: WeatherResponse, limit = 24): HourlyPoint
     points = raw
       .map((e) => fromEntry(e as NormalizedHourEntry))
       .filter((p): p is HourlyPoint => p !== null);
-  } else if (raw && typeof raw === 'object') {
+  } else if (raw && typeof raw === "object") {
     points = fromColumns(raw as OpenMeteoHourly);
   }
 

@@ -4,8 +4,8 @@
  * upcoming-hour filtering, the all-past fallback, and empty/missing data.
  */
 
-import type { WeatherResponse } from '@/api/weather';
-import { extractHourly } from '@/components/detail/hourly';
+import type { WeatherResponse } from "@/api/weather";
+import { extractHourly } from "@/components/detail/hourly";
 
 function baseWeather(extra: Record<string, unknown>): WeatherResponse {
   return {
@@ -31,25 +31,42 @@ function iso(offsetHours: number): string {
   return new Date(Date.now() + offsetHours * HOUR).toISOString();
 }
 
-describe('extractHourly', () => {
-  it('returns [] when there is no hourly field', () => {
+describe("extractHourly", () => {
+  it("returns [] when there is no hourly field", () => {
     expect(extractHourly(baseWeather({}))).toEqual([]);
   });
 
-  it('reads the normalised array shape', () => {
+  it("reads the normalised array shape", () => {
     const weather = baseWeather({
       hourly: [
-        { time: iso(1), temperature: 21, precipitationProbability: 30, weatherCode: 2, isDay: 1 },
-        { time: iso(2), temperature: 22, precipitationProbability: 10, weatherCode: 1, isDay: 0 },
+        {
+          time: iso(1),
+          temperature: 21,
+          precipitationProbability: 30,
+          weatherCode: 2,
+          isDay: 1,
+        },
+        {
+          time: iso(2),
+          temperature: 22,
+          precipitationProbability: 10,
+          weatherCode: 1,
+          isDay: 0,
+        },
       ],
     });
     const hours = extractHourly(weather);
     expect(hours).toHaveLength(2);
-    expect(hours[0]).toMatchObject({ temperature: 21, precipitationProbability: 30, weatherCode: 2, isDay: true });
+    expect(hours[0]).toMatchObject({
+      temperature: 21,
+      precipitationProbability: 30,
+      weatherCode: 2,
+      isDay: true,
+    });
     expect(hours[1].isDay).toBe(false);
   });
 
-  it('reads the Open-Meteo column shape', () => {
+  it("reads the Open-Meteo column shape", () => {
     const weather = baseWeather({
       hourly: {
         time: [iso(1), iso(2), iso(3)],
@@ -61,10 +78,15 @@ describe('extractHourly', () => {
     });
     const hours = extractHourly(weather);
     expect(hours).toHaveLength(3);
-    expect(hours[2]).toMatchObject({ temperature: 17, precipitationProbability: 40, weatherCode: 3, isDay: false });
+    expect(hours[2]).toMatchObject({
+      temperature: 17,
+      precipitationProbability: 40,
+      weatherCode: 3,
+      isDay: false,
+    });
   });
 
-  it('drops past hours but keeps the in-progress hour', () => {
+  it("drops past hours but keeps the in-progress hour", () => {
     const weather = baseWeather({
       hourly: [
         { time: iso(-5), temperature: 10 },
@@ -76,7 +98,7 @@ describe('extractHourly', () => {
     expect(hours.map((h) => h.temperature)).toEqual([11, 12]);
   });
 
-  it('falls back to the head of the series when every hour is in the past', () => {
+  it("falls back to the head of the series when every hour is in the past", () => {
     const weather = baseWeather({
       hourly: [
         { time: iso(-10), temperature: 1 },
@@ -88,19 +110,33 @@ describe('extractHourly', () => {
     expect(hours[0].temperature).toBe(1);
   });
 
-  it('caps the result at the requested limit', () => {
+  it("caps the result at the requested limit", () => {
     const weather = baseWeather({
-      hourly: Array.from({ length: 48 }, (_, i) => ({ time: iso(i + 1), temperature: i })),
+      hourly: Array.from({ length: 48 }, (_, i) => ({
+        time: iso(i + 1),
+        temperature: i,
+      })),
     });
     expect(extractHourly(weather)).toHaveLength(24);
     expect(extractHourly(weather, 6)).toHaveLength(6);
   });
 
-  it('coerces non-finite / missing numbers to null', () => {
+  it("coerces non-finite / missing numbers to null", () => {
     const weather = baseWeather({
-      hourly: [{ time: iso(1), temperature: 'warm', precipitationProbability: null, weatherCode: undefined }],
+      hourly: [
+        {
+          time: iso(1),
+          temperature: "warm",
+          precipitationProbability: null,
+          weatherCode: undefined,
+        },
+      ],
     });
     const [h] = extractHourly(weather);
-    expect(h).toMatchObject({ temperature: null, precipitationProbability: null, weatherCode: null });
+    expect(h).toMatchObject({
+      temperature: null,
+      precipitationProbability: null,
+      weatherCode: null,
+    });
   });
 });

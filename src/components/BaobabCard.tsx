@@ -8,10 +8,10 @@
  * individually. Keeps shadow/border/padding consistent everywhere.
  */
 
-import { StyleSheet, View, type ViewProps } from 'react-native';
+import { StyleSheet, View, type ViewProps } from "react-native";
 
-import { RADIUS, SPACING } from '@/brand/tokens';
-import { usePalette } from '@/hooks/usePalette';
+import { RADIUS, SPACING } from "@/brand/tokens";
+import { usePalette } from "@/hooks/usePalette";
 
 export type BaobabCardProps = ViewProps & {
   /** Use a quieter card surface (matches `.acacia` from the web). Default false. */
@@ -36,11 +36,12 @@ export function BaobabCard({
         {
           padding,
           backgroundColor: palette.surface,
-          borderColor: quiet ? palette.border : palette.primary + '40', // ~25% alpha
+          borderColor: quiet ? palette.border : palette.primary + "40", // ~25% alpha
         },
         !quiet && styles.shadow,
         style,
-      ]}>
+      ]}
+    >
       {children}
     </View>
   );
@@ -54,7 +55,7 @@ const styles = StyleSheet.create({
   },
   shadow: {
     // Shadow-sm equivalent — soft elevation. iOS uses shadow*, Android uses elevation.
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,

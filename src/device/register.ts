@@ -36,23 +36,23 @@
  *   bundle: { appVersion, buildNumber, expoSdk }
  */
 
-import * as Application from 'expo-application';
-import Constants from 'expo-constants';
-import * as Device from 'expo-device';
-import { Platform } from 'react-native';
+import * as Application from "expo-application";
+import Constants from "expo-constants";
+import * as Device from "expo-device";
+import { Platform } from "react-native";
 
-import { apiFetch, ApiError } from '@/api/client';
-import { getOrCreateDeviceId } from '@/device/identity';
+import { apiFetch, ApiError } from "@/api/client";
+import { getOrCreateDeviceId } from "@/device/identity";
 
 const REGISTER_ENABLED = false; // flip to true once the server endpoint exists
-const REGISTER_PATH = '/api/py/devices/register';
+const REGISTER_PATH = "/api/py/devices/register";
 
 export type RegisterDevicePayload = {
   deviceIdentifier: string;
-  category: 'user_device';
+  category: "user_device";
   userDevice: {
-    platformIdentifier: 'ios' | 'android' | 'web';
-    formFactor: 'phone' | 'tablet' | 'desktop';
+    platformIdentifier: "ios" | "android" | "web";
+    formFactor: "phone" | "tablet" | "desktop";
     displayName: string;
     localDataLayer: { hasSecureStore: boolean };
     consentSettings: { analytics: boolean; crashReports: boolean };
@@ -61,7 +61,11 @@ export type RegisterDevicePayload = {
   };
   softwareInventory: {
     operatingSystem: { name: string; version: string | null };
-    mukokoApp: { version: string | null; buildNumber: string | null; expoSdk: string | null };
+    mukokoApp: {
+      version: string | null;
+      buildNumber: string | null;
+      expoSdk: string | null;
+    };
   };
   capabilities: string[];
 };
@@ -70,27 +74,29 @@ export type RegisterDeviceResult =
   | { ok: true; serverId: string | null; stubbed: boolean }
   | { ok: false; error: string };
 
-function platformIdentifier(): RegisterDevicePayload['userDevice']['platformIdentifier'] {
-  if (Platform.OS === 'ios') return 'ios';
-  if (Platform.OS === 'android') return 'android';
-  return 'web';
+function platformIdentifier(): RegisterDevicePayload["userDevice"]["platformIdentifier"] {
+  if (Platform.OS === "ios") return "ios";
+  if (Platform.OS === "android") return "android";
+  return "web";
 }
 
-function formFactor(): RegisterDevicePayload['userDevice']['formFactor'] {
-  if (Platform.OS === 'web') return 'desktop';
-  if (Device.deviceType === Device.DeviceType.TABLET) return 'tablet';
-  return 'phone';
+function formFactor(): RegisterDevicePayload["userDevice"]["formFactor"] {
+  if (Platform.OS === "web") return "desktop";
+  if (Device.deviceType === Device.DeviceType.TABLET) return "tablet";
+  return "phone";
 }
 
-export function buildRegistrationPayload(deviceId: string): RegisterDevicePayload {
+export function buildRegistrationPayload(
+  deviceId: string,
+): RegisterDevicePayload {
   return {
     deviceIdentifier: deviceId,
-    category: 'user_device',
+    category: "user_device",
     userDevice: {
       platformIdentifier: platformIdentifier(),
       formFactor: formFactor(),
-      displayName: Device.deviceName ?? 'Mukoko Mobile',
-      localDataLayer: { hasSecureStore: Platform.OS !== 'web' },
+      displayName: Device.deviceName ?? "Mukoko Mobile",
+      localDataLayer: { hasSecureStore: Platform.OS !== "web" },
       consentSettings: { analytics: false, crashReports: false },
       associatedUsers: [],
       registeredAt: new Date().toISOString(),
@@ -98,7 +104,10 @@ export function buildRegistrationPayload(deviceId: string): RegisterDevicePayloa
     softwareInventory: {
       operatingSystem: {
         name: Platform.OS,
-        version: typeof Platform.Version === 'string' ? Platform.Version : String(Platform.Version),
+        version:
+          typeof Platform.Version === "string"
+            ? Platform.Version
+            : String(Platform.Version),
       },
       mukokoApp: {
         version: Application.nativeApplicationVersion ?? null,
@@ -106,7 +115,7 @@ export function buildRegistrationPayload(deviceId: string): RegisterDevicePayloa
         expoSdk: Constants.expoConfig?.sdkVersion ?? null,
       },
     },
-    capabilities: ['weather', 'geolocation'],
+    capabilities: ["weather", "geolocation"],
   };
 }
 
@@ -121,14 +130,18 @@ export async function registerDevice(): Promise<RegisterDeviceResult> {
   if (!REGISTER_ENABLED) {
     if (__DEV__) {
       // eslint-disable-next-line no-console
-      console.log('[device.register] stubbed — would POST', REGISTER_PATH, payload);
+      console.log(
+        "[device.register] stubbed — would POST",
+        REGISTER_PATH,
+        payload,
+      );
     }
     return { ok: true, serverId: null, stubbed: true };
   }
 
   try {
     const response = await apiFetch<{ serverId: string }>(REGISTER_PATH, {
-      method: 'POST',
+      method: "POST",
       json: payload,
     });
     return { ok: true, serverId: response.serverId ?? null, stubbed: false };
@@ -137,10 +150,10 @@ export async function registerDevice(): Promise<RegisterDeviceResult> {
       // Already registered — treat as success.
       return { ok: true, serverId: null, stubbed: false };
     }
-    const message = err instanceof Error ? err.message : 'unknown error';
+    const message = err instanceof Error ? err.message : "unknown error";
     if (__DEV__) {
       // eslint-disable-next-line no-console
-      console.warn('[device.register] failed', message);
+      console.warn("[device.register] failed", message);
     }
     return { ok: false, error: message };
   }

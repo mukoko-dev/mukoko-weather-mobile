@@ -9,7 +9,7 @@
  * server-side to 5 creations/hour/IP — UI should surface 429s clearly.
  */
 
-import { apiFetch } from '@/api/client';
+import { apiFetch } from "@/api/client";
 
 export type LocationSummary = {
   slug: string;
@@ -30,7 +30,7 @@ export function searchLocations(
   query: string,
   signal?: AbortSignal,
 ): Promise<SearchResponse> {
-  return apiFetch<SearchResponse>('/api/py/search', {
+  return apiFetch<SearchResponse>("/api/py/search", {
     query: { q: query },
     signal,
   });
@@ -50,8 +50,8 @@ export function addLocation(
   input: AddLocationInput,
   signal?: AbortSignal,
 ): Promise<AddLocationResponse> {
-  return apiFetch<AddLocationResponse>('/api/py/locations/add', {
-    method: 'POST',
+  return apiFetch<AddLocationResponse>("/api/py/locations/add", {
+    method: "POST",
     json: input,
     signal,
   });
@@ -63,8 +63,8 @@ export function geoLookup(
   autoCreate = false,
   signal?: AbortSignal,
 ): Promise<{ location: LocationSummary | null }> {
-  return apiFetch<{ location: LocationSummary | null }>('/api/py/geo', {
-    query: { lat, lon, autoCreate: autoCreate ? 'true' : undefined },
+  return apiFetch<{ location: LocationSummary | null }>("/api/py/geo", {
+    query: { lat, lon, autoCreate: autoCreate ? "true" : undefined },
     signal,
   });
 }

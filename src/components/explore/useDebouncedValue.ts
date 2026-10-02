@@ -3,7 +3,7 @@
  * quiet. Used to throttle the Explore search input before hitting the API.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 export function useDebouncedValue<T>(value: T, delayMs = 300): T {
   const [debounced, setDebounced] = useState(value);

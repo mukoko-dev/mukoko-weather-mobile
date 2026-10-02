@@ -7,13 +7,19 @@
  * would reject.
  */
 
-import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useState } from "react";
+import { Pressable, StyleSheet, TextInput, View } from "react-native";
 
-import { MAX_MESSAGE_LEN } from '@/api/chat';
-import { FONT_FAMILY, FONT_SIZE, RADIUS, SPACING, TOUCH_TARGET_MIN } from '@/brand/tokens';
-import { BrandText } from '@/components/BrandText';
-import { usePalette } from '@/hooks/usePalette';
+import { MAX_MESSAGE_LEN } from "@/api/chat";
+import {
+  FONT_FAMILY,
+  FONT_SIZE,
+  RADIUS,
+  SPACING,
+  TOUCH_TARGET_MIN,
+} from "@/brand/tokens";
+import { BrandText } from "@/components/BrandText";
+import { usePalette } from "@/hooks/usePalette";
 
 export type ChatComposerProps = {
   onSend: (text: string) => void;
@@ -23,7 +29,7 @@ export type ChatComposerProps = {
 
 export function ChatComposer({ onSend, loading }: ChatComposerProps) {
   const palette = usePalette();
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState("");
 
   const trimmed = value.trim();
   const canSend = trimmed.length > 0 && !loading;
@@ -31,15 +37,19 @@ export function ChatComposer({ onSend, loading }: ChatComposerProps) {
   const handleSend = () => {
     if (!canSend) return;
     onSend(trimmed);
-    setValue('');
+    setValue("");
   };
 
   return (
     <View
       style={[
         styles.card,
-        { backgroundColor: palette.surface, borderColor: palette.sodalite + '40' },
-      ]}>
+        {
+          backgroundColor: palette.surface,
+          borderColor: palette.sodalite + "40",
+        },
+      ]}
+    >
       <TextInput
         value={value}
         onChangeText={setValue}
@@ -66,11 +76,13 @@ export function ChatComposer({ onSend, loading }: ChatComposerProps) {
             backgroundColor: canSend ? palette.sodalite : palette.borderStrong,
             opacity: pressed && canSend ? 0.85 : 1,
           },
-        ]}>
+        ]}
+      >
         <BrandText
           variant="title"
           style={{ color: canSend ? palette.onSodalite : palette.textTertiary }}
-          accessibilityElementsHidden>
+          accessibilityElementsHidden
+        >
           ↑
         </BrandText>
       </Pressable>
@@ -80,8 +92,8 @@ export function ChatComposer({ onSend, loading }: ChatComposerProps) {
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     gap: SPACING.sm,
     borderWidth: 1,
     borderRadius: RADIUS.card,
@@ -102,7 +114,7 @@ const styles = StyleSheet.create({
     width: TOUCH_TARGET_MIN,
     height: TOUCH_TARGET_MIN,
     borderRadius: TOUCH_TARGET_MIN / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

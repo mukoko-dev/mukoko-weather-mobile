@@ -27,24 +27,24 @@
  * persist the raw `code` and resolve so the rest of the flow can be tested.
  */
 
-import * as AuthSession from 'expo-auth-session';
-import * as Crypto from 'expo-crypto';
-import * as SecureStore from 'expo-secure-store';
-import * as WebBrowser from 'expo-web-browser';
-import { Platform } from 'react-native';
+import * as AuthSession from "expo-auth-session";
+import * as Crypto from "expo-crypto";
+import * as SecureStore from "expo-secure-store";
+import * as WebBrowser from "expo-web-browser";
+import { Platform } from "react-native";
 
-import { apiFetch, setAuthTokenResolver } from '@/api/client';
+import { apiFetch, setAuthTokenResolver } from "@/api/client";
 
 WebBrowser.maybeCompleteAuthSession();
 
-const SESSION_KEY = 'mukoko.session';
-const PKCE_VERIFIER_KEY = 'mukoko.pkceVerifier';
+const SESSION_KEY = "mukoko.session";
+const PKCE_VERIFIER_KEY = "mukoko.pkceVerifier";
 
 const AUTHKIT_DOMAIN =
-  process.env.EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN ?? 'https://auth.mukoko.com';
-const WORKOS_CLIENT_ID = process.env.EXPO_PUBLIC_WORKOS_CLIENT_ID ?? '';
-const REDIRECT_SCHEME = 'mukoko';
-const REDIRECT_PATH = 'sign-in-callback';
+  process.env.EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN ?? "https://auth.mukoko.com";
+const WORKOS_CLIENT_ID = process.env.EXPO_PUBLIC_WORKOS_CLIENT_ID ?? "";
+const REDIRECT_SCHEME = "mukoko";
+const REDIRECT_PATH = "sign-in-callback";
 
 export type Session = {
   accessToken: string;
@@ -55,16 +55,16 @@ export type Session = {
 };
 
 async function getItem(key: string): Promise<string | null> {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined') return null;
+  if (Platform.OS === "web") {
+    if (typeof window === "undefined") return null;
     return window.localStorage.getItem(key);
   }
   return SecureStore.getItemAsync(key);
 }
 
 async function setItem(key: string, value: string): Promise<void> {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined') return;
+  if (Platform.OS === "web") {
+    if (typeof window === "undefined") return;
     window.localStorage.setItem(key, value);
     return;
   }
@@ -72,8 +72,8 @@ async function setItem(key: string, value: string): Promise<void> {
 }
 
 async function deleteItem(key: string): Promise<void> {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined') return;
+  if (Platform.OS === "web") {
+    if (typeof window === "undefined") return;
     window.localStorage.removeItem(key);
     return;
   }
@@ -111,9 +111,10 @@ export function initAuth() {
 
 /** PKCE verifier: 64 chars from RFC 7636 unreserved alphabet. */
 function randomVerifier(length = 64): string {
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  const alphabet =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
   const bytes = Crypto.getRandomBytes(length);
-  let out = '';
+  let out = "";
   for (let i = 0; i < length; i += 1) {
     out += alphabet[bytes[i] % alphabet.length];
   }
@@ -126,7 +127,7 @@ async function sha256Base64Url(input: string): Promise<string> {
     input,
     { encoding: Crypto.CryptoEncoding.BASE64 },
   );
-  return digest.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return digest.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 export function getRedirectUri(): string {
@@ -144,14 +145,14 @@ export function getRedirectUri(): string {
  * /sign-in-callback route to keep flow logic centralised).
  */
 export async function startSignIn(): Promise<
-  | { type: 'success'; code: string }
-  | { type: 'cancel' }
-  | { type: 'error'; message: string }
+  | { type: "success"; code: string }
+  | { type: "cancel" }
+  | { type: "error"; message: string }
 > {
   if (!WORKOS_CLIENT_ID) {
     return {
-      type: 'error',
-      message: 'Missing EXPO_PUBLIC_WORKOS_CLIENT_ID — set it in your .env',
+      type: "error",
+      message: "Missing EXPO_PUBLIC_WORKOS_CLIENT_ID — set it in your .env",
     };
   }
 
@@ -164,32 +165,37 @@ export async function startSignIn(): Promise<
   const params = new URLSearchParams({
     client_id: WORKOS_CLIENT_ID,
     redirect_uri: redirectUri,
-    response_type: 'code',
+    response_type: "code",
     code_challenge: challenge,
-    code_challenge_method: 'S256',
-    provider: 'authkit',
+    code_challenge_method: "S256",
+    provider: "authkit",
   });
 
   const authorizeUrl = `${AUTHKIT_DOMAIN}/oauth2/authorize?${params.toString()}`;
 
-  const result = await WebBrowser.openAuthSessionAsync(authorizeUrl, redirectUri, {
-    showInRecents: false,
-  });
+  const result = await WebBrowser.openAuthSessionAsync(
+    authorizeUrl,
+    redirectUri,
+    {
+      showInRecents: false,
+    },
+  );
 
-  if (result.type === 'cancel' || result.type === 'dismiss') {
-    return { type: 'cancel' };
+  if (result.type === "cancel" || result.type === "dismiss") {
+    return { type: "cancel" };
   }
-  if (result.type !== 'success' || !result.url) {
-    return { type: 'error', message: `Unexpected result: ${result.type}` };
+  if (result.type !== "success" || !result.url) {
+    return { type: "error", message: `Unexpected result: ${result.type}` };
   }
 
   const url = new URL(result.url);
-  const code = url.searchParams.get('code');
-  const error = url.searchParams.get('error_description') ?? url.searchParams.get('error');
+  const code = url.searchParams.get("code");
+  const error =
+    url.searchParams.get("error_description") ?? url.searchParams.get("error");
   if (!code) {
-    return { type: 'error', message: error ?? 'No code in callback URL' };
+    return { type: "error", message: error ?? "No code in callback URL" };
   }
-  return { type: 'success', code };
+  return { type: "success", code };
 }
 
 /**
@@ -203,7 +209,7 @@ export async function startSignIn(): Promise<
 const EXCHANGE_ENABLED = false;
 
 export async function completeSignIn(code: string): Promise<Session> {
-  const verifier = (await getItem(PKCE_VERIFIER_KEY)) ?? '';
+  const verifier = (await getItem(PKCE_VERIFIER_KEY)) ?? "";
   await deleteItem(PKCE_VERIFIER_KEY);
 
   if (!EXCHANGE_ENABLED) {
@@ -214,13 +220,13 @@ export async function completeSignIn(code: string): Promise<Session> {
     await persistSession(stub);
     if (__DEV__) {
       // eslint-disable-next-line no-console
-      console.log('[auth] code exchange stubbed; persisted stub session');
+      console.log("[auth] code exchange stubbed; persisted stub session");
     }
     return stub;
   }
 
-  const session = await apiFetch<Session>('/api/py/auth/mobile/exchange', {
-    method: 'POST',
+  const session = await apiFetch<Session>("/api/py/auth/mobile/exchange", {
+    method: "POST",
     json: {
       code,
       codeVerifier: verifier,

@@ -19,8 +19,8 @@ export type InlineSpan = {
 };
 
 export type MarkdownBlock =
-  | { type: 'paragraph'; spans: InlineSpan[] }
-  | { type: 'bullet'; items: InlineSpan[][] };
+  | { type: "paragraph"; spans: InlineSpan[] }
+  | { type: "bullet"; items: InlineSpan[][] };
 
 /**
  * Split a line into bold / normal spans on `**` delimiters.
@@ -30,13 +30,13 @@ export type MarkdownBlock =
  * bold run) rather than throwing — robustness beats strict correctness here.
  */
 export function parseInline(text: string): InlineSpan[] {
-  const parts = text.split('**');
+  const parts = text.split("**");
   const spans: InlineSpan[] = [];
   for (let i = 0; i < parts.length; i++) {
-    if (parts[i] === '') continue;
+    if (parts[i] === "") continue;
     spans.push({ text: parts[i], bold: i % 2 === 1 });
   }
-  return spans.length > 0 ? spans : [{ text: '', bold: false }];
+  return spans.length > 0 ? spans : [{ text: "", bold: false }];
 }
 
 const BULLET_RE = /^[-*]\s+(.*)$/;
@@ -45,20 +45,23 @@ const HEADING_RE = /^#{1,6}\s+(.*)$/;
 /** Parse assistant markdown text into a flat list of renderable blocks. */
 export function parseMarkdown(input: string): MarkdownBlock[] {
   const blocks: MarkdownBlock[] = [];
-  const lines = input.replace(/\r\n/g, '\n').split('\n');
+  const lines = input.replace(/\r\n/g, "\n").split("\n");
 
   let paragraph: string[] = [];
   let bullets: string[] = [];
 
   const flushParagraph = () => {
     if (paragraph.length > 0) {
-      blocks.push({ type: 'paragraph', spans: parseInline(paragraph.join(' ')) });
+      blocks.push({
+        type: "paragraph",
+        spans: parseInline(paragraph.join(" ")),
+      });
       paragraph = [];
     }
   };
   const flushBullets = () => {
     if (bullets.length > 0) {
-      blocks.push({ type: 'bullet', items: bullets.map(parseInline) });
+      blocks.push({ type: "bullet", items: bullets.map(parseInline) });
       bullets = [];
     }
   };
@@ -74,8 +77,11 @@ export function parseMarkdown(input: string): MarkdownBlock[] {
     } else if (headingMatch) {
       flushParagraph();
       flushBullets();
-      blocks.push({ type: 'paragraph', spans: [{ text: headingMatch[1], bold: true }] });
-    } else if (line === '') {
+      blocks.push({
+        type: "paragraph",
+        spans: [{ text: headingMatch[1], bold: true }],
+      });
+    } else if (line === "") {
       flushParagraph();
       flushBullets();
     } else {

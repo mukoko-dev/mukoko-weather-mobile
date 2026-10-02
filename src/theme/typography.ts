@@ -8,9 +8,9 @@
  * vertical rhythm predictable across platforms.
  */
 
-import { TextStyle } from 'react-native';
+import { TextStyle } from "react-native";
 
-import { FONT_FAMILY, FONT_SIZE } from '@/brand/tokens';
+import { FONT_FAMILY, FONT_SIZE } from "@/brand/tokens";
 
 export const typography = {
   hero: {

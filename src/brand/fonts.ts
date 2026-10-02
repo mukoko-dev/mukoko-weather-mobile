@@ -7,12 +7,12 @@
 import {
   NotoSerif_400Regular,
   NotoSerif_600SemiBold,
-} from '@expo-google-fonts/noto-serif';
+} from "@expo-google-fonts/noto-serif";
 import {
   NotoSans_400Regular,
   NotoSans_600SemiBold,
-} from '@expo-google-fonts/noto-sans';
-import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono';
+} from "@expo-google-fonts/noto-sans";
+import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono";
 
 export const BRAND_FONTS = {
   NotoSerif_400Regular,

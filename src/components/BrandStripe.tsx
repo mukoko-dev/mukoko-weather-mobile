@@ -12,9 +12,9 @@
  * Mounted once in `src/app/_layout.tsx` as a fixed left-edge accent.
  */
 
-import { StyleSheet, View, useColorScheme } from 'react-native';
+import { StyleSheet, View, useColorScheme } from "react-native";
 
-import { MINERALS } from '@/brand/tokens';
+import { MINERALS } from "@/brand/tokens";
 
 export type BrandStripeProps = {
   /** Width of the stripe in dp. Default 3 — matches the web band. */
@@ -22,29 +22,34 @@ export type BrandStripeProps = {
 };
 
 const ORDER: (keyof typeof MINERALS)[] = [
-  'cobalt',
-  'tanzanite',
-  'malachite',
-  'gold',
-  'terracotta',
-  'sodalite',
-  'copper',
+  "cobalt",
+  "tanzanite",
+  "malachite",
+  "gold",
+  "terracotta",
+  "sodalite",
+  "copper",
 ];
 
 export function BrandStripe({ width = 3 }: BrandStripeProps) {
   const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = scheme === "dark";
   return (
     <View
       style={[styles.column, { width }]}
       accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants">
+      importantForAccessibility="no-hide-descendants"
+    >
       {ORDER.map((name) => (
         <View
           key={name}
           style={[
             styles.segment,
-            { backgroundColor: isDark ? MINERALS[name].dark : MINERALS[name].light },
+            {
+              backgroundColor: isDark
+                ? MINERALS[name].dark
+                : MINERALS[name].light,
+            },
           ]}
         />
       ))}
@@ -54,12 +59,12 @@ export function BrandStripe({ width = 3 }: BrandStripeProps) {
 
 const styles = StyleSheet.create({
   column: {
-    flexDirection: 'column',
-    height: '100%',
-    overflow: 'hidden',
+    flexDirection: "column",
+    height: "100%",
+    overflow: "hidden",
   },
   segment: {
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
 });
