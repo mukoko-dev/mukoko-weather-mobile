@@ -11,7 +11,7 @@
  *
  * Flow:
  *   1. User taps "Sign in" on /sign-in
- *   2. App constructs `${AUTHKIT_DOMAIN}/oauth2/authorize?client_id=...
+ *   2. App constructs `${authkitDomain()}/oauth2/authorize?client_id=...
  *      &redirect_uri=mukoko://sign-in-callback&response_type=code
  *      &code_challenge=<sha256(verifier)>&code_challenge_method=S256
  *      &provider=authkit`
@@ -40,8 +40,21 @@ WebBrowser.maybeCompleteAuthSession();
 const SESSION_KEY = "mukoko.session";
 const PKCE_VERIFIER_KEY = "mukoko.pkceVerifier";
 
-const AUTHKIT_DOMAIN =
-  process.env.EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN ?? "https://auth.mukoko.com";
+/**
+ * The WorkOS AuthKit domain, from configuration only
+ * (EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN, set per build environment). There is no
+ * default in code: an unset value fails sign-in with a clear error rather than
+ * sending users to a guessed host. Accepts a bare host or an https origin.
+ */
+export const AUTHKIT_DOMAIN_MISSING =
+  "EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN is not configured";
+
+export function authkitDomain(): string {
+  const raw = (process.env.EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN ?? "").trim();
+  if (!raw) throw new Error(AUTHKIT_DOMAIN_MISSING);
+  const origin = /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
+  return origin.replace(/\/+$/, "");
+}
 const WORKOS_CLIENT_ID = process.env.EXPO_PUBLIC_WORKOS_CLIENT_ID ?? "";
 const REDIRECT_SCHEME = "mukoko";
 const REDIRECT_PATH = "sign-in-callback";
@@ -155,6 +168,12 @@ export async function startSignIn(): Promise<
       message: "Missing EXPO_PUBLIC_WORKOS_CLIENT_ID — set it in your .env",
     };
   }
+  let authkitOrigin: string;
+  try {
+    authkitOrigin = authkitDomain();
+  } catch {
+    return { type: "error", message: AUTHKIT_DOMAIN_MISSING };
+  }
 
   const verifier = randomVerifier();
   const challenge = await sha256Base64Url(verifier);
@@ -171,7 +190,7 @@ export async function startSignIn(): Promise<
     provider: "authkit",
   });
 
-  const authorizeUrl = `${AUTHKIT_DOMAIN}/oauth2/authorize?${params.toString()}`;
+  const authorizeUrl = `${authkitOrigin}/oauth2/authorize?${params.toString()}`;
 
   const result = await WebBrowser.openAuthSessionAsync(
     authorizeUrl,
