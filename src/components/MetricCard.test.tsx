@@ -5,48 +5,52 @@
  * test awaits it.
  */
 
-import { render } from '@testing-library/react-native';
+import { render } from "@testing-library/react-native";
 
-import { MetricCard } from '@/components/MetricCard';
+import { MetricCard } from "@/components/MetricCard";
 
-describe('MetricCard', () => {
-  it('renders the label, value, and unit', async () => {
+describe("MetricCard", () => {
+  it("renders the label, value, and unit", async () => {
     const { getByText } = await render(
       <MetricCard label="Humidity" value={62} unit="%" />,
     );
-    expect(getByText('Humidity')).toBeTruthy();
-    expect(getByText('62')).toBeTruthy();
-    expect(getByText('%')).toBeTruthy();
+    expect(getByText("Humidity")).toBeTruthy();
+    expect(getByText("62")).toBeTruthy();
+    expect(getByText("%")).toBeTruthy();
   });
 
-  it('rounds numeric values', async () => {
+  it("rounds numeric values", async () => {
     const { getByText } = await render(
       <MetricCard label="Wind" value={12.7} unit="km/h" />,
     );
-    expect(getByText('13')).toBeTruthy();
+    expect(getByText("13")).toBeTruthy();
   });
 
-  it('renders an em-dash placeholder for null/undefined/empty values', async () => {
-    const { getByText, rerender } = await render(<MetricCard label="UV" value={null} />);
-    expect(getByText('—')).toBeTruthy();
+  it("renders an em-dash placeholder for null/undefined/empty values", async () => {
+    const { getByText, rerender } = await render(
+      <MetricCard label="UV" value={null} />,
+    );
+    expect(getByText("—")).toBeTruthy();
     await rerender(<MetricCard label="UV" value={undefined} />);
-    expect(getByText('—')).toBeTruthy();
+    expect(getByText("—")).toBeTruthy();
     await rerender(<MetricCard label="UV" value="" />);
-    expect(getByText('—')).toBeTruthy();
+    expect(getByText("—")).toBeTruthy();
   });
 
-  it('renders the icon glyph when provided', async () => {
+  it("renders the icon glyph when provided", async () => {
     // The icon is marked `accessible={false}` so screen readers skip it; that
     // also hides it from getByText, so we walk the JSON tree instead.
-    const tree = await render(<MetricCard label="Humidity" value={50} icon="💧" />);
-    const containsGlyph = JSON.stringify(tree.toJSON()).includes('💧');
+    const tree = await render(
+      <MetricCard label="Humidity" value={50} icon="💧" />,
+    );
+    const containsGlyph = JSON.stringify(tree.toJSON()).includes("💧");
     expect(containsGlyph).toBe(true);
   });
 
-  it('renders the supporting line when provided', async () => {
+  it("renders the supporting line when provided", async () => {
     const { getByText } = await render(
       <MetricCard label="Humidity" value={50} supporting="Comfortable" />,
     );
-    expect(getByText('Comfortable')).toBeTruthy();
+    expect(getByText("Comfortable")).toBeTruthy();
   });
 });

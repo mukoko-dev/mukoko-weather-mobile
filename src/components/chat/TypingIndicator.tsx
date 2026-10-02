@@ -7,19 +7,27 @@
  * role="status".
  */
 
-import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { useEffect, useRef } from "react";
+import { Animated, Easing, StyleSheet, View } from "react-native";
 
-import { SPACING } from '@/brand/tokens';
-import { usePalette } from '@/hooks/usePalette';
-import { useReduceMotion } from './useReduceMotion';
+import { SPACING } from "@/brand/tokens";
+import { usePalette } from "@/hooks/usePalette";
+import { useReduceMotion } from "./useReduceMotion";
 
 const DOTS = [0, 1, 2];
 /** Mzizi motion: duration-emphasis (350ms) per half-cycle feels like breathing. */
 const PULSE_MS = 350;
 const STAGGER_MS = 140;
 
-function Dot({ color, delay, animate }: { color: string; delay: number; animate: boolean }) {
+function Dot({
+  color,
+  delay,
+  animate,
+}: {
+  color: string;
+  delay: number;
+  animate: boolean;
+}) {
   const value = useRef(new Animated.Value(animate ? 0.3 : 1)).current;
 
   useEffect(() => {
@@ -63,7 +71,8 @@ export function TypingIndicator() {
     <View
       style={styles.container}
       accessibilityRole="progressbar"
-      accessibilityLabel="Shamwari is thinking">
+      accessibilityLabel="Shamwari is thinking"
+    >
       {DOTS.map((i) => (
         <Dot
           key={i}
@@ -78,8 +87,8 @@ export function TypingIndicator() {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: SPACING.xs,
     paddingVertical: SPACING.sm,
   },

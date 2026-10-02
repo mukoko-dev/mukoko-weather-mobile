@@ -10,8 +10,8 @@
  * this with `matchMedia('(prefers-reduced-motion)')`, so it works on web too.
  */
 
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { useEffect, useState } from "react";
+import { AccessibilityInfo } from "react-native";
 
 export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -27,8 +27,9 @@ export function useReducedMotion(): boolean {
         /* setting unavailable — keep motion enabled */
       });
 
-    const sub = AccessibilityInfo.addEventListener?.('reduceMotionChanged', (value) =>
-      setReduced(!!value),
+    const sub = AccessibilityInfo.addEventListener?.(
+      "reduceMotionChanged",
+      (value) => setReduced(!!value),
     );
 
     return () => {

@@ -7,36 +7,41 @@
  * response carries no usable hourly data (see `extractHourly`).
  */
 
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from "react-native";
 
-import { SPACING } from '@/brand/tokens';
-import { BaobabCard } from '@/components/BaobabCard';
-import { BrandText } from '@/components/BrandText';
-import { WeatherIcon } from '@/components/WeatherIcon';
-import { SectionHeading } from '@/components/detail/SectionHeading';
-import { type HourlyPoint } from '@/components/detail/hourly';
-import { formatTime } from '@/shared';
+import { SPACING } from "@/brand/tokens";
+import { BaobabCard } from "@/components/BaobabCard";
+import { BrandText } from "@/components/BrandText";
+import { WeatherIcon } from "@/components/WeatherIcon";
+import { SectionHeading } from "@/components/detail/SectionHeading";
+import { type HourlyPoint } from "@/components/detail/hourly";
+import { formatTime } from "@/shared";
 
 function hourLabel(iso: string, isFirst: boolean): string {
-  if (isFirst) return 'Now';
+  if (isFirst) return "Now";
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? '—' : formatTime(date);
+  return Number.isNaN(date.getTime()) ? "—" : formatTime(date);
 }
 
 function HourCell({ hour, isFirst }: { hour: HourlyPoint; isFirst: boolean }) {
   const label = hourLabel(hour.time, isFirst);
   const temp =
     hour.temperature === null || hour.temperature === undefined
-      ? '—'
+      ? "—"
       : `${Math.round(hour.temperature)}°`;
   const precip =
-    hour.precipitationProbability === null || hour.precipitationProbability === undefined
+    hour.precipitationProbability === null ||
+    hour.precipitationProbability === undefined
       ? null
       : `${Math.round(hour.precipitationProbability)}%`;
 
-  const a11y = [label, temp, precip ? `${precip} chance of precipitation` : undefined]
+  const a11y = [
+    label,
+    temp,
+    precip ? `${precip} chance of precipitation` : undefined,
+  ]
     .filter(Boolean)
-    .join(', ');
+    .join(", ");
 
   return (
     <BaobabCard
@@ -45,7 +50,8 @@ function HourCell({ hour, isFirst }: { hour: HourlyPoint; isFirst: boolean }) {
       style={styles.cell}
       accessible
       accessibilityRole="text"
-      accessibilityLabel={a11y}>
+      accessibilityLabel={a11y}
+    >
       <BrandText variant="smallBold" tone="textSecondary">
         {label}
       </BrandText>
@@ -53,8 +59,8 @@ function HourCell({ hour, isFirst }: { hour: HourlyPoint; isFirst: boolean }) {
       <BrandText variant="monoLarge" tone="text">
         {temp}
       </BrandText>
-      <BrandText variant="caption" tone={precip ? 'primary' : 'textTertiary'}>
-        {precip ? `💧 ${precip}` : '—'}
+      <BrandText variant="caption" tone={precip ? "primary" : "textTertiary"}>
+        {precip ? `💧 ${precip}` : "—"}
       </BrandText>
     </BaobabCard>
   );
@@ -69,9 +75,14 @@ export function HourlyForecast({ hours }: { hours: HourlyPoint[] }) {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.track}
-        accessibilityRole="list">
+        accessibilityRole="list"
+      >
         {hours.map((hour, index) => (
-          <HourCell key={`${hour.time}-${index}`} hour={hour} isFirst={index === 0} />
+          <HourCell
+            key={`${hour.time}-${index}`}
+            hour={hour}
+            isFirst={index === 0}
+          />
         ))}
       </ScrollView>
     </View>
@@ -85,7 +96,7 @@ const styles = StyleSheet.create({
   },
   cell: {
     minWidth: 68,
-    alignItems: 'center',
+    alignItems: "center",
     gap: SPACING.xs,
   },
 });

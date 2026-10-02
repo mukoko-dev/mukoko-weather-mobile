@@ -12,7 +12,7 @@
  * fade respects the OS reduce-motion setting.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -23,29 +23,32 @@ import {
   StyleSheet,
   TextInput,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { searchLocations, type LocationSummary } from '@/api/locations';
-import { RADIUS, SPACING, TOUCH_TARGET_MIN } from '@/brand/tokens';
-import { BrandText } from '@/components/BrandText';
-import { FilterChip } from '@/components/explore/FilterChip';
-import { LocationCard, type LocationCardData } from '@/components/explore/LocationCard';
+import { searchLocations, type LocationSummary } from "@/api/locations";
+import { RADIUS, SPACING, TOUCH_TARGET_MIN } from "@/brand/tokens";
+import { BrandText } from "@/components/BrandText";
+import { FilterChip } from "@/components/explore/FilterChip";
+import {
+  LocationCard,
+  type LocationCardData,
+} from "@/components/explore/LocationCard";
 import {
   categoriesWithCounts,
   countriesWithCounts,
   filterLocations,
-} from '@/components/explore/categories';
-import { useDebouncedValue } from '@/components/explore/useDebouncedValue';
-import { useReducedMotion } from '@/components/explore/useReducedMotion';
-import { Header } from '@/components/Header';
-import { usePalette } from '@/hooks/usePalette';
+} from "@/components/explore/categories";
+import { useDebouncedValue } from "@/components/explore/useDebouncedValue";
+import { useReducedMotion } from "@/components/explore/useReducedMotion";
+import { Header } from "@/components/Header";
+import { usePalette } from "@/hooks/usePalette";
 
 export default function ExploreScreen() {
   const palette = usePalette();
   const reducedMotion = useReducedMotion();
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query, 350);
   const trimmed = debouncedQuery.trim();
   const isSearching = trimmed.length > 0;
@@ -76,7 +79,7 @@ export default function ExploreScreen() {
     if (!willSearch) setError(null);
   };
 
-  const clearQuery = () => onChangeQuery('');
+  const clearQuery = () => onChangeQuery("");
 
   // Debounced search against the Python API. All state updates happen inside
   // the promise continuations, never synchronously in the effect body.
@@ -92,7 +95,7 @@ export default function ExploreScreen() {
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
-        setError(err instanceof Error ? err.message : 'Search failed');
+        setError(err instanceof Error ? err.message : "Search failed");
         setResults([]);
       })
       .finally(() => {
@@ -118,7 +121,14 @@ export default function ExploreScreen() {
     });
     animation.start();
     return () => animation.stop();
-  }, [opacity, reducedMotion, isSearching, selectedCategory, selectedCountry, results]);
+  }, [
+    opacity,
+    reducedMotion,
+    isSearching,
+    selectedCategory,
+    selectedCountry,
+    results,
+  ]);
 
   const data: LocationCardData[] = isSearching ? results : browse;
 
@@ -139,7 +149,8 @@ export default function ExploreScreen() {
         style={[
           styles.searchRow,
           { backgroundColor: palette.surface, borderColor: palette.border },
-        ]}>
+        ]}
+      >
         <TextInput
           value={query}
           onChangeText={onChangeQuery}
@@ -157,30 +168,40 @@ export default function ExploreScreen() {
             accessibilityRole="button"
             accessibilityLabel="Clear search"
             hitSlop={12}
-            style={styles.clearBtn}>
+            style={styles.clearBtn}
+          >
             <BrandText variant="body" tone="textTertiary">
-              {'✕'}
+              {"✕"}
             </BrandText>
           </Pressable>
         ) : null}
       </View>
 
       {isSearching ? (
-        <BrandText variant="small" tone="textSecondary" style={styles.sectionLabel}>
+        <BrandText
+          variant="small"
+          tone="textSecondary"
+          style={styles.sectionLabel}
+        >
           {loading
             ? `Searching “${trimmed}”…`
-            : `${data.length} ${data.length === 1 ? 'result' : 'results'} for “${trimmed}”`}
+            : `${data.length} ${data.length === 1 ? "result" : "results"} for “${trimmed}”`}
         </BrandText>
       ) : (
         <>
-          <BrandText variant="subtitle" tone="text" style={styles.browseHeading}>
+          <BrandText
+            variant="subtitle"
+            tone="text"
+            style={styles.browseHeading}
+          >
             Browse by category
           </BrandText>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.chipRow}>
+            contentContainerStyle={styles.chipRow}
+          >
             <FilterChip
               label="All"
               selected={selectedCategory === null}
@@ -198,14 +219,19 @@ export default function ExploreScreen() {
             ))}
           </ScrollView>
 
-          <BrandText variant="subtitle" tone="text" style={styles.browseHeading}>
+          <BrandText
+            variant="subtitle"
+            tone="text"
+            style={styles.browseHeading}
+          >
             Browse by country
           </BrandText>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.chipRow}>
+            contentContainerStyle={styles.chipRow}
+          >
             <FilterChip
               label="All"
               selected={selectedCountry === null}
@@ -223,8 +249,12 @@ export default function ExploreScreen() {
             ))}
           </ScrollView>
 
-          <BrandText variant="small" tone="textSecondary" style={styles.sectionLabel}>
-            {`${data.length} ${data.length === 1 ? 'location' : 'locations'}`}
+          <BrandText
+            variant="small"
+            tone="textSecondary"
+            style={styles.sectionLabel}
+          >
+            {`${data.length} ${data.length === 1 ? "location" : "locations"}`}
           </BrandText>
         </>
       )}
@@ -255,7 +285,10 @@ export default function ExploreScreen() {
     ) : null;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[styles.safe, { backgroundColor: palette.background }]}
+      edges={["top"]}
+    >
       <Header title="Explore" subtitle="Browse or search locations" />
       <Animated.View style={[styles.fill, { opacity }]}>
         <FlatList
@@ -298,8 +331,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: SPACING.sm,
     paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.sm,
@@ -318,7 +351,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   chipRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: SPACING.sm,
     paddingVertical: SPACING.xs,
     paddingRight: SPACING.md,
@@ -328,7 +361,7 @@ const styles = StyleSheet.create({
   },
   center: {
     paddingVertical: SPACING.xl,
-    alignItems: 'center',
+    alignItems: "center",
   },
   notice: {
     padding: SPACING.md,

@@ -8,13 +8,13 @@
  * Mzizi motion tokens' reduced-motion fallback.
  */
 
-import { useEffect, useState } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from "react";
+import { Animated, StyleSheet, View } from "react-native";
 
-import { RADIUS, SPACING } from '@/brand/tokens';
-import { BaobabCard } from '@/components/BaobabCard';
-import { useReducedMotion } from '@/components/detail/useReducedMotion';
-import { usePalette } from '@/hooks/usePalette';
+import { RADIUS, SPACING } from "@/brand/tokens";
+import { BaobabCard } from "@/components/BaobabCard";
+import { useReducedMotion } from "@/components/detail/useReducedMotion";
+import { usePalette } from "@/hooks/usePalette";
 
 function usePulse(reduced: boolean): Animated.Value {
   const [value] = useState(() => new Animated.Value(reduced ? 0.6 : 0.35));
@@ -26,8 +26,16 @@ function usePulse(reduced: boolean): Animated.Value {
     }
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(value, { toValue: 0.7, duration: 700, useNativeDriver: true }),
-        Animated.timing(value, { toValue: 0.35, duration: 700, useNativeDriver: true }),
+        Animated.timing(value, {
+          toValue: 0.7,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(value, {
+          toValue: 0.35,
+          duration: 700,
+          useNativeDriver: true,
+        }),
       ]),
     );
     loop.start();
@@ -37,7 +45,15 @@ function usePulse(reduced: boolean): Animated.Value {
   return value;
 }
 
-function Bar({ width, height, opacity }: { width: number | `${number}%`; height: number; opacity: Animated.Value }) {
+function Bar({
+  width,
+  height,
+  opacity,
+}: {
+  width: number | `${number}%`;
+  height: number;
+  opacity: Animated.Value;
+}) {
   const palette = usePalette();
   return (
     <Animated.View
@@ -61,7 +77,8 @@ export function DetailSkeleton() {
       style={styles.container}
       accessible
       accessibilityRole="progressbar"
-      accessibilityLabel="Loading weather">
+      accessibilityLabel="Loading weather"
+    >
       <BaobabCard style={styles.hero}>
         <Bar width={64} height={64} opacity={opacity} />
         <Bar width={120} height={48} opacity={opacity} />
@@ -82,12 +99,12 @@ export function DetailSkeleton() {
         {Array.from({ length: 3 }).map((_, i) => (
           <View key={i} style={styles.gridRow}>
             <BaobabCard style={styles.metric}>
-              <Bar width={'60%'} height={12} opacity={opacity} />
-              <Bar width={'40%'} height={28} opacity={opacity} />
+              <Bar width={"60%"} height={12} opacity={opacity} />
+              <Bar width={"40%"} height={28} opacity={opacity} />
             </BaobabCard>
             <BaobabCard style={styles.metric}>
-              <Bar width={'60%'} height={12} opacity={opacity} />
-              <Bar width={'40%'} height={28} opacity={opacity} />
+              <Bar width={"60%"} height={12} opacity={opacity} />
+              <Bar width={"40%"} height={28} opacity={opacity} />
             </BaobabCard>
           </View>
         ))}
@@ -101,24 +118,24 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   hero: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: SPACING.xl,
     gap: SPACING.sm,
   },
   rowTrack: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: SPACING.sm,
   },
   cell: {
     minWidth: 68,
-    alignItems: 'center',
+    alignItems: "center",
     gap: SPACING.xs,
   },
   grid: {
     gap: SPACING.sm,
   },
   gridRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: SPACING.sm,
   },
   metric: {
@@ -126,6 +143,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexBasis: 0,
     gap: SPACING.sm,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
 });

@@ -7,13 +7,13 @@
  * heavy markdown dependency — just <Text> and <View>.
  */
 
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from "react-native";
 
-import { FONT_FAMILY, SPACING } from '@/brand/tokens';
-import { BrandText } from '@/components/BrandText';
-import { parseMarkdown, type InlineSpan } from './markdown';
+import { FONT_FAMILY, SPACING } from "@/brand/tokens";
+import { BrandText } from "@/components/BrandText";
+import { parseMarkdown, type InlineSpan } from "./markdown";
 
-type Tone = 'text' | 'textSecondary';
+type Tone = "text" | "textSecondary";
 
 export type MarkdownTextProps = {
   content: string;
@@ -29,21 +29,29 @@ function renderSpans(spans: InlineSpan[], keyPrefix: string) {
   ));
 }
 
-export function MarkdownText({ content, tone = 'text' }: MarkdownTextProps) {
+export function MarkdownText({ content, tone = "text" }: MarkdownTextProps) {
   const blocks = parseMarkdown(content);
 
   return (
     <View style={styles.container}>
       {blocks.map((block, bi) => {
-        if (block.type === 'bullet') {
+        if (block.type === "bullet") {
           return (
             <View key={`b-${bi}`} style={styles.bulletList}>
               {block.items.map((item, ii) => (
                 <View key={`b-${bi}-${ii}`} style={styles.bulletRow}>
-                  <BrandText variant="body" tone={tone} style={styles.bulletDot}>
-                    {'•'}
+                  <BrandText
+                    variant="body"
+                    tone={tone}
+                    style={styles.bulletDot}
+                  >
+                    {"•"}
                   </BrandText>
-                  <BrandText variant="body" tone={tone} style={styles.bulletText}>
+                  <BrandText
+                    variant="body"
+                    tone={tone}
+                    style={styles.bulletText}
+                  >
                     {renderSpans(item, `b-${bi}-${ii}`)}
                   </BrandText>
                 </View>
@@ -72,8 +80,8 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   bulletRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: SPACING.sm,
   },
   bulletDot: {

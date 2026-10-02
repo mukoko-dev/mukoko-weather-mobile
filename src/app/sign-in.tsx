@@ -4,15 +4,15 @@
  * the code exchange.
  */
 
-import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from "expo-router";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { completeSignIn, startSignIn } from '@/api/auth';
-import { RADIUS, SPACING } from '@/brand/tokens';
-import { BrandText } from '@/components/BrandText';
-import { usePalette } from '@/hooks/usePalette';
+import { completeSignIn, startSignIn } from "@/api/auth";
+import { RADIUS, SPACING } from "@/brand/tokens";
+import { BrandText } from "@/components/BrandText";
+import { usePalette } from "@/hooks/usePalette";
 
 export default function SignInScreen() {
   const palette = usePalette();
@@ -23,34 +23,36 @@ export default function SignInScreen() {
     setBusy(true);
     setError(null);
     const result = await startSignIn();
-    if (result.type === 'cancel') {
+    if (result.type === "cancel") {
       setBusy(false);
       return;
     }
-    if (result.type === 'error') {
+    if (result.type === "error") {
       setError(result.message);
       setBusy(false);
       return;
     }
     try {
       await completeSignIn(result.code);
-      router.replace('/my');
+      router.replace("/my");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign-in failed');
+      setError(err instanceof Error ? err.message : "Sign-in failed");
     } finally {
       setBusy(false);
     }
   }, []);
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]}>
+    <SafeAreaView
+      style={[styles.safe, { backgroundColor: palette.background }]}
+    >
       <View style={styles.body}>
         <BrandText variant="title" tone="text">
           Sign in to Mukoko
         </BrandText>
         <BrandText variant="body" tone="textSecondary">
-          We use Mukoko Sign-In (powered by WorkOS) so your saved locations
-          sync across the web app and your phone.
+          We use Mukoko Sign-In (powered by WorkOS) so your saved locations sync
+          across the web app and your phone.
         </BrandText>
 
         {error ? (
@@ -65,7 +67,8 @@ export default function SignInScreen() {
           style={[
             styles.btn,
             { backgroundColor: busy ? palette.surfaceDim : palette.primary },
-          ]}>
+          ]}
+        >
           {busy ? (
             <ActivityIndicator color={palette.textInverse} />
           ) : (
@@ -89,14 +92,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: SPACING.lg,
     gap: SPACING.md,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   btn: {
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.button,
-    alignItems: 'center',
+    alignItems: "center",
     minHeight: 56,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
 });

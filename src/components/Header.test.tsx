@@ -5,43 +5,45 @@
  * vertical left-edge accent).
  */
 
-import { render } from '@testing-library/react-native';
+import { render } from "@testing-library/react-native";
 
-import { Header } from '@/components/Header';
+import { Header } from "@/components/Header";
 
-type JsonNode = string | { type: string; props: Record<string, unknown>; children: JsonNode[] };
+type JsonNode =
+  | string
+  | { type: string; props: Record<string, unknown>; children: JsonNode[] };
 
 function findImages(node: JsonNode | null): { type: string }[] {
-  if (!node || typeof node === 'string') return [];
-  const here = node.type === 'Image' ? [{ type: node.type }] : [];
+  if (!node || typeof node === "string") return [];
+  const here = node.type === "Image" ? [{ type: node.type }] : [];
   return [...here, ...(node.children ?? []).flatMap(findImages)];
 }
 
-describe('Header', () => {
+describe("Header", () => {
   it('renders the wordmark "mukoko" in lowercase', async () => {
     const { getByText } = await render(<Header />);
-    expect(getByText('mukoko')).toBeTruthy();
+    expect(getByText("mukoko")).toBeTruthy();
   });
 
-  it('renders the Seed of Life mark image', async () => {
+  it("renders the Seed of Life mark image", async () => {
     const tree = await render(<Header />);
     const images = findImages(tree.toJSON() as JsonNode | null);
     expect(images.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('renders a page title when supplied', async () => {
+  it("renders a page title when supplied", async () => {
     const { getByText } = await render(<Header title="Explore" />);
-    expect(getByText('Explore')).toBeTruthy();
-    expect(getByText('mukoko')).toBeTruthy();
+    expect(getByText("Explore")).toBeTruthy();
+    expect(getByText("mukoko")).toBeTruthy();
   });
 
-  it('renders a subtitle when supplied', async () => {
+  it("renders a subtitle when supplied", async () => {
     const { getByText } = await render(<Header subtitle="Harare, ZW" />);
-    expect(getByText('Harare, ZW')).toBeTruthy();
+    expect(getByText("Harare, ZW")).toBeTruthy();
   });
 
-  it('honours markOnly by hiding the wordmark', async () => {
+  it("honours markOnly by hiding the wordmark", async () => {
     const { queryByText } = await render(<Header markOnly />);
-    expect(queryByText('mukoko')).toBeNull();
+    expect(queryByText("mukoko")).toBeNull();
   });
 });

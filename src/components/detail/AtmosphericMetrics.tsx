@@ -6,25 +6,30 @@
  * shared weather-label helpers so mobile and web phrase things identically.
  */
 
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from "react-native";
 
-import type { WeatherResponse } from '@/api/weather';
-import { SPACING } from '@/brand/tokens';
-import { MetricCard, type MetricSeverity } from '@/components/MetricCard';
-import { SectionHeading } from '@/components/detail/SectionHeading';
-import { cloudLabel, humidityLabel, pressureLabel, windDirection } from '@/shared';
+import type { WeatherResponse } from "@/api/weather";
+import { SPACING } from "@/brand/tokens";
+import { MetricCard, type MetricSeverity } from "@/components/MetricCard";
+import { SectionHeading } from "@/components/detail/SectionHeading";
+import {
+  cloudLabel,
+  humidityLabel,
+  pressureLabel,
+  windDirection,
+} from "@/shared";
 
 function uvSeverity(uv: number | null | undefined): MetricSeverity | undefined {
   if (uv === null || uv === undefined) return undefined;
-  if (uv <= 2) return 'low';
-  if (uv <= 5) return 'moderate';
-  if (uv <= 7) return 'high';
-  if (uv <= 10) return 'severe';
-  return 'extreme';
+  if (uv <= 2) return "low";
+  if (uv <= 5) return "moderate";
+  if (uv <= 7) return "high";
+  if (uv <= 10) return "severe";
+  return "extreme";
 }
 
 function isNum(v: number | null | undefined): v is number {
-  return typeof v === 'number' && Number.isFinite(v);
+  return typeof v === "number" && Number.isFinite(v);
 }
 
 export function AtmosphericMetrics({ weather }: { weather: WeatherResponse }) {
@@ -44,9 +49,19 @@ export function AtmosphericMetrics({ weather }: { weather: WeatherResponse }) {
             value={current.humidity}
             unit="%"
             icon="💧"
-            supporting={isNum(current.humidity) ? humidityLabel(current.humidity) : undefined}
+            supporting={
+              isNum(current.humidity)
+                ? humidityLabel(current.humidity)
+                : undefined
+            }
           />
-          <MetricCard label="Wind" value={current.windSpeed} unit="km/h" icon="🌬" supporting={windSupporting} />
+          <MetricCard
+            label="Wind"
+            value={current.windSpeed}
+            unit="km/h"
+            icon="🌬"
+            supporting={windSupporting}
+          />
         </View>
         <View style={styles.row}>
           <MetricCard
@@ -54,9 +69,18 @@ export function AtmosphericMetrics({ weather }: { weather: WeatherResponse }) {
             value={current.pressure}
             unit="hPa"
             icon="📈"
-            supporting={isNum(current.pressure) ? pressureLabel(current.pressure) : undefined}
+            supporting={
+              isNum(current.pressure)
+                ? pressureLabel(current.pressure)
+                : undefined
+            }
           />
-          <MetricCard label="UV index" value={current.uvIndex} icon="☀" severity={uvSeverity(current.uvIndex)} />
+          <MetricCard
+            label="UV index"
+            value={current.uvIndex}
+            icon="☀"
+            severity={uvSeverity(current.uvIndex)}
+          />
         </View>
         <View style={styles.row}>
           <MetricCard
@@ -64,9 +88,18 @@ export function AtmosphericMetrics({ weather }: { weather: WeatherResponse }) {
             value={current.cloudCover}
             unit="%"
             icon="☁"
-            supporting={isNum(current.cloudCover) ? cloudLabel(current.cloudCover) : undefined}
+            supporting={
+              isNum(current.cloudCover)
+                ? cloudLabel(current.cloudCover)
+                : undefined
+            }
           />
-          <MetricCard label="Feels like" value={current.feelsLike} unit="°" icon="🌡" />
+          <MetricCard
+            label="Feels like"
+            value={current.feelsLike}
+            unit="°"
+            icon="🌡"
+          />
         </View>
       </View>
     </View>
@@ -78,7 +111,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: SPACING.sm,
   },
 });

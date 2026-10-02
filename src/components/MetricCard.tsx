@@ -10,13 +10,19 @@
  * accent, terracotta, primary, sodalite) for quick at-a-glance reading.
  */
 
-import { StyleSheet, View, type ViewProps } from 'react-native';
+import { StyleSheet, View, type ViewProps } from "react-native";
 
-import { SPACING } from '@/brand/tokens';
-import { BaobabCard } from '@/components/BaobabCard';
-import { BrandText } from '@/components/BrandText';
+import { SPACING } from "@/brand/tokens";
+import { BaobabCard } from "@/components/BaobabCard";
+import { BrandText } from "@/components/BrandText";
 
-export type MetricSeverity = 'low' | 'moderate' | 'high' | 'severe' | 'extreme' | 'cold';
+export type MetricSeverity =
+  | "low"
+  | "moderate"
+  | "high"
+  | "severe"
+  | "extreme"
+  | "cold";
 
 export type MetricCardProps = ViewProps & {
   label: string;
@@ -30,13 +36,16 @@ export type MetricCardProps = ViewProps & {
   severity?: MetricSeverity;
 };
 
-const SEVERITY_TONE: Record<MetricSeverity, 'success' | 'accent' | 'terracotta' | 'frostSevere' | 'primary'> = {
-  low: 'success',
-  moderate: 'accent',
-  high: 'terracotta',
-  severe: 'frostSevere',
-  extreme: 'frostSevere',
-  cold: 'primary',
+const SEVERITY_TONE: Record<
+  MetricSeverity,
+  "success" | "accent" | "terracotta" | "frostSevere" | "primary"
+> = {
+  low: "success",
+  moderate: "accent",
+  high: "terracotta",
+  severe: "frostSevere",
+  extreme: "frostSevere",
+  cold: "primary",
 };
 
 export function MetricCard({
@@ -50,20 +59,21 @@ export function MetricCard({
   ...rest
 }: MetricCardProps) {
   const displayValue =
-    value === null || value === undefined || value === ''
-      ? '—'
-      : typeof value === 'number'
+    value === null || value === undefined || value === ""
+      ? "—"
+      : typeof value === "number"
         ? Math.round(value).toString()
         : value;
 
-  const valueTone = severity ? SEVERITY_TONE[severity] : 'text';
+  const valueTone = severity ? SEVERITY_TONE[severity] : "text";
 
   return (
     <BaobabCard
       {...rest}
       style={[styles.card, style]}
       accessibilityRole="summary"
-      accessibilityLabel={`${label}: ${displayValue}${unit ? ' ' + unit : ''}`}>
+      accessibilityLabel={`${label}: ${displayValue}${unit ? " " + unit : ""}`}
+    >
       <View style={styles.headRow}>
         <BrandText variant="small" tone="textSecondary" style={styles.label}>
           {label}
@@ -73,7 +83,8 @@ export function MetricCard({
             variant="body"
             tone="textTertiary"
             importantForAccessibility="no-hide-descendants"
-            accessible={false}>
+            accessible={false}
+          >
             {icon}
           </BrandText>
         ) : null}
@@ -83,7 +94,11 @@ export function MetricCard({
           {displayValue}
         </BrandText>
         {unit ? (
-          <BrandText variant="bodyBold" tone="textSecondary" style={styles.unit}>
+          <BrandText
+            variant="bodyBold"
+            tone="textSecondary"
+            style={styles.unit}
+          >
             {unit}
           </BrandText>
         ) : null}
@@ -105,16 +120,16 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   headRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   label: {
     flexShrink: 1,
   },
   valueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     gap: SPACING.xs,
   },
   unit: {

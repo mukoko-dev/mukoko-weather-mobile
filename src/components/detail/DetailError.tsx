@@ -4,18 +4,28 @@
  * the 56dp minimum touch target (TOUCH_TARGET_MIN).
  */
 
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from "react-native";
 
-import { RADIUS, SPACING, TOUCH_TARGET_MIN } from '@/brand/tokens';
-import { BaobabCard } from '@/components/BaobabCard';
-import { BrandText } from '@/components/BrandText';
-import { usePalette } from '@/hooks/usePalette';
+import { RADIUS, SPACING, TOUCH_TARGET_MIN } from "@/brand/tokens";
+import { BaobabCard } from "@/components/BaobabCard";
+import { BrandText } from "@/components/BrandText";
+import { usePalette } from "@/hooks/usePalette";
 
-export function DetailError({ message, onRetry }: { message: string; onRetry: () => void }) {
+export function DetailError({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   const palette = usePalette();
   return (
     <BaobabCard style={styles.card}>
-      <BrandText variant="display" tone="terracotta" accessibilityElementsHidden>
+      <BrandText
+        variant="display"
+        tone="terracotta"
+        accessibilityElementsHidden
+      >
         ⚠
       </BrandText>
       <BrandText variant="bodyBold" tone="terracotta">
@@ -32,7 +42,8 @@ export function DetailError({ message, onRetry }: { message: string; onRetry: ()
         style={({ pressed }) => [
           styles.button,
           { backgroundColor: palette.primary, opacity: pressed ? 0.85 : 1 },
-        ]}>
+        ]}
+      >
         <BrandText variant="bodyBold" style={{ color: palette.onPrimary }}>
           Try again
         </BrandText>
@@ -43,19 +54,19 @@ export function DetailError({ message, onRetry }: { message: string; onRetry: ()
 
 const styles = StyleSheet.create({
   card: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: SPACING.xl,
     gap: SPACING.sm,
   },
   message: {
-    textAlign: 'center',
+    textAlign: "center",
   },
   button: {
     marginTop: SPACING.sm,
     minHeight: TOUCH_TARGET_MIN,
     paddingHorizontal: SPACING.xl,
     borderRadius: RADIUS.button,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

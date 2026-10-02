@@ -11,16 +11,16 @@
  * `palette.surface` with a hairline top border in `palette.border`.
  */
 
-import { Tabs } from 'expo-router';
-import { Platform, useColorScheme } from 'react-native';
+import { Tabs } from "expo-router";
+import { Platform, useColorScheme } from "react-native";
 
-import { FONT_FAMILY } from '@/brand/tokens';
-import { TabIcon } from '@/components/TabIcon';
-import { paletteFor } from '@/theme/colors';
+import { FONT_FAMILY } from "@/brand/tokens";
+import { TabIcon } from "@/components/TabIcon";
+import { paletteFor } from "@/theme/colors";
 
 export default function TabsLayout() {
   const scheme = useColorScheme();
-  const palette = paletteFor(scheme === 'dark' ? 'dark' : 'light');
+  const palette = paletteFor(scheme === "dark" ? "dark" : "light");
 
   return (
     <Tabs
@@ -33,9 +33,9 @@ export default function TabsLayout() {
           borderTopColor: palette.border,
           borderTopWidth: 1,
           // Slightly taller on web so it reads as a real nav bar, not a strip.
-          height: Platform.OS === 'web' ? 64 : undefined,
+          height: Platform.OS === "web" ? 64 : undefined,
           paddingTop: 6,
-          paddingBottom: Platform.OS === 'web' ? 8 : undefined,
+          paddingBottom: Platform.OS === "web" ? 8 : undefined,
         },
         tabBarLabelStyle: {
           fontFamily: FONT_FAMILY.bodyBold,
@@ -45,38 +45,54 @@ export default function TabsLayout() {
         tabBarItemStyle: {
           paddingVertical: 4,
         },
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Weather',
+          title: "Weather",
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="weather" color={color} size={size} focused={focused} />
+            <TabIcon
+              name="weather"
+              color={color}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
+          title: "Explore",
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="explore" color={color} size={size} focused={focused} />
+            <TabIcon
+              name="explore"
+              color={color}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="shamwari"
         options={{
-          title: 'Shamwari',
+          title: "Shamwari",
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="shamwari" color={color} size={size} focused={focused} />
+            <TabIcon
+              name="shamwari"
+              color={color}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="my"
         options={{
-          title: 'My',
+          title: "My",
           tabBarIcon: ({ color, size, focused }) => (
             <TabIcon name="my" color={color} size={size} focused={focused} />
           ),

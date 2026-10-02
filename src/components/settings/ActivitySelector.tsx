@@ -22,7 +22,12 @@ import {
 
 /** Mineral tone (fill) + its matching on-colour (text on fill) per activity. */
 type MineralTone =
-  "primary" | "success" | "accent" | "copper" | "terracotta" | "sodalite";
+  | "primary"
+  | "success"
+  | "accent"
+  | "copper"
+  | "terracotta"
+  | "sodalite";
 
 const ACTIVITY_META: Record<
   ActivityId,

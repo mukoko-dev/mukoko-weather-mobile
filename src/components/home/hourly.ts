@@ -10,7 +10,7 @@
  * Pure module (no React) so the zipping + labelling logic is unit-testable.
  */
 
-import { type WeatherResponse } from '@/api/weather';
+import { type WeatherResponse } from "@/api/weather";
 
 /** Raw parallel-array hourly block as emitted by the weather API. */
 type RawHourly = {
@@ -41,7 +41,10 @@ function readHourly(weather: WeatherResponse): RawHourly {
  * Entries without a timestamp are skipped. Missing metric arrays yield
  * `null` values rather than throwing.
  */
-export function extractHourly(weather: WeatherResponse, maxHours = 24): HourlyPoint[] {
+export function extractHourly(
+  weather: WeatherResponse,
+  maxHours = 24,
+): HourlyPoint[] {
   const h = readHourly(weather);
   const times = h.time ?? [];
   const temps = h.temperature_2m ?? [];
@@ -76,8 +79,8 @@ export function isDaytime(date: Date): boolean {
  * if the timestamp can't be parsed.
  */
 export function hourLabel(iso: string, index: number): string {
-  if (index === 0) return 'Now';
+  if (index === 0) return "Now";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleTimeString(undefined, { hour: 'numeric' });
+  return d.toLocaleTimeString(undefined, { hour: "numeric" });
 }

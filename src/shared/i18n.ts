@@ -26,7 +26,8 @@ const messages: Record<string, Record<string, string>> = {
     "nav.searchLocations": "Search locations...",
     "nav.useMyLocation": "Use my location",
     "nav.detectingLocation": "Detecting location...",
-    "nav.locationDenied": "Location access denied. Enable it in your browser settings.",
+    "nav.locationDenied":
+      "Location access denied. Enable it in your browser settings.",
     "nav.locationFailed": "Unable to detect your location. Select one below.",
 
     // Weather
@@ -56,7 +57,8 @@ const messages: Record<string, Record<string, string>> = {
     // AI
     "ai.title": "Shamwari Weather Insight",
     "ai.loading": "Loading AI weather summary...",
-    "ai.error": "Unable to load AI summary. Weather data is still available above.",
+    "ai.error":
+      "Unable to load AI summary. Weather data is still available above.",
     "ai.poweredBy": "Powered by Shamwari AI",
 
     // Seasons
@@ -129,7 +131,10 @@ const LOCALE_MAP: Record<Locale, string> = {
 };
 
 /** Format temperature with unit, e.g. "28°C" */
-export function formatTemp(value: number, locale: Locale = DEFAULT_LOCALE): string {
+export function formatTemp(
+  value: number,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
   const intlLocale = LOCALE_MAP[locale] ?? "en";
   return new Intl.NumberFormat(intlLocale, {
     style: "unit",
@@ -139,7 +144,10 @@ export function formatTemp(value: number, locale: Locale = DEFAULT_LOCALE): stri
 }
 
 /** Format wind speed, e.g. "12 km/h" */
-export function formatWindSpeed(value: number, locale: Locale = DEFAULT_LOCALE): string {
+export function formatWindSpeed(
+  value: number,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
   const intlLocale = LOCALE_MAP[locale] ?? "en";
   return new Intl.NumberFormat(intlLocale, {
     style: "unit",
@@ -149,7 +157,10 @@ export function formatWindSpeed(value: number, locale: Locale = DEFAULT_LOCALE):
 }
 
 /** Format percentage, e.g. "62%" */
-export function formatPercent(value: number, locale: Locale = DEFAULT_LOCALE): string {
+export function formatPercent(
+  value: number,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
   const intlLocale = LOCALE_MAP[locale] ?? "en";
   return new Intl.NumberFormat(intlLocale, {
     style: "unit",
@@ -159,7 +170,10 @@ export function formatPercent(value: number, locale: Locale = DEFAULT_LOCALE): s
 }
 
 /** Format time (24h), e.g. "14:30" */
-export function formatTime(date: Date, locale: Locale = DEFAULT_LOCALE): string {
+export function formatTime(
+  date: Date,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
   const intlLocale = LOCALE_MAP[locale] ?? "en";
   return new Intl.DateTimeFormat(intlLocale, {
     hour: "2-digit",
@@ -169,13 +183,19 @@ export function formatTime(date: Date, locale: Locale = DEFAULT_LOCALE): string 
 }
 
 /** Format day name, e.g. "Mon" */
-export function formatDayName(date: Date, locale: Locale = DEFAULT_LOCALE): string {
+export function formatDayName(
+  date: Date,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
   const intlLocale = LOCALE_MAP[locale] ?? "en";
   return new Intl.DateTimeFormat(intlLocale, { weekday: "short" }).format(date);
 }
 
 /** Format full date, e.g. "9 February 2026" */
-export function formatDate(date: Date, locale: Locale = DEFAULT_LOCALE): string {
+export function formatDate(
+  date: Date,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
   const intlLocale = LOCALE_MAP[locale] ?? "en";
   return new Intl.DateTimeFormat(intlLocale, {
     day: "numeric",

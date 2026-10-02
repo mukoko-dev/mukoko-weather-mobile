@@ -7,13 +7,13 @@
  * component only renders the brand row.
  */
 
-import { ReactNode } from 'react';
-import { StyleSheet, View, type ViewProps } from 'react-native';
+import { ReactNode } from "react";
+import { StyleSheet, View, type ViewProps } from "react-native";
 
-import { SPACING } from '@/brand/tokens';
-import { BrandText } from '@/components/BrandText';
-import { MukokoLogo } from '@/components/MukokoLogo';
-import { usePalette } from '@/hooks/usePalette';
+import { SPACING } from "@/brand/tokens";
+import { BrandText } from "@/components/BrandText";
+import { MukokoLogo } from "@/components/MukokoLogo";
+import { usePalette } from "@/hooks/usePalette";
 
 // Note: the 7-mineral BrandStripe is a fixed VERTICAL left-edge accent
 // mounted once in src/app/_layout.tsx — it does not belong inside the Header.
@@ -47,9 +47,13 @@ export function Header({
       {...rest}
       style={[
         styles.container,
-        { backgroundColor: palette.background, borderBottomColor: palette.border },
+        {
+          backgroundColor: palette.background,
+          borderBottomColor: palette.border,
+        },
         style,
-      ]}>
+      ]}
+    >
       <View style={styles.row}>
         <View style={styles.titleBlock}>
           <MukokoLogo size={32} showWordmark={!markOnly} />
@@ -59,7 +63,11 @@ export function Header({
             </BrandText>
           ) : null}
           {subtitle ? (
-            <BrandText variant="small" tone="textSecondary" style={styles.subtitle}>
+            <BrandText
+              variant="small"
+              tone="textSecondary"
+              style={styles.subtitle}
+            >
               {subtitle}
             </BrandText>
           ) : null}
@@ -78,9 +86,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: SPACING.md,
     paddingBottom: SPACING.sm,
   },

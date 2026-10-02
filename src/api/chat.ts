@@ -15,14 +15,14 @@
  * graceful assistant fallback so the UI always has something to render.
  */
 
-import { ApiError, apiFetch } from '@/api/client';
+import { ApiError, apiFetch } from "@/api/client";
 
 /** Server rejects messages longer than this (api/py/_chat.py MAX_MESSAGE_LEN). */
 export const MAX_MESSAGE_LEN = 2000;
 /** Server truncates history to the last N messages (api/py/_chat.py MAX_HISTORY). */
 export const MAX_HISTORY = 10;
 
-export type ChatRole = 'user' | 'assistant';
+export type ChatRole = "user" | "assistant";
 
 export type ChatHistoryMessage = {
   role: ChatRole;
@@ -57,8 +57,8 @@ export type SendChatMessageOptions = {
 /** Thrown when sendChatMessage is called with an empty message. */
 export class EmptyMessageError extends Error {
   constructor() {
-    super('Message is required');
-    this.name = 'EmptyMessageError';
+    super("Message is required");
+    this.name = "EmptyMessageError";
   }
 }
 
@@ -94,9 +94,10 @@ export async function sendChatMessage(
     throw new EmptyMessageError();
   }
 
-  const history = (opts.history ?? [])
-    .slice(-MAX_HISTORY)
-    .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE_LEN) }));
+  const history = (opts.history ?? []).slice(-MAX_HISTORY).map((m) => ({
+    role: m.role,
+    content: m.content.slice(0, MAX_MESSAGE_LEN),
+  }));
 
   const body: {
     message: string;
@@ -109,8 +110,8 @@ export async function sendChatMessage(
   }
 
   try {
-    const data = await apiFetch<ChatResponse>('/api/py/chat', {
-      method: 'POST',
+    const data = await apiFetch<ChatResponse>("/api/py/chat", {
+      method: "POST",
       json: body,
       signal: opts.signal,
     });
@@ -121,18 +122,18 @@ export async function sendChatMessage(
     };
   } catch (err) {
     // Let the caller ignore user-initiated cancellations.
-    if (err instanceof Error && err.name === 'AbortError') throw err;
+    if (err instanceof Error && err.name === "AbortError") throw err;
 
     if (err instanceof ApiError) {
       // The server may include a friendlier message in the JSON body; prefer it.
       const errBody = err.body;
       const bodyResponse =
-        errBody && typeof errBody === 'object' && 'response' in errBody
+        errBody && typeof errBody === "object" && "response" in errBody
           ? (errBody as { response?: unknown }).response
           : undefined;
       return {
         response:
-          typeof bodyResponse === 'string' && bodyResponse.length > 0
+          typeof bodyResponse === "string" && bodyResponse.length > 0
             ? bodyResponse
             : fallbackForStatus(err.status),
         references: [],

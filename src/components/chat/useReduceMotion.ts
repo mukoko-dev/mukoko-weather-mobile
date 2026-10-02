@@ -5,8 +5,8 @@
  * (reduced_motion_fallback = 0ms).
  */
 
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { useEffect, useState } from "react";
+import { AccessibilityInfo } from "react-native";
 
 export function useReduceMotion(): boolean {
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -22,7 +22,7 @@ export function useReduceMotion(): boolean {
       });
 
     const sub = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
+      "reduceMotionChanged",
       setReduceMotion,
     );
     return () => {

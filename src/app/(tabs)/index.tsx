@@ -23,8 +23,8 @@
  *   - 7-day forecast list inside a single baobab card
  */
 
-import * as Location from 'expo-location';
-import { useCallback, useEffect, useState } from 'react';
+import * as Location from "expo-location";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -34,25 +34,25 @@ import {
   StyleSheet,
   View,
   useWindowDimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { type LocationSummary, geoLookup } from '@/api/locations';
-import { fetchWeather, type WeatherResponse } from '@/api/weather';
-import { RADIUS, SPACING } from '@/brand/tokens';
-import { BaobabCard } from '@/components/BaobabCard';
-import { BrandText } from '@/components/BrandText';
-import { Header } from '@/components/Header';
-import { ConditionHero } from '@/components/home/ConditionHero';
-import { HourlyStrip } from '@/components/home/HourlyStrip';
-import { isDaytime } from '@/components/home/hourly';
-import { MetricCard, type MetricSeverity } from '@/components/MetricCard';
-import { WeatherIcon } from '@/components/WeatherIcon';
-import { usePalette } from '@/hooks/usePalette';
-import { cloudLabel, humidityLabel, pressureLabel } from '@/shared';
+import { type LocationSummary, geoLookup } from "@/api/locations";
+import { fetchWeather, type WeatherResponse } from "@/api/weather";
+import { RADIUS, SPACING } from "@/brand/tokens";
+import { BaobabCard } from "@/components/BaobabCard";
+import { BrandText } from "@/components/BrandText";
+import { Header } from "@/components/Header";
+import { ConditionHero } from "@/components/home/ConditionHero";
+import { HourlyStrip } from "@/components/home/HourlyStrip";
+import { isDaytime } from "@/components/home/hourly";
+import { MetricCard, type MetricSeverity } from "@/components/MetricCard";
+import { WeatherIcon } from "@/components/WeatherIcon";
+import { usePalette } from "@/hooks/usePalette";
+import { cloudLabel, humidityLabel, pressureLabel } from "@/shared";
 
 /** Harare — Mukoko's editorial default. Used when geolocation is unavailable. */
-const FALLBACK = { lat: -17.8252, lon: 31.0335, label: 'Harare, ZW' };
+const FALLBACK = { lat: -17.8252, lon: 31.0335, label: "Harare, ZW" };
 
 /** Web max-width — matches the web `max-w-3xl` (768px) reading column. */
 const WEB_MAX_WIDTH = 768;
@@ -70,21 +70,21 @@ type GeoResult = {
 };
 
 type LoadState =
-  | { kind: 'loading' }
-  | { kind: 'ready'; weather: WeatherResponse }
-  | { kind: 'error'; message: string };
+  | { kind: "loading" }
+  | { kind: "ready"; weather: WeatherResponse }
+  | { kind: "error"; message: string };
 
 export default function WeatherHome() {
   const palette = usePalette();
   const { width } = useWindowDimensions();
   const [coords, setCoords] = useState<Coords | null>(null);
-  const [state, setState] = useState<LoadState>({ kind: 'loading' });
+  const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [refreshing, setRefreshing] = useState(false);
 
   const resolveLocation = useCallback(async (): Promise<Coords> => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      if (status !== "granted") {
         return { ...FALLBACK };
       }
       // High accuracy so the backend can reverse-geocode to a specific
@@ -99,22 +99,30 @@ export default function WeatherHome() {
   }, []);
 
   /** Resolve (and auto-create) the fine-grained place name for a GPS fix. */
-  const resolveName = useCallback(async (loc: Coords): Promise<string | null> => {
-    try {
-      const res = (await geoLookup(loc.lat, loc.lon, true)) as unknown as GeoResult;
-      return res.nearest?.name ?? res.location?.name ?? null;
-    } catch {
-      return null;
-    }
-  }, []);
+  const resolveName = useCallback(
+    async (loc: Coords): Promise<string | null> => {
+      try {
+        const res = (await geoLookup(
+          loc.lat,
+          loc.lon,
+          true,
+        )) as unknown as GeoResult;
+        return res.nearest?.name ?? res.location?.name ?? null;
+      } catch {
+        return null;
+      }
+    },
+    [],
+  );
 
   const load = useCallback(async (loc: Coords) => {
     try {
       const weather = await fetchWeather({ lat: loc.lat, lon: loc.lon });
-      setState({ kind: 'ready', weather });
+      setState({ kind: "ready", weather });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to load weather';
-      setState({ kind: 'error', message });
+      const message =
+        err instanceof Error ? err.message : "Unable to load weather";
+      setState({ kind: "error", message });
     }
   }, []);
 
@@ -142,31 +150,39 @@ export default function WeatherHome() {
 
   // On web, constrain the reading column to 768dp so desktop doesn't look
   // empty. Phones get the full viewport width.
-  const isWideWeb = Platform.OS === 'web' && width > WEB_MAX_WIDTH;
+  const isWideWeb = Platform.OS === "web" && width > WEB_MAX_WIDTH;
   const contentWidth = isWideWeb ? WEB_MAX_WIDTH : width;
 
   // Prefer the fine-grained geolocated name; fall back to the weather API's
   // resolved location, then a neutral placeholder.
   const subtitle =
     coords?.label ??
-    (state.kind === 'ready' ? state.weather.location?.name : undefined) ??
-    'Finding location…';
+    (state.kind === "ready" ? state.weather.location?.name : undefined) ??
+    "Finding location…";
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[styles.safe, { backgroundColor: palette.background }]}
+      edges={["top"]}
+    >
       <Header subtitle={subtitle} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          isWideWeb && { alignItems: 'center' },
+          isWideWeb && { alignItems: "center" },
         ]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />
-        }>
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={palette.primary}
+          />
+        }
+      >
         <View style={[styles.column, { width: contentWidth }]}>
-          {state.kind === 'loading' ? (
+          {state.kind === "loading" ? (
             <LoadingState />
-          ) : state.kind === 'error' ? (
+          ) : state.kind === "error" ? (
             <ErrorState message={state.message} onRetry={onRefresh} />
           ) : (
             <WeatherView weather={state.weather} />
@@ -192,11 +208,21 @@ function LoadingState() {
   );
 }
 
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+function ErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   const palette = usePalette();
   return (
     <BaobabCard style={styles.center}>
-      <BrandText variant="display" tone="terracotta" accessibilityElementsHidden>
+      <BrandText
+        variant="display"
+        tone="terracotta"
+        accessibilityElementsHidden
+      >
         ⚠
       </BrandText>
       <BrandText variant="bodyBold" tone="terracotta">
@@ -215,7 +241,8 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
             backgroundColor: palette.primary,
             opacity: pressed ? 0.85 : 1,
           },
-        ]}>
+        ]}
+      >
         <BrandText variant="bodyBold" style={{ color: palette.onPrimary }}>
           Try again
         </BrandText>
@@ -242,7 +269,11 @@ function WeatherView({ weather }: { weather: WeatherResponse }) {
           value={current.humidity}
           unit="%"
           icon="💧"
-          supporting={typeof current.humidity === 'number' ? humidityLabel(current.humidity) : undefined}
+          supporting={
+            typeof current.humidity === "number"
+              ? humidityLabel(current.humidity)
+              : undefined
+          }
         />
         <MetricCard
           label="Wind"
@@ -257,7 +288,11 @@ function WeatherView({ weather }: { weather: WeatherResponse }) {
           value={current.pressure}
           unit="hPa"
           icon="📈"
-          supporting={typeof current.pressure === 'number' ? pressureLabel(current.pressure) : undefined}
+          supporting={
+            typeof current.pressure === "number"
+              ? pressureLabel(current.pressure)
+              : undefined
+          }
         />
         <MetricCard
           label="UV"
@@ -272,14 +307,13 @@ function WeatherView({ weather }: { weather: WeatherResponse }) {
           value={current.cloudCover}
           unit="%"
           icon="☁"
-          supporting={typeof current.cloudCover === 'number' ? cloudLabel(current.cloudCover) : undefined}
+          supporting={
+            typeof current.cloudCover === "number"
+              ? cloudLabel(current.cloudCover)
+              : undefined
+          }
         />
-        <MetricCard
-          label="Feels"
-          value={current.feelsLike}
-          unit="°"
-          icon="🌡"
-        />
+        <MetricCard label="Feels" value={current.feelsLike} unit="°" icon="🌡" />
       </View>
 
       <BrandText variant="subtitle" tone="text" style={styles.sectionHeading}>
@@ -288,7 +322,11 @@ function WeatherView({ weather }: { weather: WeatherResponse }) {
       <BaobabCard quiet>
         <View style={styles.dailyList}>
           {daily.slice(0, 7).map((d, idx) => (
-            <DailyRow key={d.date ?? idx} day={d} isLast={idx === Math.min(6, daily.length - 1)} />
+            <DailyRow
+              key={d.date ?? idx}
+              day={d}
+              isLast={idx === Math.min(6, daily.length - 1)}
+            />
           ))}
         </View>
       </BaobabCard>
@@ -298,19 +336,29 @@ function WeatherView({ weather }: { weather: WeatherResponse }) {
 
 function uvSeverity(uv: number | null | undefined): MetricSeverity | undefined {
   if (uv === null || uv === undefined) return undefined;
-  if (uv <= 2) return 'low';
-  if (uv <= 5) return 'moderate';
-  if (uv <= 7) return 'high';
-  if (uv <= 10) return 'severe';
-  return 'extreme';
+  if (uv <= 2) return "low";
+  if (uv <= 5) return "moderate";
+  if (uv <= 7) return "high";
+  if (uv <= 10) return "severe";
+  return "extreme";
 }
 
-function DailyRow({ day, isLast }: { day: WeatherResponse['daily'][number]; isLast: boolean }) {
+function DailyRow({
+  day,
+  isLast,
+}: {
+  day: WeatherResponse["daily"][number];
+  isLast: boolean;
+}) {
   const palette = usePalette();
   const date = day.date ? new Date(day.date) : null;
   const label = date
-    ? date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
-    : '—';
+    ? date.toLocaleDateString(undefined, {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      })
+    : "—";
   return (
     <View
       style={[
@@ -319,7 +367,8 @@ function DailyRow({ day, isLast }: { day: WeatherResponse['daily'][number]; isLa
           borderBottomColor: palette.border,
           borderBottomWidth: StyleSheet.hairlineWidth,
         },
-      ]}>
+      ]}
+    >
       <View style={styles.dailyLeft}>
         <WeatherIcon code={day.weatherCode} variant="title" />
         <BrandText variant="bodyBold" tone="text">
@@ -328,10 +377,14 @@ function DailyRow({ day, isLast }: { day: WeatherResponse['daily'][number]; isLa
       </View>
       <View style={styles.dailyRight}>
         <BrandText variant="mono" tone="textSecondary">
-          {day.tempMin !== null && day.tempMin !== undefined ? `${Math.round(day.tempMin)}°` : '—'}
+          {day.tempMin !== null && day.tempMin !== undefined
+            ? `${Math.round(day.tempMin)}°`
+            : "—"}
         </BrandText>
         <BrandText variant="monoLarge" tone="text">
-          {day.tempMax !== null && day.tempMax !== undefined ? `${Math.round(day.tempMax)}°` : '—'}
+          {day.tempMax !== null && day.tempMax !== undefined
+            ? `${Math.round(day.tempMax)}°`
+            : "—"}
         </BrandText>
       </View>
     </View>
@@ -347,16 +400,16 @@ const styles = StyleSheet.create({
   column: {
     gap: SPACING.md,
     maxWidth: WEB_MAX_WIDTH,
-    width: '100%',
-    alignSelf: 'center',
+    width: "100%",
+    alignSelf: "center",
   },
   center: {
     paddingVertical: SPACING.xl,
-    alignItems: 'center',
+    alignItems: "center",
     gap: SPACING.sm,
   },
   centerLine: {
-    textAlign: 'center',
+    textAlign: "center",
   },
   retryButton: {
     marginTop: SPACING.sm,
@@ -365,7 +418,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.button,
   },
   metricGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: SPACING.sm,
   },
   sectionHeading: {
@@ -375,19 +428,19 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   dailyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: SPACING.sm,
   },
   dailyLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: SPACING.sm,
   },
   dailyRight: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     gap: SPACING.sm,
   },
 });

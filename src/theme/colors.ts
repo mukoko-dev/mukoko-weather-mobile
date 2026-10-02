@@ -4,7 +4,7 @@
  * accent = gold, AI = sodalite/tanzanite, community = copper).
  */
 
-import { MINERALS, SURFACE } from '@/brand/tokens';
+import { MINERALS, SURFACE } from "@/brand/tokens";
 
 export type Palette = {
   /** App background — paper-warm. */
@@ -54,55 +54,55 @@ export type Palette = {
 
 export const lightPalette: Palette = {
   // Paper-warm — matches web `--color-paper` (#FAF9F5)
-  background: '#FAF9F5',
+  background: "#FAF9F5",
   // Surface-card — clean white for `.baobab` chrome
-  surface: '#FFFFFF',
-  surfaceElevated: '#FFFFFF',
+  surface: "#FFFFFF",
+  surfaceElevated: "#FFFFFF",
   surfaceDim: SURFACE.paper,
 
   // Near-black ink — matches web `--color-text-primary` (#1a1a1a)
-  text: '#1A1A1A',
-  textSecondary: 'rgba(0, 0, 0, 0.65)',
-  textTertiary: 'rgba(0, 0, 0, 0.45)',
-  textInverse: '#FFFFFF',
+  text: "#1A1A1A",
+  textSecondary: "rgba(0, 0, 0, 0.65)",
+  textTertiary: "rgba(0, 0, 0, 0.45)",
+  textInverse: "#FFFFFF",
 
-  border: 'rgba(0, 0, 0, 0.08)',
-  borderStrong: 'rgba(0, 0, 0, 0.16)',
+  border: "rgba(0, 0, 0, 0.08)",
+  borderStrong: "rgba(0, 0, 0, 0.16)",
 
   primary: MINERALS.cobalt.light,
-  onPrimary: '#FFFFFF',
+  onPrimary: "#FFFFFF",
   success: MINERALS.malachite.light,
-  onSuccess: '#FFFFFF',
+  onSuccess: "#FFFFFF",
   accent: MINERALS.gold.light,
-  onAccent: '#FFFFFF',
+  onAccent: "#FFFFFF",
   tanzanite: MINERALS.tanzanite.light,
-  onTanzanite: '#FFFFFF',
+  onTanzanite: "#FFFFFF",
   sodalite: MINERALS.sodalite.light,
-  onSodalite: '#FFFFFF',
+  onSodalite: "#FFFFFF",
   copper: MINERALS.copper.light,
-  onCopper: '#FFFFFF',
+  onCopper: "#FFFFFF",
   terracotta: MINERALS.terracotta.light,
-  onTerracotta: '#FFFFFF',
+  onTerracotta: "#FFFFFF",
 
-  frostSevere: '#B3261E',
+  frostSevere: "#B3261E",
   focusRing: MINERALS.cobalt.light,
 };
 
 export const darkPalette: Palette = {
   // Tanzanite-dark scrim — matches web dark `--color-paper` zone (#1A0033 mood)
-  background: '#0A0A0A',
+  background: "#0A0A0A",
   // Translucent surface — lifts cards without flatness
-  surface: 'rgba(255, 255, 255, 0.05)',
-  surfaceElevated: 'rgba(255, 255, 255, 0.08)',
-  surfaceDim: '#141414',
+  surface: "rgba(255, 255, 255, 0.05)",
+  surfaceElevated: "rgba(255, 255, 255, 0.08)",
+  surfaceDim: "#141414",
 
-  text: '#F5F5F5',
-  textSecondary: 'rgba(255, 255, 255, 0.7)',
-  textTertiary: 'rgba(255, 255, 255, 0.5)',
+  text: "#F5F5F5",
+  textSecondary: "rgba(255, 255, 255, 0.7)",
+  textTertiary: "rgba(255, 255, 255, 0.5)",
   textInverse: SURFACE.ink,
 
-  border: 'rgba(255, 255, 255, 0.1)',
-  borderStrong: 'rgba(255, 255, 255, 0.2)',
+  border: "rgba(255, 255, 255, 0.1)",
+  borderStrong: "rgba(255, 255, 255, 0.2)",
 
   primary: MINERALS.cobalt.dark,
   onPrimary: SURFACE.ink,
@@ -119,12 +119,12 @@ export const darkPalette: Palette = {
   terracotta: MINERALS.terracotta.dark,
   onTerracotta: SURFACE.ink,
 
-  frostSevere: '#FF6E5A',
+  frostSevere: "#FF6E5A",
   focusRing: MINERALS.cobalt.dark,
 };
 
-export type ColorScheme = 'light' | 'dark';
+export type ColorScheme = "light" | "dark";
 
 export function paletteFor(scheme: ColorScheme): Palette {
-  return scheme === 'dark' ? darkPalette : lightPalette;
+  return scheme === "dark" ? darkPalette : lightPalette;
 }

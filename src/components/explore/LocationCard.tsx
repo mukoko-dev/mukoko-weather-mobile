@@ -4,15 +4,15 @@
  * badges are tinted with their mineral tone. Minimum 56px touch target.
  */
 
-import { router } from 'expo-router';
-import { memo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { router } from "expo-router";
+import { memo } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 
-import { RADIUS, SPACING, TOUCH_TARGET_MIN } from '@/brand/tokens';
-import { BrandText } from '@/components/BrandText';
-import { usePalette } from '@/hooks/usePalette';
+import { RADIUS, SPACING, TOUCH_TARGET_MIN } from "@/brand/tokens";
+import { BrandText } from "@/components/BrandText";
+import { usePalette } from "@/hooks/usePalette";
 
-import { getCategoryMeta } from './categories';
+import { getCategoryMeta } from "./categories";
 
 /** Minimal shape shared by `LocationSummary` (search) + `WeatherLocation` (browse). */
 export type LocationCardData = {
@@ -31,7 +31,9 @@ export const LocationCard = memo(function LocationCard({
   location: LocationCardData;
 }) {
   const palette = usePalette();
-  const subtitle = [location.province, location.country].filter(Boolean).join(' · ');
+  const subtitle = [location.province, location.country]
+    .filter(Boolean)
+    .join(" · ");
   const tags = (location.tags ?? []).slice(0, MAX_TAGS);
 
   return (
@@ -46,7 +48,8 @@ export const LocationCard = memo(function LocationCard({
           borderColor: palette.border,
           opacity: pressed ? 0.85 : 1,
         },
-      ]}>
+      ]}
+    >
       <View style={styles.body}>
         <BrandText variant="bodyBold" tone="text" numberOfLines={1}>
           {location.name}
@@ -63,7 +66,11 @@ export const LocationCard = memo(function LocationCard({
               return (
                 <View
                   key={tag}
-                  style={[styles.tag, { backgroundColor: palette[meta.tone] + '1F' }]}>
+                  style={[
+                    styles.tag,
+                    { backgroundColor: palette[meta.tone] + "1F" },
+                  ]}
+                >
                   <BrandText variant="caption" tone={meta.tone}>
                     {meta.label}
                   </BrandText>
@@ -74,7 +81,7 @@ export const LocationCard = memo(function LocationCard({
         ) : null}
       </View>
       <BrandText variant="title" tone="primary">
-        {'›'}
+        {"›"}
       </BrandText>
     </Pressable>
   );
@@ -82,9 +89,9 @@ export const LocationCard = memo(function LocationCard({
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: SPACING.sm,
     padding: SPACING.md,
     borderRadius: RADIUS.card,
@@ -96,8 +103,8 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: SPACING.xs,
     marginTop: 2,
   },

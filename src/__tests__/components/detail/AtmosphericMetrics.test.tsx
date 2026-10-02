@@ -3,10 +3,10 @@
  * wind-direction supporting line.
  */
 
-import { render } from '@testing-library/react-native';
+import { render } from "@testing-library/react-native";
 
-import type { WeatherResponse } from '@/api/weather';
-import { AtmosphericMetrics } from '@/components/detail/AtmosphericMetrics';
+import type { WeatherResponse } from "@/api/weather";
+import { AtmosphericMetrics } from "@/components/detail/AtmosphericMetrics";
 
 const weather = {
   current: {
@@ -23,17 +23,19 @@ const weather = {
   daily: [],
 } as unknown as WeatherResponse;
 
-describe('AtmosphericMetrics', () => {
-  it('renders every metric and a wind-direction hint', async () => {
-    const { getByText } = await render(<AtmosphericMetrics weather={weather} />);
-    expect(getByText('Humidity')).toBeTruthy();
-    expect(getByText('Wind')).toBeTruthy();
-    expect(getByText('Pressure')).toBeTruthy();
-    expect(getByText('UV index')).toBeTruthy();
-    expect(getByText('Cloud')).toBeTruthy();
-    expect(getByText('Feels like')).toBeTruthy();
+describe("AtmosphericMetrics", () => {
+  it("renders every metric and a wind-direction hint", async () => {
+    const { getByText } = await render(
+      <AtmosphericMetrics weather={weather} />,
+    );
+    expect(getByText("Humidity")).toBeTruthy();
+    expect(getByText("Wind")).toBeTruthy();
+    expect(getByText("Pressure")).toBeTruthy();
+    expect(getByText("UV index")).toBeTruthy();
+    expect(getByText("Cloud")).toBeTruthy();
+    expect(getByText("Feels like")).toBeTruthy();
     // windDirection(90) => "E", humidityLabel(55) => "Comfortable"
-    expect(getByText('From E')).toBeTruthy();
-    expect(getByText('Comfortable')).toBeTruthy();
+    expect(getByText("From E")).toBeTruthy();
+    expect(getByText("Comfortable")).toBeTruthy();
   });
 });

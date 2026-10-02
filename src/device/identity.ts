@@ -8,27 +8,27 @@
  * on Android, crypto.getRandomValues on web).
  */
 
-import * as Crypto from 'expo-crypto';
-import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
+import * as Crypto from "expo-crypto";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
-const STORAGE_KEY = 'mukoko.deviceId';
+const STORAGE_KEY = "mukoko.deviceId";
 
 /**
  * Web fallback — SecureStore isn't supported in browsers, so we fall back to
  * localStorage. Mobile (iOS/Android) always uses SecureStore.
  */
 async function getItem(key: string): Promise<string | null> {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined') return null;
+  if (Platform.OS === "web") {
+    if (typeof window === "undefined") return null;
     return window.localStorage.getItem(key);
   }
   return SecureStore.getItemAsync(key);
 }
 
 async function setItem(key: string, value: string): Promise<void> {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined') return;
+  if (Platform.OS === "web") {
+    if (typeof window === "undefined") return;
     window.localStorage.setItem(key, value);
     return;
   }
@@ -50,8 +50,8 @@ export async function getOrCreateDeviceId(): Promise<string> {
 
 /** Test/debug only — clears the persisted id so the next call regenerates one. */
 export async function resetDeviceId(): Promise<void> {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined') return;
+  if (Platform.OS === "web") {
+    if (typeof window === "undefined") return;
     window.localStorage.removeItem(STORAGE_KEY);
     return;
   }

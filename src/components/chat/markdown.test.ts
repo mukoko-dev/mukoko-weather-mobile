@@ -3,71 +3,71 @@
  * headings (defensive), paragraphs, and mixed content.
  */
 
-import { parseInline, parseMarkdown } from '@/components/chat/markdown';
+import { parseInline, parseMarkdown } from "@/components/chat/markdown";
 
-describe('parseInline', () => {
-  it('returns a single normal span for plain text', () => {
-    expect(parseInline('hello world')).toEqual([
-      { text: 'hello world', bold: false },
+describe("parseInline", () => {
+  it("returns a single normal span for plain text", () => {
+    expect(parseInline("hello world")).toEqual([
+      { text: "hello world", bold: false },
     ]);
   });
 
-  it('marks text between ** markers as bold', () => {
-    expect(parseInline('a **b** c')).toEqual([
-      { text: 'a ', bold: false },
-      { text: 'b', bold: true },
-      { text: ' c', bold: false },
+  it("marks text between ** markers as bold", () => {
+    expect(parseInline("a **b** c")).toEqual([
+      { text: "a ", bold: false },
+      { text: "b", bold: true },
+      { text: " c", bold: false },
     ]);
   });
 
-  it('handles a fully bold line', () => {
-    expect(parseInline('**bold**')).toEqual([{ text: 'bold', bold: true }]);
+  it("handles a fully bold line", () => {
+    expect(parseInline("**bold**")).toEqual([{ text: "bold", bold: true }]);
   });
 
-  it('never returns an empty span list', () => {
-    expect(parseInline('')).toEqual([{ text: '', bold: false }]);
+  it("never returns an empty span list", () => {
+    expect(parseInline("")).toEqual([{ text: "", bold: false }]);
   });
 });
 
-describe('parseMarkdown', () => {
-  it('parses a single paragraph', () => {
-    const blocks = parseMarkdown('Just a line.');
+describe("parseMarkdown", () => {
+  it("parses a single paragraph", () => {
+    const blocks = parseMarkdown("Just a line.");
     expect(blocks).toEqual([
-      { type: 'paragraph', spans: [{ text: 'Just a line.', bold: false }] },
+      { type: "paragraph", spans: [{ text: "Just a line.", bold: false }] },
     ]);
   });
 
-  it('groups consecutive bullet lines into one list', () => {
-    const blocks = parseMarkdown('- one\n- two\n* three');
+  it("groups consecutive bullet lines into one list", () => {
+    const blocks = parseMarkdown("- one\n- two\n* three");
     expect(blocks).toHaveLength(1);
-    expect(blocks[0].type).toBe('bullet');
-    if (blocks[0].type === 'bullet') {
+    expect(blocks[0].type).toBe("bullet");
+    if (blocks[0].type === "bullet") {
       expect(blocks[0].items).toHaveLength(3);
-      expect(blocks[0].items[0]).toEqual([{ text: 'one', bold: false }]);
+      expect(blocks[0].items[0]).toEqual([{ text: "one", bold: false }]);
     }
   });
 
-  it('separates paragraphs from a following bullet list', () => {
-    const blocks = parseMarkdown('Intro line\n\n- point a\n- point b');
-    expect(blocks.map((b) => b.type)).toEqual(['paragraph', 'bullet']);
+  it("separates paragraphs from a following bullet list", () => {
+    const blocks = parseMarkdown("Intro line\n\n- point a\n- point b");
+    expect(blocks.map((b) => b.type)).toEqual(["paragraph", "bullet"]);
   });
 
-  it('renders headings as bold paragraphs', () => {
-    const blocks = parseMarkdown('## Heading');
+  it("renders headings as bold paragraphs", () => {
+    const blocks = parseMarkdown("## Heading");
     expect(blocks).toEqual([
-      { type: 'paragraph', spans: [{ text: 'Heading', bold: true }] },
+      { type: "paragraph", spans: [{ text: "Heading", bold: true }] },
     ]);
   });
 
-  it('keeps bold spans inside bullet items', () => {
-    const blocks = parseMarkdown('- **Harare**: sunny');
-    if (blocks[0].type === 'bullet') {
+  it("keeps bold spans inside bullet items", () => {
+    const blocks = parseMarkdown("- **Harare**: sunny");
+    if (blocks[0].type === "bullet") {
       expect(blocks[0].items[0]).toEqual([
-        { text: 'Harare', bold: true },
-        { text: ': sunny', bold: false },
+        { text: "Harare", bold: true },
+        { text: ": sunny", bold: false },
       ]);
     } else {
-      throw new Error('expected a bullet block');
+      throw new Error("expected a bullet block");
     }
   });
 });

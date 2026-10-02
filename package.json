@@ -2,6 +2,7 @@
   "name": "mukoko-mobile",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "packageManager": "npm@11.12.1",
   "dependencies": {
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
     "@expo-google-fonts/noto-sans": "^0.4.2",
@@ -52,10 +53,13 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint",
+    "lint": "vp lint",
+    "lint:expo": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "check": "vp check",
+    "fmt": "vp fmt"
   },
   "jest": {
     "preset": "jest-expo",

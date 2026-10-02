@@ -11,14 +11,14 @@
  * from a non-React context (e.g. background tasks).
  */
 
-import { Platform } from 'react-native';
+import { Platform } from "react-native";
 
-const DEFAULT_BASE_URL = 'https://weather.mukoko.com';
+const DEFAULT_BASE_URL = "https://weather.mukoko.com";
 
 export const API_BASE_URL: string =
-  process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '') ?? DEFAULT_BASE_URL;
+  process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, "") ?? DEFAULT_BASE_URL;
 
-export type FetchOptions = Omit<RequestInit, 'body'> & {
+export type FetchOptions = Omit<RequestInit, "body"> & {
   /** Parsed JSON body. Will be JSON-stringified + Content-Type set. */
   json?: unknown;
   /** Query string parameters; undefined / null values are dropped. */
@@ -37,7 +37,7 @@ export class ApiError extends Error {
     readonly body?: unknown,
   ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
   }
 }
 
@@ -47,12 +47,14 @@ let cachedTokenResolver: (() => Promise<string | null>) | null = null;
  * Register a function that resolves the current session bearer token.
  * Called by src/api/auth.ts at app boot so we don't hard-import SecureStore here.
  */
-export function setAuthTokenResolver(resolver: (() => Promise<string | null>) | null) {
+export function setAuthTokenResolver(
+  resolver: (() => Promise<string | null>) | null,
+) {
   cachedTokenResolver = resolver;
 }
 
-export function buildUrl(path: string, query?: FetchOptions['query']): string {
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+export function buildUrl(path: string, query?: FetchOptions["query"]): string {
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
   const url = new URL(`${API_BASE_URL}${cleanPath}`);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
@@ -71,19 +73,20 @@ export async function apiFetch<T = unknown>(
   const url = buildUrl(path, query);
 
   const finalHeaders: Record<string, string> = {
-    Accept: 'application/json',
-    'X-Mukoko-Client': `mukoko-mobile/${Platform.OS}`,
+    Accept: "application/json",
+    "X-Mukoko-Client": `mukoko-mobile/${Platform.OS}`,
     ...((headers as Record<string, string>) ?? {}),
   };
 
-  const bearer = token ?? (cachedTokenResolver ? await cachedTokenResolver() : null);
+  const bearer =
+    token ?? (cachedTokenResolver ? await cachedTokenResolver() : null);
   if (bearer) {
     finalHeaders.Authorization = `Bearer ${bearer}`;
   }
 
   let body: BodyInit | undefined;
   if (json !== undefined) {
-    finalHeaders['Content-Type'] = 'application/json';
+    finalHeaders["Content-Type"] = "application/json";
     body = JSON.stringify(json);
   }
 
@@ -93,8 +96,8 @@ export async function apiFetch<T = unknown>(
     body,
   });
 
-  const contentType = response.headers.get('content-type') ?? '';
-  const parsed: unknown = contentType.includes('application/json')
+  const contentType = response.headers.get("content-type") ?? "";
+  const parsed: unknown = contentType.includes("application/json")
     ? await response.json().catch(() => undefined)
     : await response.text().catch(() => undefined);
 

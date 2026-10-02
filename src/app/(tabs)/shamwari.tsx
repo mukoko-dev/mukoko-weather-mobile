@@ -13,31 +13,34 @@
  * components under src/components/chat.
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from "react";
 import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   View,
-} from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 import {
   sendChatMessage,
   type ChatHistoryMessage,
   type ChatReference,
-} from '@/api/chat';
-import { SPACING } from '@/brand/tokens';
-import { BrandText } from '@/components/BrandText';
-import { Header } from '@/components/Header';
-import { ChatBubble, type ChatMessage } from '@/components/chat/ChatBubble';
-import { ChatComposer } from '@/components/chat/ChatComposer';
-import { DEFAULT_SUGGESTED_PROMPTS } from '@/components/chat/prompts';
-import { SuggestedPrompts } from '@/components/chat/SuggestedPrompts';
-import { TypingIndicator } from '@/components/chat/TypingIndicator';
-import { usePalette } from '@/hooks/usePalette';
+} from "@/api/chat";
+import { SPACING } from "@/brand/tokens";
+import { BrandText } from "@/components/BrandText";
+import { Header } from "@/components/Header";
+import { ChatBubble, type ChatMessage } from "@/components/chat/ChatBubble";
+import { ChatComposer } from "@/components/chat/ChatComposer";
+import { DEFAULT_SUGGESTED_PROMPTS } from "@/components/chat/prompts";
+import { SuggestedPrompts } from "@/components/chat/SuggestedPrompts";
+import { TypingIndicator } from "@/components/chat/TypingIndicator";
+import { usePalette } from "@/hooks/usePalette";
 
 /** Cap rendered turns to keep memory bounded in long conversations. */
 const MAX_RENDERED_MESSAGES = 30;
@@ -60,7 +63,9 @@ export default function ShamwariScreen() {
 
   const scrollToEnd = useCallback(() => {
     // Deferred so the list has laid out the new row before we scroll.
-    requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+    requestAnimationFrame(() =>
+      listRef.current?.scrollToEnd({ animated: true }),
+    );
   }, []);
 
   const sendMessage = useCallback(
@@ -69,8 +74,8 @@ export default function ShamwariScreen() {
       if (!trimmed || loading) return;
 
       const userMessage: ChatMessage = {
-        id: nextId('user'),
-        role: 'user',
+        id: nextId("user"),
+        role: "user",
         content: trimmed,
       };
 
@@ -80,7 +85,9 @@ export default function ShamwariScreen() {
         .slice(-10)
         .map((m) => ({ role: m.role, content: m.content }));
 
-      setMessages((prev) => [...prev, userMessage].slice(-MAX_RENDERED_MESSAGES));
+      setMessages((prev) =>
+        [...prev, userMessage].slice(-MAX_RENDERED_MESSAGES),
+      );
       setLoading(true);
 
       // Cancel any in-flight request before starting a new one.
@@ -95,22 +102,24 @@ export default function ShamwariScreen() {
           signal: controller.signal,
         });
         const assistantMessage: ChatMessage = {
-          id: nextId('assistant'),
-          role: 'assistant',
+          id: nextId("assistant"),
+          role: "assistant",
           content: data.response,
           references: data.references,
           isError: data.error,
         };
-        setMessages((prev) => [...prev, assistantMessage].slice(-MAX_RENDERED_MESSAGES));
+        setMessages((prev) =>
+          [...prev, assistantMessage].slice(-MAX_RENDERED_MESSAGES),
+        );
       } catch (err) {
         // Ignore user-initiated cancellations (unmount / rapid resend).
-        if (err instanceof Error && err.name === 'AbortError') return;
+        if (err instanceof Error && err.name === "AbortError") return;
         setMessages((prev) =>
           [
             ...prev,
             {
-              id: nextId('error'),
-              role: 'assistant',
+              id: nextId("error"),
+              role: "assistant",
               content:
                 "I'm having trouble connecting right now. Please try again in a moment.",
               isError: true,
@@ -126,7 +135,10 @@ export default function ShamwariScreen() {
 
   const handleReferencePress = useCallback(
     (reference: ChatReference) => {
-      router.push({ pathname: '/location/[slug]', params: { slug: reference.slug } });
+      router.push({
+        pathname: "/location/[slug]",
+        params: { slug: reference.slug },
+      });
     },
     [router],
   );
@@ -136,12 +148,14 @@ export default function ShamwariScreen() {
   return (
     <SafeAreaView
       style={[styles.safe, { backgroundColor: palette.background }]}
-      edges={['top']}>
+      edges={["top"]}
+    >
       <Header title="Shamwari" subtitle="Your weather friend" />
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
+      >
         <FlatList
           ref={listRef}
           style={styles.flex}
@@ -155,14 +169,22 @@ export default function ShamwariScreen() {
           keyboardShouldPersistTaps="handled"
           onContentSizeChange={scrollToEnd}
           renderItem={({ item }) => (
-            <ChatBubble message={item} onReferencePress={handleReferencePress} />
+            <ChatBubble
+              message={item}
+              onReferencePress={handleReferencePress}
+            />
           )}
           ListEmptyComponent={
             <EmptyState onSelect={sendMessage} disabled={loading} />
           }
           ListFooterComponent={loading ? <TypingIndicator /> : null}
         />
-        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, SPACING.sm) }]}>
+        <View
+          style={[
+            styles.composer,
+            { paddingBottom: Math.max(insets.bottom, SPACING.sm) },
+          ]}
+        >
           <ChatComposer onSend={sendMessage} loading={loading} />
         </View>
       </KeyboardAvoidingView>
@@ -186,10 +208,14 @@ function EmptyState({
         Meet Shamwari
       </BrandText>
       <BrandText variant="body" tone="textSecondary" style={styles.emptyCopy}>
-        Your weather friend. Ask about the forecast, farming windows, frost risk,
-        safari plans, or what to wear — anywhere in the world.
+        Your weather friend. Ask about the forecast, farming windows, frost
+        risk, safari plans, or what to wear — anywhere in the world.
       </BrandText>
-      <BrandText variant="smallBold" tone="textTertiary" style={styles.emptyLabel}>
+      <BrandText
+        variant="smallBold"
+        tone="textTertiary"
+        style={styles.emptyLabel}
+      >
         Try asking
       </BrandText>
       <SuggestedPrompts
@@ -210,23 +236,23 @@ const styles = StyleSheet.create({
   },
   listContentEmpty: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   empty: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: SPACING.sm,
     paddingVertical: SPACING.xl,
   },
   emptyCentered: {
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptyCopy: {
-    textAlign: 'center',
+    textAlign: "center",
     maxWidth: 340,
     marginBottom: SPACING.md,
   },
   emptyLabel: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   composer: {
     paddingHorizontal: SPACING.md,

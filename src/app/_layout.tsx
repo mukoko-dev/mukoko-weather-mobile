@@ -17,17 +17,17 @@
  * The (tabs) group renders the actual bottom Tabs.
  */
 
-import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import { useColorScheme, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFonts } from "expo-font";
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { useColorScheme, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { initAuth } from '@/api/auth';
-import { BRAND_FONTS } from '@/brand/fonts';
-import { BrandStripe } from '@/components/BrandStripe';
-import { registerDevice } from '@/device/register';
+import { initAuth } from "@/api/auth";
+import { BRAND_FONTS } from "@/brand/fonts";
+import { BrandStripe } from "@/components/BrandStripe";
+import { registerDevice } from "@/device/register";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* already hidden — fine */
@@ -58,23 +58,23 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <View style={{ flex: 1, flexDirection: 'row' }}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <View style={{ flex: 1, flexDirection: "row" }}>
           <BrandStripe width={3} />
           <View style={{ flex: 1 }}>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen
                 name="location/[slug]"
-                options={{ title: 'Location', presentation: 'card' }}
+                options={{ title: "Location", presentation: "card" }}
               />
               <Stack.Screen
                 name="sign-in"
-                options={{ title: 'Sign in', presentation: 'modal' }}
+                options={{ title: "Sign in", presentation: "modal" }}
               />
               <Stack.Screen
                 name="sign-in-callback"
-                options={{ title: 'Signing in...', presentation: 'modal' }}
+                options={{ title: "Signing in...", presentation: "modal" }}
               />
             </Stack>
           </View>
