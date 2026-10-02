@@ -7,17 +7,17 @@
  * references as tappable quick-link chips underneath.
  */
 
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from "react-native";
 
-import { RADIUS, SPACING } from '@/brand/tokens';
-import { BrandText } from '@/components/BrandText';
-import { usePalette } from '@/hooks/usePalette';
-import type { ChatReference } from '@/api/chat';
-import { MarkdownText } from './MarkdownText';
+import { RADIUS, SPACING } from "@/brand/tokens";
+import { BrandText } from "@/components/BrandText";
+import { usePalette } from "@/hooks/usePalette";
+import type { ChatReference } from "@/api/chat";
+import { MarkdownText } from "./MarkdownText";
 
 export type ChatMessage = {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   references?: ChatReference[];
   /** Marks a graceful fallback reply so we can tint it as a soft error. */
@@ -32,7 +32,7 @@ export type ChatBubbleProps = {
 
 export function ChatBubble({ message, onReferencePress }: ChatBubbleProps) {
   const palette = usePalette();
-  const isUser = message.role === 'user';
+  const isUser = message.role === "user";
 
   if (isUser) {
     return (
@@ -40,7 +40,8 @@ export function ChatBubble({ message, onReferencePress }: ChatBubbleProps) {
         <View
           accessibilityRole="text"
           accessibilityLabel={`You said: ${message.content}`}
-          style={[styles.userBubble, { backgroundColor: palette.sodalite }]}>
+          style={[styles.userBubble, { backgroundColor: palette.sodalite }]}
+        >
           <BrandText variant="body" style={{ color: palette.onSodalite }}>
             {message.content}
           </BrandText>
@@ -50,21 +51,31 @@ export function ChatBubble({ message, onReferencePress }: ChatBubbleProps) {
   }
 
   const references = (message.references ?? []).filter(
-    (ref) => ref.type === 'location' || ref.type === 'weather',
+    (ref) => ref.type === "location" || ref.type === "weather",
   );
 
   return (
     <View
       style={styles.assistantRow}
       accessible
-      accessibilityLabel={`Shamwari said: ${message.content}`}>
-      <View style={[styles.avatar, { backgroundColor: palette.sodalite + '1F' }]}>
-        <BrandText variant="smallBold" tone="sodalite" accessibilityElementsHidden>
+      accessibilityLabel={`Shamwari said: ${message.content}`}
+    >
+      <View
+        style={[styles.avatar, { backgroundColor: palette.sodalite + "1F" }]}
+      >
+        <BrandText
+          variant="smallBold"
+          tone="sodalite"
+          accessibilityElementsHidden
+        >
           ✦
         </BrandText>
       </View>
       <View style={styles.assistantBody}>
-        <MarkdownText content={message.content} tone={message.isError ? 'textSecondary' : 'text'} />
+        <MarkdownText
+          content={message.content}
+          tone={message.isError ? "textSecondary" : "text"}
+        />
         {references.length > 0 ? (
           <View style={styles.refRow}>
             {references.slice(0, 5).map((ref) => (
@@ -76,10 +87,11 @@ export function ChatBubble({ message, onReferencePress }: ChatBubbleProps) {
                 style={({ pressed }) => [
                   styles.refChip,
                   {
-                    backgroundColor: palette.sodalite + '1A', // ~10% alpha
+                    backgroundColor: palette.sodalite + "1A", // ~10% alpha
                     opacity: pressed ? 0.7 : 1,
                   },
-                ]}>
+                ]}
+              >
                 <BrandText variant="smallBold" tone="sodalite">
                   {`📍 ${ref.name}`}
                 </BrandText>
@@ -94,26 +106,26 @@ export function ChatBubble({ message, onReferencePress }: ChatBubbleProps) {
 
 const styles = StyleSheet.create({
   userRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
   },
   userBubble: {
-    maxWidth: '85%',
+    maxWidth: "85%",
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.card,
   },
   assistantRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: SPACING.sm,
   },
   avatar: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 2,
   },
   assistantBody: {
@@ -121,8 +133,8 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   refRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: SPACING.xs,
   },
   refChip: {

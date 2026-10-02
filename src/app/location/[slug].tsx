@@ -14,43 +14,43 @@
  * instantly). All spacing/radii/colours come from brand tokens + the palette.
  */
 
-import { Stack, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Animated, RefreshControl, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import { Animated, RefreshControl, ScrollView, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { fetchWeather, type WeatherResponse } from '@/api/weather';
-import { SPACING } from '@/brand/tokens';
-import { Header } from '@/components/Header';
-import { AtmosphericMetrics } from '@/components/detail/AtmosphericMetrics';
-import { DailyForecast } from '@/components/detail/DailyForecast';
-import { DetailError } from '@/components/detail/DetailError';
-import { DetailSkeleton } from '@/components/detail/DetailSkeleton';
-import { HeroConditions } from '@/components/detail/HeroConditions';
-import { HourlyForecast } from '@/components/detail/HourlyForecast';
-import { extractHourly } from '@/components/detail/hourly';
-import { useReducedMotion } from '@/components/detail/useReducedMotion';
-import { usePalette } from '@/hooks/usePalette';
+import { fetchWeather, type WeatherResponse } from "@/api/weather";
+import { SPACING } from "@/brand/tokens";
+import { Header } from "@/components/Header";
+import { AtmosphericMetrics } from "@/components/detail/AtmosphericMetrics";
+import { DailyForecast } from "@/components/detail/DailyForecast";
+import { DetailError } from "@/components/detail/DetailError";
+import { DetailSkeleton } from "@/components/detail/DetailSkeleton";
+import { HeroConditions } from "@/components/detail/HeroConditions";
+import { HourlyForecast } from "@/components/detail/HourlyForecast";
+import { extractHourly } from "@/components/detail/hourly";
+import { useReducedMotion } from "@/components/detail/useReducedMotion";
+import { usePalette } from "@/hooks/usePalette";
 
 type LoadState =
-  | { kind: 'loading' }
-  | { kind: 'ready'; weather: WeatherResponse }
-  | { kind: 'error'; message: string };
+  | { kind: "loading" }
+  | { kind: "ready"; weather: WeatherResponse }
+  | { kind: "error"; message: string };
 
 function titleCaseSlug(slug: string | undefined): string {
-  if (!slug) return 'Location';
+  if (!slug) return "Location";
   return slug
     .split(/[-_]/)
     .filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+    .join(" ");
 }
 
 export default function LocationScreen() {
   const palette = usePalette();
   const reduceMotion = useReducedMotion();
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const [state, setState] = useState<LoadState>({ kind: 'loading' });
+  const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [refreshing, setRefreshing] = useState(false);
 
   // Never calls setState synchronously — every update lands after the awaited
@@ -60,12 +60,13 @@ export default function LocationScreen() {
     async (signal?: AbortSignal) => {
       try {
         const weather = await fetchWeather({ slug }, signal);
-        setState({ kind: 'ready', weather });
+        setState({ kind: "ready", weather });
       } catch (err) {
         if (signal?.aborted) return;
         setState({
-          kind: 'error',
-          message: err instanceof Error ? err.message : 'Unable to load weather',
+          kind: "error",
+          message:
+            err instanceof Error ? err.message : "Unable to load weather",
         });
       }
     },
@@ -88,22 +89,27 @@ export default function LocationScreen() {
   }, [load]);
 
   const onRetry = useCallback(() => {
-    setState({ kind: 'loading' });
+    setState({ kind: "loading" });
     void load();
   }, [load]);
 
   const fallbackTitle = titleCaseSlug(slug);
   const title =
-    state.kind === 'ready' ? (state.weather.location?.name ?? fallbackTitle) : fallbackTitle;
+    state.kind === "ready"
+      ? (state.weather.location?.name ?? fallbackTitle)
+      : fallbackTitle;
   const subtitle =
-    state.kind === 'ready'
+    state.kind === "ready"
       ? [state.weather.location?.province, state.weather.location?.country]
           .filter(Boolean)
-          .join(', ') || undefined
+          .join(", ") || undefined
       : undefined;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[styles.safe, { backgroundColor: palette.background }]}
+      edges={["top"]}
+    >
       <Stack.Screen options={{ title }} />
       <Header title={title} subtitle={subtitle} />
       <ScrollView
@@ -115,12 +121,13 @@ export default function LocationScreen() {
             tintColor={palette.primary}
             colors={[palette.primary]}
           />
-        }>
+        }
+      >
         {!slug ? (
           <DetailError message="No location was specified." onRetry={onRetry} />
-        ) : state.kind === 'loading' ? (
+        ) : state.kind === "loading" ? (
           <DetailSkeleton />
-        ) : state.kind === 'error' ? (
+        ) : state.kind === "error" ? (
           <DetailError message={state.message} onRetry={onRetry} />
         ) : (
           <ReadyContent weather={state.weather} reduceMotion={reduceMotion} />

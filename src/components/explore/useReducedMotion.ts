@@ -4,8 +4,8 @@
  * React hook contract and stays subscribed to live changes.
  */
 
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { useEffect, useState } from "react";
+import { AccessibilityInfo } from "react-native";
 
 export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -19,7 +19,10 @@ export function useReducedMotion(): boolean {
       .catch(() => {
         /* default to motion enabled if the query fails */
       });
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduced);
+    const sub = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      setReduced,
+    );
     return () => {
       active = false;
       sub.remove();

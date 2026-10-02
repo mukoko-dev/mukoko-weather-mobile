@@ -13,18 +13,16 @@ export {
   cloudLabel,
   precipitationLabel,
   feelsLikeContext,
-} from './weather-labels';
+} from "./weather-labels";
 
 export {
   getIcaoForSlug,
   getNearestIcao,
   getSlugForIcao,
   ICAO_MAP,
-} from './icao-codes';
+} from "./icao-codes";
 
-export type {
-  Locale,
-} from './i18n';
+export type { Locale } from "./i18n";
 export {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
@@ -35,19 +33,16 @@ export {
   formatTime,
   formatDayName,
   formatDate,
-} from './i18n';
+} from "./i18n";
 
 export type {
   WeatherLocation,
   LocationTag,
   NominatimAddress,
-} from './locations';
-export {
-  SEED_LOCATIONS_ZW,
-  LOCATIONS,
-} from './locations';
+} from "./locations";
+export { SEED_LOCATIONS_ZW, LOCATIONS } from "./locations";
 
-export { GLOBAL_LOCATIONS } from './locations-global';
+export { GLOBAL_LOCATIONS } from "./locations-global";
 
 export type {
   WeatherData,
@@ -57,7 +52,7 @@ export type {
   WeatherInsights,
   FrostAlert,
   Season,
-} from './weather';
+} from "./weather";
 export {
   fetchWeather,
   checkFrostRisk,
@@ -67,4 +62,4 @@ export {
   uvLevel,
   createFallbackWeather,
   synthesizeOpenMeteoInsights,
-} from './weather';
+} from "./weather";

@@ -7,7 +7,7 @@
  * the response.
  */
 
-import { apiFetch } from '@/api/client';
+import { apiFetch } from "@/api/client";
 
 export type DailyForecast = {
   date: string;
@@ -44,21 +44,19 @@ export type WeatherResponse = {
   };
   current: CurrentConditions;
   daily: DailyForecast[];
-  source?: 'tomorrow' | 'open-meteo' | 'fallback';
+  source?: "tomorrow" | "open-meteo" | "fallback";
   fetchedAt?: string;
 };
 
-export type WeatherQuery =
-  | { slug: string }
-  | { lat: number; lon: number };
+export type WeatherQuery = { slug: string } | { lat: number; lon: number };
 
 export function fetchWeather(
   query: WeatherQuery,
   signal?: AbortSignal,
 ): Promise<WeatherResponse> {
-  return apiFetch<WeatherResponse>('/api/py/weather', {
+  return apiFetch<WeatherResponse>("/api/py/weather", {
     query:
-      'slug' in query
+      "slug" in query
         ? { location: query.slug }
         : { lat: query.lat, lon: query.lon },
     signal,

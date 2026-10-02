@@ -6,12 +6,12 @@
  * responsive two-per-row grid.
  */
 
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from "react-native";
 
-import { RADIUS, SPACING } from '@/brand/tokens';
-import { BrandText } from '@/components/BrandText';
-import { usePalette } from '@/hooks/usePalette';
-import type { SuggestedPrompt } from './prompts';
+import { RADIUS, SPACING } from "@/brand/tokens";
+import { BrandText } from "@/components/BrandText";
+import { usePalette } from "@/hooks/usePalette";
+import type { SuggestedPrompt } from "./prompts";
 
 /** Accessible minimum (Mzizi touch_targets: accessible = 48px). */
 const CHIP_MIN_HEIGHT = 48;
@@ -22,7 +22,11 @@ export type SuggestedPromptsProps = {
   disabled?: boolean;
 };
 
-export function SuggestedPrompts({ prompts, onSelect, disabled }: SuggestedPromptsProps) {
+export function SuggestedPrompts({
+  prompts,
+  onSelect,
+  disabled,
+}: SuggestedPromptsProps) {
   const palette = usePalette();
 
   return (
@@ -40,10 +44,11 @@ export function SuggestedPrompts({ prompts, onSelect, disabled }: SuggestedPromp
             styles.chip,
             {
               backgroundColor: palette.surface,
-              borderColor: palette.sodalite + '40', // ~25% alpha
+              borderColor: palette.sodalite + "40", // ~25% alpha
               opacity: disabled ? 0.5 : pressed ? 0.8 : 1,
             },
-          ]}>
+          ]}
+        >
           <BrandText variant="smallBold" tone="sodalite" numberOfLines={2}>
             {prompt.label}
           </BrandText>
@@ -55,15 +60,15 @@ export function SuggestedPrompts({ prompts, onSelect, disabled }: SuggestedPromp
 
 const styles = StyleSheet.create({
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: SPACING.sm,
   },
   chip: {
     flexGrow: 1,
-    flexBasis: '46%',
+    flexBasis: "46%",
     minHeight: CHIP_MIN_HEIGHT,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.card,

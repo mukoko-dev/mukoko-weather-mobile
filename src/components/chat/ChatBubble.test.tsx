@@ -3,61 +3,67 @@
  * reference quick-link dispatch.
  */
 
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render } from "@testing-library/react-native";
 
-import { ChatBubble } from '@/components/chat/ChatBubble';
+import { ChatBubble } from "@/components/chat/ChatBubble";
 
-describe('ChatBubble', () => {
-  it('renders a user turn with its content', async () => {
-    const { getByText } = await render(
-      <ChatBubble message={{ id: 'u1', role: 'user', content: 'Hello Shamwari' }} />,
-    );
-    expect(getByText('Hello Shamwari')).toBeTruthy();
-  });
-
-  it('renders assistant markdown with a bold span', async () => {
+describe("ChatBubble", () => {
+  it("renders a user turn with its content", async () => {
     const { getByText } = await render(
       <ChatBubble
-        message={{ id: 'a1', role: 'assistant', content: '**Harare** is sunny' }}
+        message={{ id: "u1", role: "user", content: "Hello Shamwari" }}
+      />,
+    );
+    expect(getByText("Hello Shamwari")).toBeTruthy();
+  });
+
+  it("renders assistant markdown with a bold span", async () => {
+    const { getByText } = await render(
+      <ChatBubble
+        message={{
+          id: "a1",
+          role: "assistant",
+          content: "**Harare** is sunny",
+        }}
       />,
     );
     // Bold and normal segments render as separate Text nodes.
-    expect(getByText('Harare')).toBeTruthy();
-    expect(getByText(' is sunny')).toBeTruthy();
+    expect(getByText("Harare")).toBeTruthy();
+    expect(getByText(" is sunny")).toBeTruthy();
   });
 
-  it('renders location reference chips and dispatches on press', async () => {
+  it("renders location reference chips and dispatches on press", async () => {
     const onReferencePress = jest.fn();
     const { getByLabelText } = await render(
       <ChatBubble
         message={{
-          id: 'a2',
-          role: 'assistant',
-          content: 'Here you go',
-          references: [{ slug: 'harare', name: 'Harare', type: 'weather' }],
+          id: "a2",
+          role: "assistant",
+          content: "Here you go",
+          references: [{ slug: "harare", name: "Harare", type: "weather" }],
         }}
         onReferencePress={onReferencePress}
       />,
     );
-    fireEvent.press(getByLabelText('Open weather for Harare'));
+    fireEvent.press(getByLabelText("Open weather for Harare"));
     expect(onReferencePress).toHaveBeenCalledWith({
-      slug: 'harare',
-      name: 'Harare',
-      type: 'weather',
+      slug: "harare",
+      name: "Harare",
+      type: "weather",
     });
   });
 
-  it('omits references that are not location/weather typed', async () => {
+  it("omits references that are not location/weather typed", async () => {
     const { queryByLabelText } = await render(
       <ChatBubble
         message={{
-          id: 'a3',
-          role: 'assistant',
-          content: 'ok',
-          references: [{ slug: 'x', name: 'X', type: 'other' }],
+          id: "a3",
+          role: "assistant",
+          content: "ok",
+          references: [{ slug: "x", name: "X", type: "other" }],
         }}
       />,
     );
-    expect(queryByLabelText('Open weather for X')).toBeNull();
+    expect(queryByLabelText("Open weather for X")).toBeNull();
   });
 });

@@ -23,7 +23,12 @@ export type ThemePreference = "light" | "dark" | "system";
 
 /** Activity interests — drive contextual weather advice + mineral accents. */
 export type ActivityId =
-  "farming" | "mining" | "travel" | "tourism" | "sports" | "casual";
+  | "farming"
+  | "mining"
+  | "travel"
+  | "tourism"
+  | "sports"
+  | "casual";
 
 /** Ordered, canonical list of selectable activities. */
 export const ACTIVITY_IDS: readonly ActivityId[] = [
