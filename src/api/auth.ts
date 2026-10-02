@@ -52,8 +52,19 @@ export const AUTHKIT_DOMAIN_MISSING =
 export function authkitDomain(): string {
   const raw = (process.env.EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN ?? "").trim();
   if (!raw) throw new Error(AUTHKIT_DOMAIN_MISSING);
-  const origin = /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
-  return origin.replace(/\/+$/, "");
+  // Parse rather than concatenate: only an https origin is accepted, and any
+  // path, query, fragment or credentials in the value are dropped, so the
+  // authorize URL is always <origin>/oauth2/authorize.
+  let url: URL;
+  try {
+    url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`);
+  } catch {
+    throw new Error(`${AUTHKIT_DOMAIN_MISSING} (not a valid host or URL)`);
+  }
+  if (url.protocol !== "https:" || url.username || url.password) {
+    throw new Error(`${AUTHKIT_DOMAIN_MISSING} (must be an https origin)`);
+  }
+  return url.origin;
 }
 const WORKOS_CLIENT_ID = process.env.EXPO_PUBLIC_WORKOS_CLIENT_ID ?? "";
 const REDIRECT_SCHEME = "mukoko";
