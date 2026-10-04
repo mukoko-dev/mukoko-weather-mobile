@@ -57,7 +57,9 @@ export function authkitDomain(): string {
   // authorize URL is always <origin>/oauth2/authorize.
   let url: URL;
   try {
-    url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`);
+    url = new URL(
+      /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`,
+    );
   } catch {
     throw new Error(`${AUTHKIT_DOMAIN_MISSING} (not a valid host or URL)`);
   }

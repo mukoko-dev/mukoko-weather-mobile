@@ -33,17 +33,27 @@ describe("authkitDomain", () => {
 
   it("accepts a bare host or an https origin, and returns the origin", () => {
     expect(withDomain("auth.example.test")).toBe("https://auth.example.test");
-    expect(withDomain("https://auth.example.test/")).toBe("https://auth.example.test");
-    expect(withDomain("HTTPS://Auth.Example.Test")).toBe("https://auth.example.test");
+    expect(withDomain("https://auth.example.test/")).toBe(
+      "https://auth.example.test",
+    );
+    expect(withDomain("HTTPS://Auth.Example.Test")).toBe(
+      "https://auth.example.test",
+    );
   });
 
   it("drops any path, query or fragment", () => {
-    expect(withDomain("https://auth.example.test/x/y?z=1#f")).toBe("https://auth.example.test");
+    expect(withDomain("https://auth.example.test/x/y?z=1#f")).toBe(
+      "https://auth.example.test",
+    );
   });
 
   it("rejects anything that is not an https origin", () => {
-    expect(() => withDomain("http://auth.example.test")).toThrow(AUTHKIT_DOMAIN_MISSING);
-    expect(() => withDomain("javascript://auth.example.test")).toThrow(AUTHKIT_DOMAIN_MISSING);
+    expect(() => withDomain("http://auth.example.test")).toThrow(
+      AUTHKIT_DOMAIN_MISSING,
+    );
+    expect(() => withDomain("javascript://auth.example.test")).toThrow(
+      AUTHKIT_DOMAIN_MISSING,
+    );
     expect(() => withDomain("https://user:pass@auth.example.test")).toThrow(
       AUTHKIT_DOMAIN_MISSING,
     );
