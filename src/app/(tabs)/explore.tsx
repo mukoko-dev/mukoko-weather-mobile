@@ -282,7 +282,7 @@ export default function ExploreScreen() {
           No locations found. Try another search.
         </BrandText>
       </View>
-    ) : null;
+    ) : undefined;
 
   return (
     <SafeAreaView

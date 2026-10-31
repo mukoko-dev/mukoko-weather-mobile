@@ -3,8 +3,8 @@
 > The Expo / React Native client for
 > [Mukoko Weather](https://weather.mukoko.com) — iOS and Android.
 
-![Expo](https://img.shields.io/badge/Expo-SDK_57-000020?style=flat-square&logo=expo&logoColor=white)
-![React Native](https://img.shields.io/badge/React_Native-0.86-61DAFB?style=flat-square&logo=react&logoColor=000)
+![Expo](https://img.shields.io/badge/Expo-SDK_58-000020?style=flat-square&logo=expo&logoColor=white)
+![React Native](https://img.shields.io/badge/React_Native-0.88-61DAFB?style=flat-square&logo=react&logoColor=000)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Platforms](https://img.shields.io/badge/Platforms-iOS_%7C_Android-lightgrey?style=flat-square)
 
@@ -42,7 +42,7 @@ declares no `updates` block or `runtimeVersion` even though `eas.json` names
 
 ## Setup
 
-Expo SDK 57 needs Node.js 22.13 or newer.
+Expo SDK 58 needs Node.js 22.13 or newer on the 22 line, 24.3 or newer on the 24 line, or 26 and later (odd-numbered releases such as 23 and 25 are not supported).
 
 ```bash
 cd mukoko-weather-mobile
@@ -199,7 +199,7 @@ tokens, and component render tests via `@testing-library/react-native`
 Expo's pre-build flow creates the `/ios` and `/android` folders on demand:
 
 ```bash
-npx expo prebuild               # generates native projects (clears ios/ and android/ first; SDK 57 default)
+npx expo prebuild               # generates native projects (clears ios/ and android/ first; the default since SDK 57)
 npx expo run:ios                # build + launch iOS app
 npx expo run:android            # build + launch Android app
 ```
