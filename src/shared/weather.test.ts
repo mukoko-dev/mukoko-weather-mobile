@@ -106,4 +106,33 @@ describe("createFallbackWeather", () => {
     expect(data.hourly.time.length).toBe(48);
     expect(data.daily.time.length).toBe(7);
   });
+
+  it("reads the night in the place's time zone, not the phone's", () => {
+    const base = {
+      temperature_2m: [2],
+      apparent_temperature: [2],
+      relative_humidity_2m: [50],
+      precipitation_probability: [0],
+      precipitation: [0],
+      weather_code: [0],
+      visibility: [10000],
+      cloud_cover: [10],
+      surface_pressure: [1015],
+      wind_speed_10m: [5],
+      wind_direction_10m: [0],
+      wind_gusts_10m: [8],
+      uv_index: [0],
+      is_day: [0],
+    };
+    // 20:00 UTC is 22:00 in Harare (+2): night there.
+    const zoned = { ...base, time: ["2026-06-01T20:00:00Z"] };
+    expect(checkFrostRisk(zoned, 7200)).not.toBeNull();
+    // The same instant is 12:00 in Los Angeles (-8): midday, no frost window.
+    expect(checkFrostRisk(zoned, -28800)).toBeNull();
+    // A naive wall-clock string is already the place's hour.
+    expect(
+      checkFrostRisk({ ...base, time: ["2026-06-01T23:00"] }),
+    ).not.toBeNull();
+    expect(checkFrostRisk({ ...base, time: ["2026-06-01T13:00"] })).toBeNull();
+  });
 });

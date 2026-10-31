@@ -217,12 +217,35 @@ export async function fetchWeather(
   return res.json();
 }
 
-export function checkFrostRisk(hourly: HourlyWeather): FrostAlert | null {
+/**
+ * The clock hour (0-23) of a forecast time in the PLACE's time zone, never the
+ * phone's. Open-Meteo sends naive wall-clock strings already in the place's
+ * zone, so their hour is read straight off the string. A zoned instant (`Z` or
+ * `+02:00`) is shifted by the place's UTC offset, and read as UTC when the
+ * offset is unknown. Returns null for a time it cannot read.
+ */
+export function placeHourOf(
+  time: string,
+  offsetSeconds?: number | null,
+): number | null {
+  const m = /^\d{4}-\d{2}-\d{2}T(\d{2})/.exec(time);
+  if (!m) return null;
+  if (!/(Z|[+-]\d{2}:?\d{2})$/.test(time)) return Number(m[1]);
+  const ms = Date.parse(time);
+  if (Number.isNaN(ms)) return null;
+  const offset = Number.isFinite(offsetSeconds) ? (offsetSeconds as number) : 0;
+  return new Date(ms + offset * 1000).getUTCHours();
+}
+
+export function checkFrostRisk(
+  hourly: HourlyWeather,
+  offsetSeconds?: number | null,
+): FrostAlert | null {
   const frostHours = hourly.temperature_2m
     .map((temp, i) => ({ temp, time: hourly.time[i] }))
     .filter((h) => {
-      const hour = new Date(h.time).getHours();
-      return (hour >= 22 || hour <= 8) && h.temp <= 3;
+      const hour = placeHourOf(h.time, offsetSeconds);
+      return hour !== null && (hour >= 22 || hour <= 8) && h.temp <= 3;
     });
 
   if (frostHours.length > 0) {
