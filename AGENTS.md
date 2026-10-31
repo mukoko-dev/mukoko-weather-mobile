@@ -1,6 +1,7 @@
 # Expo HAS CHANGED
 
-Read the exact versioned docs at <https://docs.expo.dev/versions/v56.0.0/> before writing any code.
+Read the exact versioned docs at <https://docs.expo.dev/versions/v58.0.0/> before writing any code.
+The SDK 58 release notes and upgrade steps are at <https://expo.dev/changelog/sdk-58>; the Expo Router migration is at <https://docs.expo.dev/router/migrate/sdk-57-to-58/>.
 
 ## Track big work in GitHub issues
 

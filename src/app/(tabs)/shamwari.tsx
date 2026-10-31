@@ -177,7 +177,7 @@ export default function ShamwariScreen() {
           ListEmptyComponent={
             <EmptyState onSelect={sendMessage} disabled={loading} />
           }
-          ListFooterComponent={loading ? <TypingIndicator /> : null}
+          ListFooterComponent={loading ? <TypingIndicator /> : undefined}
         />
         <View
           style={[
