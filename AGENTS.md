@@ -1,6 +1,7 @@
 # Expo HAS CHANGED
 
-Read the exact versioned docs at <https://docs.expo.dev/versions/v56.0.0/> before writing any code.
+Read the exact versioned docs at <https://docs.expo.dev/versions/v57.0.0/> before writing any code.
+The SDK 57 release notes and upgrade steps are at <https://expo.dev/changelog/sdk-57>.
 
 ## Track big work in GitHub issues
 
