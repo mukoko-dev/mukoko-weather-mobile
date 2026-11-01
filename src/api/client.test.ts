@@ -113,6 +113,12 @@ describe("ROUTES", () => {
       geo: "/v1/geo",
       search: "/v1/search",
       locations: "/v1/locations",
+      activities: "/v1/activities",
+      suitability: "/v1/suitability",
+      reports: "/v1/reports",
+      reportsUpvote: "/v1/reports/upvote",
+      aiSummary: "/v1/ai/summary",
+      aiFollowup: "/v1/ai/followup",
       devices: "/v1/devices",
       chat: "/v1/ai/chat",
     });
