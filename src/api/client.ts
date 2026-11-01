@@ -54,6 +54,16 @@ export const ROUTES = {
   devices: "/v1/devices",
   /** POST {message, history, activities?} -> Shamwari's reply. */
   chat: "/v1/ai/chat",
+  /** GET ?lat&lon -> the US AQI, its pollutants and the WHO guidelines. */
+  airQuality: "/v1/air-quality",
+  /** GET ?lat&lon -> the haze panel (smoke, dust, smog, seasons). */
+  haze: "/v1/haze",
+  /** GET ?lat&lon&date -> today's climate-normal high and low. */
+  normals: "/v1/normals",
+  /** GET ?lat&lon -> the twelve monthly climate normals. */
+  normalsMonthly: "/v1/normals/monthly",
+  /** GET ?location&days -> the days recorded for a place. */
+  history: "/v1/history",
 } as const;
 
 /** `http(s)://host[:port]` with nothing after it, as the base URL must be. */
