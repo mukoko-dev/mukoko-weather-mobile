@@ -6,11 +6,15 @@
 
 import { mockFetch } from "@/api/mock-fetch";
 import { getOrCreateDeviceId, resetDeviceId } from "@/device/identity";
-import { registerDevice } from "@/device/register";
+import { DEVICE_REGISTRATION_ENABLED, registerDevice } from "@/device/register";
 
 describe("device registration", () => {
   beforeEach(async () => {
     await resetDeviceId();
+  });
+
+  it("is switched off until the synced user database replaces it", async () => {
+    expect(DEVICE_REGISTRATION_ENABLED).toBe(false);
   });
 
   it("writes nothing in a development build, which is the default under jest", async () => {

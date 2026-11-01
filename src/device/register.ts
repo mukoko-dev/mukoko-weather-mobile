@@ -20,7 +20,7 @@ import { getOrCreateDeviceId } from "@/device/identity";
  * the server-side device profile: the app is not in a store, and an install
  * profile on the API is not needed to show weather. Flip to true to register.
  */
-export const DEVICE_REGISTRATION_ENABLED = false;
+export const DEVICE_REGISTRATION_ENABLED: boolean = false;
 
 export type RegisterDeviceResult =
   | { ok: true; serverId: string | null; stubbed: boolean }
