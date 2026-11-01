@@ -16,7 +16,7 @@ import { createDeviceProfile } from "@/api/devices";
 import { getOrCreateDeviceId } from "@/device/identity";
 
 /**
- * Off until a person's own synced database (CouchDB, owner 2026-11-01) replaces
+ * Off until a person's own synced database (owner decision, 2026-11-01) replaces
  * the server-side device profile: the app is not in a store, and an install
  * profile on the API is not needed to show weather. Flip to true to register.
  */
