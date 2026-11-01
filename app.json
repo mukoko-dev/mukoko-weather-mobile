@@ -3,6 +3,12 @@
     "name": "Mukoko Weather",
     "slug": "mukoko-weather",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/97f6eb48-2aac-42c2-b13d-5f68f1a86174"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mukoko",
