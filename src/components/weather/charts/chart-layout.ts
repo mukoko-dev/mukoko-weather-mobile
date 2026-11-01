@@ -47,16 +47,29 @@ export function niceStep(range: number, target: number): number {
   return nice * mag;
 }
 
-/** Round tick values inside `[min, max]`, about `target` of them. */
-export function niceTicks(min: number, max: number, target = 4): number[] {
+/** Most tick labels an axis draws. */
+export const MAX_TICKS = 7;
+
+/**
+ * Round tick values inside `[min, max]`: the smallest round step (1, 2 or 5
+ * times a power of ten) that gives no more than `maxTicks` of them.
+ */
+export function niceTicks(min: number, max: number, maxTicks = MAX_TICKS): number[] {
   if (!(max > min)) return [min];
-  const step = niceStep(max - min, target);
-  const first = Math.ceil(min / step - 1e-9) * step;
-  const ticks: number[] = [];
-  for (let v = first; v <= max + step * 1e-9; v += step) {
-    ticks.push(clean(v, step));
+  const range = max - min;
+  const unit = 10 ** (Math.floor(Math.log10(range)) - 2);
+  for (let k = 0; k < 8; k++) {
+    for (const m of [1, 2, 5]) {
+      const step = m * unit * 10 ** k;
+      const first = Math.ceil(min / step - 1e-9) * step;
+      const ticks: number[] = [];
+      for (let v = first; v <= max + step * 1e-9; v += step) {
+        ticks.push(clean(v, step));
+      }
+      if (ticks.length <= maxTicks) return ticks;
+    }
   }
-  return ticks;
+  return [min, max];
 }
 
 /** Every finite number in a list of readings. */
@@ -281,4 +294,19 @@ export function maxLabelsFitting(
 /** A rough width of a label in dp, from its length and the type size. */
 export function estimateTextWidth(text: string, fontSize: number): number {
   return text.length * fontSize * 0.62;
+}
+
+/**
+ * The range of some readings widened by `pad` each side, for an axis the chart
+ * sets itself (the web's `Math.min(...) - 2`, `Math.max(...) + 2`). A reading
+ * that is missing is left out; with none at all, `fallback` is returned.
+ */
+export function paddedRange(
+  values: readonly Reading[],
+  pad: number,
+  fallback: Domain,
+): Domain {
+  const data = finite(values);
+  if (data.length === 0) return fallback;
+  return { min: Math.min(...data) - pad, max: Math.max(...data) + pad };
 }

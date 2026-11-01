@@ -1,18 +1,18 @@
 /**
- * The 7-day forecast (the web's `DailyForecast`, without the chart): one row
+ * The 7-day forecast (the web's `DailyForecast`): the week chart, then one row
  * per day with the day and date, the condition icon and rain chance, the low,
  * a range bar scaled across the whole week, and the high, then a quiet line of
  * detail (feels-like, rainfall, wind, UV). Dates are the PLACE's calendar days,
  * read as UTC calendar dates so a phone in another zone never shifts a day.
  *
- * On the web this lives on the /forecast page; here it follows the tiles until
- * that page has a screen of its own.
+ * Like the web, it lives on the /forecast page, not on the location page.
  */
 
 import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet, View } from "react-native";
 
 import { WeatherIcon } from "@/components/icons/Icon";
+import { dayName, dayOfMonth } from "@/shared/chart-data";
 import { type WeatherData, uvLevel, weatherCodeToInfo } from "@/shared/weather";
 import { usePageColors } from "@/hooks/usePageColors";
 import {
@@ -26,27 +26,17 @@ import {
   withAlpha,
 } from "@/theme/mzizi";
 
+import { DailyChart } from "./charts/DailyChart";
+import { PageCard } from "./PageCard";
 import { WxText } from "./WxText";
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+export { dayName, dayOfMonth };
 
 /** Position of a temperature within the week's range, 0 to 100 (the web's `tempPercent`). */
 export function tempPercent(temp: number, absMin: number, absMax: number) {
   const range = absMax - absMin;
   if (range === 0) return 50;
   return ((temp - absMin) / range) * 100;
-}
-
-/** "Today", else the short weekday, of a `YYYY-MM-DD` place date. */
-export function dayName(date: string, index: number): string {
-  if (index === 0) return "Today";
-  const d = new Date(`${date.slice(0, 10)}T12:00:00Z`);
-  return Number.isNaN(d.getTime()) ? "—" : WEEKDAYS[d.getUTCDay()];
-}
-
-/** The day of the month of a `YYYY-MM-DD` place date. */
-export function dayOfMonth(date: string): number {
-  return Number(date.slice(8, 10));
 }
 
 export type DayRow = {
@@ -211,45 +201,21 @@ function DayItem({ row }: { row: DayRow }) {
 }
 
 export function DailyCard({ forecast }: { forecast: WeatherData }) {
-  const { colors } = usePageColors();
   const rows = dayRows(forecast);
   if (rows.length === 0) return null;
   return (
-    <View
-      testID="daily-card"
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.card,
-          borderColor: withAlpha(colors.primary, 0.25),
-        },
-      ]}
-    >
-      <WxText
-        type="h6"
-        weight={600}
-        family="serif"
-        color={colors.textPrimary}
-        accessibilityRole="header"
-      >
-        {`${rows.length}-Day Forecast`}
-      </WxText>
+    <PageCard title={`${rows.length}-Day Forecast`} testID="daily-card">
+      <DailyChart daily={forecast.daily} />
       <View style={styles.list} accessibilityRole="list">
         {rows.map((row) => (
           <DayItem key={row.date} row={row} />
         ))}
       </View>
-    </View>
+    </PageCard>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: RADIUS.card,
-    borderWidth: BORDER.rest,
-    padding: SPACE.card,
-    gap: SPACE.stack,
-  },
   list: { gap: SPACE.tight },
   row: {
     borderRadius: RADIUS.input,

@@ -44,7 +44,7 @@ beforeEach(() => {
 });
 
 describe("WeatherPage", () => {
-  it("renders the whole page: sky, hero, Conditions card, tiles and the week", async () => {
+  it("renders the whole page: sky, hero, Conditions card and tiles (the week is on /forecast, as on the web)", async () => {
     const tree = await render(
       <WeatherPage
         weather={harareWeather()}
@@ -63,7 +63,7 @@ describe("WeatherPage", () => {
     // The Conditions card on the sky and the Conditions section of tiles.
     expect(tree.getAllByText("Conditions")).toHaveLength(2);
     expect(tree.getByText("Wind")).toBeTruthy();
-    expect(tree.getByText("7-Day Forecast")).toBeTruthy();
+    expect(tree.queryByText("7-Day Forecast")).toBeNull();
     expect(HAS_EMOJI.test(allText(tree.toJSON()))).toBe(false);
   });
 

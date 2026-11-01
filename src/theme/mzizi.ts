@@ -46,6 +46,8 @@ export const SPACE = {
 export const TYPE = {
   display: { size: 72, leading: 1.1 },
   h2: { size: 36, leading: 1.2 },
+  /** The page title on a sub-route (the web's `.elephant`, `text-3xl`). */
+  h3: { size: 30, leading: 1.25 },
   h4: { size: 24, leading: 1.3 },
   h5: { size: 20, leading: 1.4 },
   h6: { size: 16, leading: 1.4 },

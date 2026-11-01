@@ -38,11 +38,25 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import Svg, { Circle, Line, Path, Rect, Text as SvgText } from "react-native-svg";
+import Svg, {
+  Circle,
+  G,
+  Line,
+  Path,
+  Rect,
+  Text as SvgText,
+} from "react-native-svg";
 
 import { usePageColors } from "@/hooks/usePageColors";
 import { useReduceMotion } from "@/hooks/useReduceMotion";
-import { BORDER, FONT_FILE, RADIUS, SPACE, TYPE, lineHeightOf, withAlpha } from "@/theme/mzizi";
+import {
+  BORDER,
+  FONT_FILE,
+  SPACE,
+  TYPE,
+  lineHeightOf,
+  withAlpha,
+} from "@/theme/mzizi";
 import { type SeriesKey, seriesColors } from "@/theme/wx-series";
 
 import { WxText } from "../WxText";
@@ -81,7 +95,7 @@ export interface TimeSeriesChartProps {
   /** The chart's accessible name, for example "Temperature, next 24 hours". */
   title: string;
   /** One object per point: the label field and a number (or null) per series key. */
-  data: Record<string, unknown>[];
+  data: readonly object[];
   /** Which field of a point is its x label. */
   labelKey: string;
   series: SeriesConfig[];
@@ -124,6 +138,10 @@ export const CHART = {
 
 /** The most the readout row reserves, in lines, so selecting never moves the chart. */
 const READOUT_LINES = 2;
+
+function fieldOf(point: object, key: string): unknown {
+  return (point as Record<string, unknown>)[key];
+}
 
 function numberOf(v: unknown): Reading {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
@@ -181,7 +199,7 @@ export function TimeSeriesChart({
 
   const fontSize = TYPE.caption.size * Math.min(fontScale, CHART.maxFontScale);
   const labels = useMemo(
-    () => data.map((d) => String(d[labelKey] ?? "")),
+    () => data.map((d) => String(fieldOf(d, labelKey) ?? "")),
     [data, labelKey],
   );
   const specs: SeriesSpec[] = useMemo(
@@ -195,7 +213,7 @@ export function TimeSeriesChart({
         axisId: s.yAxisID ?? DEFAULT_AXIS,
         order: s.order ?? (s.type === "bar" ? 2 : 1),
         showDots: s.showDots ?? showDots,
-        values: data.map((d) => numberOf(d[s.key])),
+        values: data.map((d) => numberOf(fieldOf(d, s.key))),
       })),
     [data, series, showDots],
   );
@@ -408,7 +426,7 @@ export function TimeSeriesChart({
               const cfg = series.find((s) => s.key === drawn.spec.key) as SeriesConfig;
               const color = colorOf(cfg);
               return (
-                <View key={drawn.spec.key}>
+                <G key={drawn.spec.key}>
                   {drawn.areas.map((d, n) => (
                     <Path
                       key={`a${n}`}
@@ -448,7 +466,7 @@ export function TimeSeriesChart({
                   {drawn.dots.map((p) => (
                     <Circle key={`d${p.x}`} cx={p.x} cy={p.y} r={CHART.dot} fill={color} />
                   ))}
-                </View>
+                </G>
               );
             })}
 
@@ -499,5 +517,3 @@ const styles = StyleSheet.create({
   },
   item: { flexDirection: "row", alignItems: "center", gap: SPACE.hair },
 });
-
-export { RADIUS };

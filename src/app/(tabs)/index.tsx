@@ -27,12 +27,19 @@ import { WeatherError, WeatherPage } from "@/components/weather/WeatherPage";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
 
 /** Harare, Mukoko's editorial default, used when there is no location fix. */
-const FALLBACK = { lat: -17.8252, lon: 31.0335, label: "Harare" };
+const FALLBACK = {
+  lat: -17.8252,
+  lon: 31.0335,
+  label: "Harare",
+  slug: "harare",
+};
 
 type Coords = {
   lat: number;
   lon: number;
   label?: string;
+  /** The place's slug, for the links to its forecast and atmosphere pages. */
+  slug?: string;
   /** True for the Harare default: not the person's own location. */
   fallback?: boolean;
 };
@@ -64,10 +71,12 @@ export default function WeatherHome() {
 
   /** Name the exact place under a GPS fix (nothing is stored). */
   const resolveName = useCallback(
-    async (loc: Coords): Promise<string | null> => {
+    async (loc: Coords): Promise<{ name: string; slug: string } | null> => {
       try {
         const { location } = await geoLookup(loc.lat, loc.lon, true);
-        return location?.name ?? null;
+        return location
+          ? { name: location.name, slug: location.slug }
+          : null;
       } catch {
         return null;
       }
@@ -94,8 +103,14 @@ export default function WeatherHome() {
       // geocode never holds the first paint.
       void load(loc);
       if (loc.label) return;
-      const name = await resolveName(loc);
-      if (name) setCoords((prev) => ({ ...(prev ?? loc), label: name }));
+      const place = await resolveName(loc);
+      if (place) {
+        setCoords((prev) => ({
+          ...(prev ?? loc),
+          label: place.name,
+          slug: place.slug,
+        }));
+      }
     })();
   }, [load, resolveLocation, resolveName]);
 
@@ -123,6 +138,7 @@ export default function WeatherHome() {
     <WeatherPage
       weather={state.weather}
       name={name}
+      slug={coords?.slug}
       isCurrentLocation={Boolean(coords && !coords.fallback)}
       onRefresh={onRefresh}
       refreshing={refreshing}

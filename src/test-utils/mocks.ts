@@ -26,14 +26,18 @@ export function setInsets(insets: Insets) {
 }
 
 export function routerMock() {
+  const router = {
+    navigate: jest.fn(),
+    push: jest.fn(),
+    back: jest.fn(),
+    replace: jest.fn(),
+    canGoBack: jest.fn(() => true),
+  };
   return {
-    router: {
-      navigate: jest.fn(),
-      push: jest.fn(),
-      back: jest.fn(),
-      replace: jest.fn(),
-      canGoBack: jest.fn(() => true),
-    },
+    router,
+    useRouter: () => router,
+    Stack: { Screen: () => null },
+    useLocalSearchParams: () => (globalThis as { __params?: object }).__params ?? {},
     useFocusEffect: (cb: () => void | (() => void)) => {
       React.useEffect(cb, [cb]);
     },

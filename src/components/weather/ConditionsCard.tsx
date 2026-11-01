@@ -24,6 +24,7 @@ import { type WeatherData, weatherCodeToInfo } from "@/shared/weather";
 import { BORDER, RADIUS, SIZE, SPACE, withAlpha } from "@/theme/mzizi";
 import { SKY_FG, SKY_FG_DIM, SKY_SURFACE } from "@/theme/sky";
 
+import { SectionHeader } from "./SectionHeader";
 import { WxText } from "./WxText";
 
 /** Hours in the strip. */
@@ -68,9 +69,15 @@ export function hourTiles(forecast: WeatherData, now: Date): HourTile[] {
 export type ConditionsCardProps = {
   forecast: WeatherData;
   now: Date;
+  /** Opens the place's /forecast page; no link without it. */
+  onOpenForecast?: () => void;
 };
 
-export function ConditionsCard({ forecast, now }: ConditionsCardProps) {
+export function ConditionsCard({
+  forecast,
+  now,
+  onOpenForecast,
+}: ConditionsCardProps) {
   const hours = hourTiles(forecast, now);
   if (hours.length === 0) return null;
   const outlook = heroOutlook(
@@ -90,15 +97,21 @@ export function ConditionsCard({ forecast, now }: ConditionsCardProps) {
         },
       ]}
     >
-      <WxText
-        type="h6"
-        weight={600}
-        family="serif"
-        color={SKY_FG}
-        accessibilityRole="header"
-      >
-        Conditions
-      </WxText>
+      <SectionHeader
+        title="Conditions"
+        titleColor={SKY_FG}
+        actionColor={SKY_FG}
+        action={
+          onOpenForecast
+            ? {
+                label: "Full forecast",
+                spoken: "Full forecast, hourly and 7-day",
+                onPress: onOpenForecast,
+                testID: "full-forecast-link",
+              }
+            : undefined
+        }
+      />
       {outlook ? (
         <View style={[styles.outlook, { borderBottomColor: hairline }]}>
           <WxText type="body" color={SKY_FG_DIM}>
