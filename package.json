@@ -58,6 +58,7 @@
     "lint": "vp lint",
     "lint:expo": "expo lint",
     "typecheck": "tsc --noEmit",
+    "check:cloudflare-only": "node scripts/check-cloudflare-only.mjs",
     "test": "jest",
     "test:watch": "jest --watch",
     "check": "vp check",

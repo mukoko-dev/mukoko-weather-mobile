@@ -1,0 +1,14 @@
+{
+  "location": {
+    "country": "ZW",
+    "elevation": 1490.0,
+    "lat": -17.83,
+    "lon": 31.05,
+    "name": "Harare",
+    "province": "Harare",
+    "provinceSlug": "harare-zw",
+    "slug": "harare",
+    "source": "seed",
+    "tags": ["city", "education"]
+  }
+}

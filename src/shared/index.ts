@@ -54,7 +54,6 @@ export type {
   Season,
 } from "./weather";
 export {
-  fetchWeather,
   checkFrostRisk,
   weatherCodeToInfo,
   getDefaultSeason,

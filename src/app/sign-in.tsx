@@ -2,6 +2,9 @@
  * Sign-in launcher. Kicks off the WorkOS AuthKit hosted page via
  * expo-web-browser. The redirect lands on /sign-in-callback which finishes
  * the code exchange.
+ *
+ * While the backend has no route to exchange the code (`SIGN_IN_AVAILABLE`),
+ * the screen says so plainly and does not open the browser.
  */
 
 import { router } from "expo-router";
@@ -9,7 +12,12 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { completeSignIn, startSignIn } from "@/api/auth";
+import {
+  completeSignIn,
+  SIGN_IN_AVAILABLE,
+  SIGN_IN_UNAVAILABLE_MESSAGE,
+  startSignIn,
+} from "@/api/auth";
 import { RADIUS, SPACING } from "@/brand/tokens";
 import { BrandText } from "@/components/BrandText";
 import { usePalette } from "@/hooks/usePalette";
@@ -27,7 +35,7 @@ export default function SignInScreen() {
       setBusy(false);
       return;
     }
-    if (result.type === "error") {
+    if (result.type === "error" || result.type === "unavailable") {
       setError(result.message);
       setBusy(false);
       return;
@@ -55,7 +63,13 @@ export default function SignInScreen() {
           across the web app and your phone.
         </BrandText>
 
-        {error ? (
+        {!SIGN_IN_AVAILABLE ? (
+          <BrandText variant="body" tone="textSecondary">
+            {SIGN_IN_UNAVAILABLE_MESSAGE}
+          </BrandText>
+        ) : null}
+
+        {error && SIGN_IN_AVAILABLE ? (
           <BrandText variant="small" tone="terracotta">
             {error}
           </BrandText>
@@ -63,17 +77,27 @@ export default function SignInScreen() {
 
         <Pressable
           onPress={onPress}
-          disabled={busy}
+          disabled={busy || !SIGN_IN_AVAILABLE}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: busy || !SIGN_IN_AVAILABLE }}
           style={[
             styles.btn,
-            { backgroundColor: busy ? palette.surfaceDim : palette.primary },
+            {
+              backgroundColor:
+                busy || !SIGN_IN_AVAILABLE
+                  ? palette.surfaceDim
+                  : palette.primary,
+            },
           ]}
         >
           {busy ? (
             <ActivityIndicator color={palette.textInverse} />
           ) : (
-            <BrandText variant="bodyBold" tone="textInverse">
-              Continue
+            <BrandText
+              variant="bodyBold"
+              tone={SIGN_IN_AVAILABLE ? "textInverse" : "textSecondary"}
+            >
+              {SIGN_IN_AVAILABLE ? "Continue" : "Not available yet"}
             </BrandText>
           )}
         </Pressable>
