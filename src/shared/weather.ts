@@ -31,6 +31,8 @@ export interface HourlyWeather {
   wind_gusts_10m: number[];
   uv_index: number[];
   is_day: number[];
+  /** Present when the model supplies it (the web's type has it). */
+  dew_point_2m?: (number | null)[];
 }
 
 export interface DailyWeather {

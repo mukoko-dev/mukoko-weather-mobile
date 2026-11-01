@@ -1,0 +1,34 @@
+{
+  "advice": [
+    "Sensitive groups should cut back on prolonged outdoor exertion.",
+    "Air is worst around 06:00; plan outdoor work and travel for another time."
+  ],
+  "aod": 0.06,
+  "attribution": "Air quality and visibility: Open-Meteo (CAMS aerosol model, free, no key). Heuristic classification by mukoko weather; not an official alert.",
+  "available": true,
+  "dust": 0.0,
+  "fetchedAt": "2026-11-01T02:15:30Z",
+  "headline": "Light smog",
+  "level": "light",
+  "official": null,
+  "peakTime": "2026-11-01T06:00",
+  "pm25": 20.4,
+  "pm25Mean": 12.9,
+  "reason": null,
+  "relativeHumidity": 70.0,
+  "season": {
+    "active": false,
+    "name": "Southern African burning season",
+    "typicalMonths": [
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "typicalType": "smoke"
+  },
+  "type": "smog",
+  "usAqi": 54,
+  "visibilityKm": 32.2
+}
