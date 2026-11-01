@@ -55,6 +55,9 @@ export type WeatherResponse = {
     country?: string;
     lat: number;
     lon: number;
+    elevation?: number;
+    source?: string;
+    address?: string;
   };
   current: CurrentConditions;
   daily: DailyForecast[];
@@ -66,6 +69,8 @@ export type WeatherResponse = {
    * to start at the current hour.
    */
   forecast?: WeatherData;
+  /** The terrain height in metres the forecast used for this exact point. */
+  forecastElevation?: number;
   /** Where the forecast came from. `fallback` is a seasonal estimate. */
   source?: "tomorrow" | "open-meteo" | "fallback";
   fetchedAt?: string;
@@ -84,6 +89,7 @@ type WireWeather = {
   daily?: Record<string, unknown>;
   timezone?: unknown;
   utc_offset_seconds?: unknown;
+  elevation?: unknown;
 };
 
 /** Where the answer came from, from the `X-Weather-Provider` header. */
@@ -272,11 +278,15 @@ export function toWeatherResponse(
       country: place.country,
       lat: place.lat,
       lon: place.lon,
+      elevation: place.elevation,
+      source: place.source,
+      address: place.address,
     },
     current,
     daily: toDaily(raw.daily),
     hourly: alignHourly(raw.hourly, current.observedAt),
     forecast: toForecast(raw),
+    forecastElevation: num(raw.elevation) ?? undefined,
     source: sourceOf(meta.provider),
     fetchedAt: meta.fetchedAt ?? undefined,
     timezone: typeof raw.timezone === "string" ? raw.timezone : undefined,

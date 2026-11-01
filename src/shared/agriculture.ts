@@ -214,7 +214,8 @@ export function cropLabel(id: string): string {
 // ---------------------------------------------------------------------------
 
 export interface AgriLocationRef {
-  slug: string;
+  /** The place's slug; a bare coordinate has none and the Worker places it by point. */
+  slug?: string;
   lat: number;
   lon: number;
   country?: string;
@@ -231,8 +232,8 @@ export function agricultureQuery(
   const query: Record<string, string> = {
     lat: String(location.lat),
     lon: String(location.lon),
-    location: location.slug,
   };
+  if (location.slug) query.location = location.slug;
   if (location.country) query.country = location.country;
   if (crops.length) query.crops = crops.join(",");
   return query;

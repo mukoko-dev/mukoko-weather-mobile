@@ -30,6 +30,8 @@ export type LocationSummary = {
   source?: string;
   /** Set when the answer names an area (a country or region), not a place. */
   area?: string;
+  /** The street address the place was named from (Nominatim's display name). */
+  address?: string;
 };
 
 export type SearchResponse = {
@@ -49,6 +51,7 @@ type WireLocation = {
   tags?: unknown;
   source?: unknown;
   area?: unknown;
+  nominatimAddress?: unknown;
 };
 
 function str(v: unknown): string | undefined {
@@ -57,6 +60,12 @@ function str(v: unknown): string | undefined {
 
 function finite(v: unknown): number | undefined {
   return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+}
+
+/** The address line a place was named from, when the answer carries one. */
+function displayNameOf(v: unknown): string | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  return str((v as { displayName?: unknown }).displayName);
 }
 
 /** A place with a slug, a name and a coordinate; anything else is dropped. */
@@ -81,6 +90,7 @@ export function toLocationSummary(raw: unknown): LocationSummary | null {
       : undefined,
     source: str(w.source),
     area: str(w.area),
+    address: displayNameOf(w.nominatimAddress),
   };
 }
 

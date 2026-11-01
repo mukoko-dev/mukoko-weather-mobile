@@ -38,6 +38,21 @@ describe("toLocationSummary", () => {
     });
   });
 
+  it("carries the address a place was named from", () => {
+    const named = toLocationSummary(geoAutocreate.nearest);
+    expect(named?.address).toContain("Harare");
+    expect(toLocationSummary(locationHarare.location)?.address).toBeUndefined();
+    expect(
+      toLocationSummary({
+        slug: "a",
+        name: "A",
+        lat: 1,
+        lon: 2,
+        nominatimAddress: { displayName: "" },
+      })?.address,
+    ).toBeUndefined();
+  });
+
   it("carries the area flag of a country or region", () => {
     const area = toLocationSummary({
       slug: "zimbabwe--kwek",

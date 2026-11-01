@@ -115,6 +115,11 @@ describe("ROUTES", () => {
       locations: "/v1/locations",
       devices: "/v1/devices",
       chat: "/v1/ai/chat",
+      normals: "/v1/normals",
+      history: "/v1/history",
+      agriculture: "/v1/agriculture",
+      enso: "/v1/enso",
+      profile: "/v1/locations/profile",
     });
   });
 });

@@ -93,6 +93,13 @@ describe("agricultureQuery", () => {
       location: "x",
     });
   });
+
+  it("asks by point alone for a place with no slug", () => {
+    expect(agricultureQuery({ lat: 1, lon: 2 })).toEqual({
+      lat: "1",
+      lon: "2",
+    });
+  });
 });
 
 describe("status + risk tones", () => {
