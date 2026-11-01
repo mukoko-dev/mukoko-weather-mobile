@@ -1,0 +1,439 @@
+{
+ "admin1": "Harare",
+ "agriculture": {
+  "calendarRef": {
+   "country": "ZW",
+   "region": "Mashonaland East",
+   "source": "GEOGLAM Crop Monitor Sub-National Crop Calendars (CM4EW) v1.3"
+  },
+  "crops": [
+   {
+    "crop": "maize",
+    "cropLabel": "Maize",
+    "season": null,
+    "stages": {
+     "endOfSeason": 136,
+     "harvest": 91,
+     "outOfSeason": 167,
+     "planting": 305,
+     "vegetative": 350
+    }
+   },
+   {
+    "crop": "sorghum",
+    "cropLabel": "Sorghum",
+    "season": null,
+    "stages": {
+     "endOfSeason": 106,
+     "harvest": 75,
+     "outOfSeason": 136,
+     "planting": 320,
+     "vegetative": 1
+    }
+   },
+   {
+    "crop": "winter-wheat",
+    "cropLabel": "Winter wheat",
+    "season": null,
+    "stages": {
+     "endOfSeason": 305,
+     "harvest": 244,
+     "outOfSeason": 335,
+     "planting": 106,
+     "vegetative": 182
+    }
+   }
+  ],
+  "derived": {
+   "basis": "months with 60 mm or more of normal rainfall",
+   "method": "derived",
+   "months": [
+    1,
+    2,
+    3,
+    11,
+    12
+   ]
+  },
+  "grazing": {
+   "coldMonths": [],
+   "dryMonths": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "method": "derived",
+   "note": "normal rain under 30 mm in 7 months, when forage and surface water are usually scarcer"
+  }
+ },
+ "builtAt": "2026-11-01T02:16:20.010000+00:00",
+ "climate": {
+  "koppen": {
+   "code": "Cwb",
+   "label": "subtropical highland, dry winter",
+   "method": "derived"
+  },
+  "normals": {
+   "cell": "-17.75_31.00",
+   "monthly": [
+    {
+     "meanHighC": 24.8,
+     "meanLowC": 16.4,
+     "meanTempC": 20.2,
+     "month": 1,
+     "precipMm": 212.9,
+     "rainyDays": 20.6
+    },
+    {
+     "meanHighC": 24.7,
+     "meanLowC": 16.3,
+     "meanTempC": 20.1,
+     "month": 2,
+     "precipMm": 142.9,
+     "rainyDays": 16.2
+    },
+    {
+     "meanHighC": 24.5,
+     "meanLowC": 15.5,
+     "meanTempC": 19.7,
+     "month": 3,
+     "precipMm": 93.1,
+     "rainyDays": 13.0
+    },
+    {
+     "meanHighC": 23.7,
+     "meanLowC": 13.2,
+     "meanTempC": 18.3,
+     "month": 4,
+     "precipMm": 27.7,
+     "rainyDays": 4.8
+    },
+    {
+     "meanHighC": 22.4,
+     "meanLowC": 10.7,
+     "meanTempC": 16.4,
+     "month": 5,
+     "precipMm": 6.3,
+     "rainyDays": 1.5
+    },
+    {
+     "meanHighC": 20.5,
+     "meanLowC": 8.4,
+     "meanTempC": 14.3,
+     "month": 6,
+     "precipMm": 1.6,
+     "rainyDays": 0.3
+    },
+    {
+     "meanHighC": 20.3,
+     "meanLowC": 7.9,
+     "meanTempC": 13.9,
+     "month": 7,
+     "precipMm": 1.3,
+     "rainyDays": 0.3
+    },
+    {
+     "meanHighC": 23.4,
+     "meanLowC": 9.8,
+     "meanTempC": 16.5,
+     "month": 8,
+     "precipMm": 0.7,
+     "rainyDays": 0.2
+    },
+    {
+     "meanHighC": 26.8,
+     "meanLowC": 12.9,
+     "meanTempC": 19.8,
+     "month": 9,
+     "precipMm": 3.2,
+     "rainyDays": 0.9
+    },
+    {
+     "meanHighC": 28.3,
+     "meanLowC": 15.3,
+     "meanTempC": 21.7,
+     "month": 10,
+     "precipMm": 21.0,
+     "rainyDays": 4.1
+    },
+    {
+     "meanHighC": 27.4,
+     "meanLowC": 16.5,
+     "meanTempC": 21.7,
+     "month": 11,
+     "precipMm": 77.2,
+     "rainyDays": 12.2
+    },
+    {
+     "meanHighC": 25.3,
+     "meanLowC": 16.5,
+     "meanTempC": 20.5,
+     "month": 12,
+     "precipMm": 177.8,
+     "rainyDays": 20.2
+    }
+   ],
+   "period": "1991–2020"
+  }
+ },
+ "complete": true,
+ "countryCode": "ZW",
+ "crops": [
+  {
+   "calendar": {
+    "grow": [
+     12,
+     1,
+     2,
+     3
+    ],
+    "harvest": [
+     4,
+     5
+    ],
+    "plant": [
+     11,
+     12
+    ]
+   },
+   "id": "crop-farming",
+   "label": "Maize",
+   "phase": "planting",
+   "season": null,
+   "source": "GEOGLAM Crop Monitor Sub-National Crop Calendars (CM4EW) v1.3"
+  }
+ ],
+ "current": {
+  "astronomy": {
+   "dayLengthChangeMinutes7d": 6.6,
+   "dayLengthHours": 12.8,
+   "sunrise": "05:15",
+   "sunset": "18:03",
+   "trend": "lengthening"
+  },
+  "cropPhases": [
+   {
+    "crop": "maize",
+    "cropLabel": "Maize",
+    "nextPhase": "vegetative",
+    "nextPhaseLabel": "Vegetative to reproductive",
+    "nextPhaseOn": "2026-12-16",
+    "phase": "planting",
+    "phaseLabel": "Planting to early vegetative",
+    "season": null
+   },
+   {
+    "crop": "sorghum",
+    "cropLabel": "Sorghum",
+    "nextPhase": "planting",
+    "nextPhaseLabel": "Planting to early vegetative",
+    "nextPhaseOn": "2026-11-16",
+    "phase": "outOfSeason",
+    "phaseLabel": "Out of season",
+    "season": null
+   },
+   {
+    "crop": "winter-wheat",
+    "cropLabel": "Winter wheat",
+    "nextPhase": "outOfSeason",
+    "nextPhaseLabel": "Out of season",
+    "nextPhaseOn": "2026-12-01",
+    "phase": "endOfSeason",
+    "phaseLabel": "End of harvest",
+    "season": null
+   }
+  ],
+  "date": "2026-11-01",
+  "enso": {
+   "oni": 2.16,
+   "phase": "El Niño",
+   "season": "JAS 2026",
+   "source": "NOAA CPC ONI",
+   "strength": "very strong"
+  },
+  "inDerivedGrowingWindow": true,
+  "month": 11,
+  "moon": {
+   "name": "last quarter",
+   "phase": 6
+  },
+  "nextSeason": {
+   "localName": "Munakamwe",
+   "name": "Short rains",
+   "startsOn": "2027-04-01"
+  },
+  "normalsThisMonth": {
+   "meanHighC": 27.4,
+   "meanLowC": 16.5,
+   "meanTempC": 21.7,
+   "month": 11,
+   "precipMm": 77.2,
+   "rainyDays": 12.2
+  },
+  "season": {
+   "description": "Flooding, road damage, planting",
+   "localName": "Masika",
+   "name": "Main rains",
+   "source": "seed",
+   "verified": true
+  }
+ },
+ "elevationMeters": 1490.0,
+ "enso": {
+  "oni": 2.16,
+  "phase": "El Niño"
+ },
+ "hemisphere": "south",
+ "koppen": "Cwb",
+ "lat": -17.83,
+ "lon": 31.05,
+ "name": "Harare",
+ "normals": {
+  "high": 27.4,
+  "low": 16.5
+ },
+ "placeCollection": "placesGeo",
+ "placeId": "seed:harare",
+ "provenance": [
+  {
+   "attribution": "Copernicus Climate Change Service ERA5 reanalysis, via Open-Meteo",
+   "field": "climate.normals",
+   "licence": "CC-BY-4.0",
+   "method": "modelled",
+   "retrievedAt": "2026-11-01T02:16:20.010000+00:00",
+   "source": "ERA5 via Open-Meteo, 1991–2020",
+   "url": "https://open-meteo.com/en/docs/historical-weather-api"
+  },
+  {
+   "attribution": "Classification definitions: Beck et al. (2018), Scientific Data 5, 180214",
+   "field": "climate.koppen",
+   "licence": null,
+   "method": "derived",
+   "retrievedAt": "2026-11-01T02:16:20.010000+00:00",
+   "source": "Köppen–Geiger rules applied to the ERA5 normals of the 0.25° cell",
+   "url": "https://doi.org/10.1038/sdata.2018.214"
+  },
+  {
+   "attribution": null,
+   "field": "addressCountry,addressRegion",
+   "licence": null,
+   "method": "observed",
+   "retrievedAt": "2026-11-01T02:16:20.010000+00:00",
+   "source": "places.placesGeo",
+   "url": null
+  },
+  {
+   "attribution": null,
+   "field": "elevationMeters",
+   "licence": null,
+   "method": "observed",
+   "retrievedAt": "2026-11-01T02:16:20.010000+00:00",
+   "source": "place record",
+   "url": null
+  },
+  {
+   "attribution": null,
+   "field": "timeZone",
+   "licence": null,
+   "method": "observed",
+   "retrievedAt": "2026-11-01T02:16:20.010000+00:00",
+   "source": "Open-Meteo time-zone lookup (IANA tz database)",
+   "url": null
+  },
+  {
+   "attribution": null,
+   "field": "seasons",
+   "licence": null,
+   "method": "seed",
+   "retrievedAt": "2026-11-01T02:16:20.010000+00:00",
+   "source": "mukoko season calendar (weather.seasons, seed-seasons.ts)",
+   "url": null
+  },
+  {
+   "attribution": "Becker-Reshef, I., Barker, B. et al., GEOGLAM Crop Monitor Sub-National Crop Calendars, v1.3 (2025), doi:10.5281/zenodo.15850408",
+   "field": "agriculture.crops",
+   "licence": "CC-BY-4.0",
+   "method": "seed",
+   "retrievedAt": "2026-11-01T02:16:20.010000+00:00",
+   "source": "GEOGLAM Crop Monitor Sub-National Crop Calendars (CM4EW) v1.3",
+   "url": "https://doi.org/10.5281/zenodo.15850408"
+  },
+  {
+   "attribution": null,
+   "field": "agriculture.derived,agriculture.grazing",
+   "licence": null,
+   "method": "derived",
+   "retrievedAt": "2026-11-01T02:16:20.010000+00:00",
+   "source": "Derived from ERA5 1991–2020 normals",
+   "url": null
+  }
+ ],
+ "refreshAfter": {
+  "agriculture": "2027-04-30T02:16:20.010000+00:00",
+  "normals": "2027-11-01T02:16:20.010000+00:00",
+  "seasons": "2026-12-01T02:16:20.010000+00:00",
+  "soil": "2026-11-02T02:16:20.010000+00:00"
+ },
+ "regionCell": "ksy4d",
+ "season": {
+  "description": "Flooding, road damage, planting",
+  "localName": "Masika",
+  "name": "Main rains",
+  "source": "seed",
+  "verified": true
+ },
+ "seasons": {
+  "calendar": [
+   {
+    "description": "Harvest, late rains",
+    "localName": "Munakamwe",
+    "months": [
+     4
+    ],
+    "name": "Short rains"
+   },
+   {
+    "description": "Frost, cold snaps, veld fires",
+    "localName": "Chirimo",
+    "months": [
+     5,
+     6,
+     7,
+     8
+    ],
+    "name": "Cool dry"
+   },
+   {
+    "description": "Heat stress, UV, water scarcity",
+    "localName": "Zhizha",
+    "months": [
+     9,
+     10
+    ],
+    "name": "Hot dry"
+   },
+   {
+    "description": "Flooding, road damage, planting",
+    "localName": "Masika",
+    "months": [
+     11,
+     12,
+     1,
+     2,
+     3
+    ],
+    "name": "Main rains"
+   }
+  ],
+  "source": "seed",
+  "verified": true
+ },
+ "slug": "harare",
+ "soil": null,
+ "stored": false,
+ "timeZone": "Africa/Harare"
+}

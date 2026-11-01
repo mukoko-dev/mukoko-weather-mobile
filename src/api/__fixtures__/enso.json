@@ -1,0 +1,42 @@
+{
+ "available": true,
+ "fetchedAt": "2026-10-31T23:41:26Z",
+ "oni": 2.16,
+ "phase": "El Niño",
+ "season": "JAS",
+ "series": [
+  {
+   "oni": 0.11,
+   "season": "FMA",
+   "year": 2026
+  },
+  {
+   "oni": 0.46,
+   "season": "MAM",
+   "year": 2026
+  },
+  {
+   "oni": 0.95,
+   "season": "AMJ",
+   "year": 2026
+  },
+  {
+   "oni": 1.39,
+   "season": "MJJ",
+   "year": 2026
+  },
+  {
+   "oni": 1.8,
+   "season": "JJA",
+   "year": 2026
+  },
+  {
+   "oni": 2.16,
+   "season": "JAS",
+   "year": 2026
+  }
+ ],
+ "source": "NOAA CPC ONI",
+ "strength": "very strong",
+ "year": 2026
+}

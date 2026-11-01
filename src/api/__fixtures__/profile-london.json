@@ -1,0 +1,329 @@
+{
+ "admin1": null,
+ "agriculture": {
+  "calendarRef": null,
+  "crops": [],
+  "derived": {
+   "basis": "months with a mean temperature of 10 °C or more",
+   "method": "derived",
+   "months": [
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ]
+  },
+  "grazing": {
+   "coldMonths": [
+    1
+   ],
+   "dryMonths": [],
+   "method": "derived",
+   "note": "mean temperature under 5 °C in 1 months, with little pasture growth"
+  }
+ },
+ "builtAt": "2026-11-01T02:16:54.725000+00:00",
+ "climate": {
+  "koppen": {
+   "code": "Cfb",
+   "label": "temperate oceanic",
+   "method": "derived"
+  },
+  "normals": {
+   "cell": "51.50_0.00",
+   "monthly": [
+    {
+     "meanHighC": 7.5,
+     "meanLowC": 2.2,
+     "meanTempC": 4.9,
+     "month": 1,
+     "precipMm": 53.0,
+     "rainyDays": 11.1
+    },
+    {
+     "meanHighC": 8.1,
+     "meanLowC": 2.0,
+     "meanTempC": 5.1,
+     "month": 2,
+     "precipMm": 45.6,
+     "rainyDays": 9.4
+    },
+    {
+     "meanHighC": 10.6,
+     "meanLowC": 3.3,
+     "meanTempC": 7.0,
+     "month": 3,
+     "precipMm": 42.5,
+     "rainyDays": 10.1
+    },
+    {
+     "meanHighC": 13.6,
+     "meanLowC": 5.1,
+     "meanTempC": 9.4,
+     "month": 4,
+     "precipMm": 49.2,
+     "rainyDays": 11.1
+    },
+    {
+     "meanHighC": 16.8,
+     "meanLowC": 8.2,
+     "meanTempC": 12.7,
+     "month": 5,
+     "precipMm": 52.6,
+     "rainyDays": 10.1
+    },
+    {
+     "meanHighC": 19.7,
+     "meanLowC": 11.3,
+     "meanTempC": 15.7,
+     "month": 6,
+     "precipMm": 56.0,
+     "rainyDays": 9.8
+    },
+    {
+     "meanHighC": 21.9,
+     "meanLowC": 13.5,
+     "meanTempC": 17.8,
+     "month": 7,
+     "precipMm": 56.6,
+     "rainyDays": 10.4
+    },
+    {
+     "meanHighC": 21.6,
+     "meanLowC": 13.4,
+     "meanTempC": 17.6,
+     "month": 8,
+     "precipMm": 61.5,
+     "rainyDays": 9.8
+    },
+    {
+     "meanHighC": 18.8,
+     "meanLowC": 11.2,
+     "meanTempC": 15.0,
+     "month": 9,
+     "precipMm": 46.5,
+     "rainyDays": 8.8
+    },
+    {
+     "meanHighC": 14.8,
+     "meanLowC": 8.4,
+     "meanTempC": 11.6,
+     "month": 10,
+     "precipMm": 58.7,
+     "rainyDays": 10.6
+    },
+    {
+     "meanHighC": 10.5,
+     "meanLowC": 4.9,
+     "meanTempC": 7.8,
+     "month": 11,
+     "precipMm": 60.5,
+     "rainyDays": 11.1
+    },
+    {
+     "meanHighC": 7.8,
+     "meanLowC": 2.8,
+     "meanTempC": 5.4,
+     "month": 12,
+     "precipMm": 56.7,
+     "rainyDays": 11.2
+    }
+   ],
+   "period": "1991–2020"
+  }
+ },
+ "complete": true,
+ "countryCode": null,
+ "crops": [],
+ "current": {
+  "astronomy": {
+   "dayLengthChangeMinutes7d": -25.2,
+   "dayLengthHours": 9.5,
+   "sunrise": "06:59",
+   "sunset": "16:29",
+   "trend": "shortening"
+  },
+  "cropPhases": [],
+  "date": "2026-11-01",
+  "enso": {
+   "oni": 2.16,
+   "phase": "El Niño",
+   "season": "JAS 2026",
+   "source": "NOAA CPC ONI",
+   "strength": "very strong"
+  },
+  "inDerivedGrowingWindow": false,
+  "month": 11,
+  "moon": {
+   "name": "last quarter",
+   "phase": 6
+  },
+  "nextSeason": {
+   "localName": null,
+   "name": "Winter",
+   "startsOn": "2026-12-01"
+  },
+  "normalsThisMonth": {
+   "meanHighC": 10.5,
+   "meanLowC": 4.9,
+   "meanTempC": 7.8,
+   "month": 11,
+   "precipMm": 60.5,
+   "rainyDays": 11.1
+  },
+  "season": {
+   "description": "Meteorological season",
+   "localName": null,
+   "name": "Autumn",
+   "source": "derived",
+   "verified": false
+  }
+ },
+ "elevationMeters": 4.0,
+ "enso": {
+  "oni": 2.16,
+  "phase": "El Niño"
+ },
+ "hemisphere": "north",
+ "koppen": "Cfb",
+ "lat": 51.5,
+ "lon": -0.12,
+ "name": null,
+ "normals": {
+  "high": 10.5,
+  "low": 4.9
+ },
+ "placeCollection": null,
+ "placeId": null,
+ "provenance": [
+  {
+   "attribution": "Copernicus Climate Change Service ERA5 reanalysis, via Open-Meteo",
+   "field": "climate.normals",
+   "licence": "CC-BY-4.0",
+   "method": "modelled",
+   "retrievedAt": "2026-11-01T02:16:54.725000+00:00",
+   "source": "ERA5 via Open-Meteo, 1991–2020",
+   "url": "https://open-meteo.com/en/docs/historical-weather-api"
+  },
+  {
+   "attribution": "Classification definitions: Beck et al. (2018), Scientific Data 5, 180214",
+   "field": "climate.koppen",
+   "licence": null,
+   "method": "derived",
+   "retrievedAt": "2026-11-01T02:16:54.725000+00:00",
+   "source": "Köppen–Geiger rules applied to the ERA5 normals of the 0.25° cell",
+   "url": "https://doi.org/10.1038/sdata.2018.214"
+  },
+  {
+   "attribution": null,
+   "field": "addressCountry,addressRegion",
+   "licence": null,
+   "method": "observed",
+   "retrievedAt": "2026-11-01T02:16:54.725000+00:00",
+   "source": "places.placesGeo",
+   "url": null
+  },
+  {
+   "attribution": null,
+   "field": "elevationMeters",
+   "licence": null,
+   "method": "modelled",
+   "retrievedAt": "2026-11-01T02:16:54.725000+00:00",
+   "source": "Open-Meteo elevation (Copernicus DEM, 90 m) at the cell centre",
+   "url": null
+  },
+  {
+   "attribution": null,
+   "field": "timeZone",
+   "licence": null,
+   "method": "observed",
+   "retrievedAt": "2026-11-01T02:16:54.725000+00:00",
+   "source": "Open-Meteo time-zone lookup (IANA tz database)",
+   "url": null
+  },
+  {
+   "attribution": null,
+   "field": "seasons",
+   "licence": null,
+   "method": "derived",
+   "retrievedAt": "2026-11-01T02:16:54.725000+00:00",
+   "source": "Derived from hemisphere and ERA5 normals",
+   "url": null
+  },
+  {
+   "attribution": null,
+   "field": "agriculture.derived,agriculture.grazing",
+   "licence": null,
+   "method": "derived",
+   "retrievedAt": "2026-11-01T02:16:54.725000+00:00",
+   "source": "Derived from ERA5 1991–2020 normals",
+   "url": null
+  }
+ ],
+ "refreshAfter": {
+  "agriculture": "2027-04-30T02:16:54.725000+00:00",
+  "normals": "2027-11-01T02:16:54.725000+00:00",
+  "seasons": "2026-12-01T02:16:54.725000+00:00",
+  "soil": "2026-11-02T02:16:54.725000+00:00"
+ },
+ "regionCell": "gcpuv",
+ "season": {
+  "description": "Meteorological season",
+  "localName": null,
+  "name": "Autumn",
+  "source": "derived",
+  "verified": false
+ },
+ "seasons": {
+  "calendar": [
+   {
+    "description": "Meteorological season",
+    "localName": null,
+    "months": [
+     12,
+     1,
+     2
+    ],
+    "name": "Winter"
+   },
+   {
+    "description": "Meteorological season",
+    "localName": null,
+    "months": [
+     3,
+     4,
+     5
+    ],
+    "name": "Spring"
+   },
+   {
+    "description": "Meteorological season",
+    "localName": null,
+    "months": [
+     6,
+     7,
+     8
+    ],
+    "name": "Summer"
+   },
+   {
+    "description": "Meteorological season",
+    "localName": null,
+    "months": [
+     9,
+     10,
+     11
+    ],
+    "name": "Autumn"
+   }
+  ],
+  "source": "derived",
+  "verified": false
+ },
+ "slug": null,
+ "soil": null,
+ "stored": false,
+ "timeZone": "Europe/London"
+}

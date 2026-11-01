@@ -1,0 +1,557 @@
+{
+"backfilled": 0,
+"clamped": false,
+"data": [
+{
+"current": {
+"apparent_temperature": 13.8,
+"cloud_cover": 0,
+"is_day": 0,
+"precipitation": 0,
+"relative_humidity_2m": 67,
+"surface_pressure": 856.9,
+"temperature_2m": 15.5,
+"time": "2026-11-01T03:00",
+"uv_index": 0,
+"weather_code": 0,
+"wind_direction_10m": 46,
+"wind_gusts_10m": 19.4,
+"wind_speed_10m": 10.1
+},
+"daily": {
+"apparent_temperature_max": [
+32.1
+],
+"apparent_temperature_min": [
+13.6
+],
+"precipitation_probability_max": [
+0
+],
+"precipitation_sum": [
+0
+],
+"sunrise": [
+"2026-11-01T05:16"
+],
+"sunset": [
+"2026-11-01T18:02"
+],
+"temperature_2m_max": [
+31.1
+],
+"temperature_2m_min": [
+15.1
+],
+"time": [
+"2026-11-01"
+],
+"uv_index_max": [
+10
+],
+"weather_code": [
+0
+],
+"wind_direction_10m_dominant": [
+56
+],
+"wind_gusts_10m_max": [
+26.6
+],
+"wind_speed_10m_max": [
+12.8
+]
+},
+"date": "2026-11-01",
+"locationSlug": "harare",
+"provider": "open-meteo:blend",
+"recordedAt": "2026-11-01T01:04:51.606Z",
+"source": "recorded"
+},
+{
+"current": {
+"apparent_temperature": 16.5,
+"cloud_cover": 0,
+"interval": 900,
+"is_day": 0,
+"precipitation": 0,
+"relative_humidity_2m": 57,
+"surface_pressure": 858.5,
+"temperature_2m": 18,
+"time": "2026-10-31T23:30",
+"uv_index": 0,
+"weather_code": 0,
+"wind_direction_10m": 53,
+"wind_gusts_10m": 20.9,
+"wind_speed_10m": 9.3
+},
+"daily": {
+"apparent_temperature_max": [
+28.4
+],
+"apparent_temperature_min": [
+11.5
+],
+"precipitation_probability_max": [
+0
+],
+"precipitation_sum": [
+0
+],
+"sunrise": [
+"2026-10-31T05:17"
+],
+"sunset": [
+"2026-10-31T18:01"
+],
+"temperature_2m_max": [
+28.7
+],
+"temperature_2m_min": [
+12.6
+],
+"time": [
+"2026-10-31"
+],
+"uv_index_max": [
+9.65
+],
+"weather_code": [
+3
+],
+"wind_direction_10m_dominant": [
+87
+],
+"wind_gusts_10m_max": [
+27.4
+],
+"wind_speed_10m_max": [
+11.2
+]
+},
+"date": "2026-10-31",
+"locationSlug": "harare",
+"provider": "open-meteo",
+"recordedAt": "2026-10-31T21:30:45Z",
+"source": "recorded"
+},
+{
+"current": {
+"apparent_temperature": 14.1,
+"cloud_cover": 47,
+"interval": 900,
+"is_day": 0,
+"precipitation": 0,
+"relative_humidity_2m": 52,
+"surface_pressure": 859,
+"temperature_2m": 16.1,
+"time": "2026-10-30T23:30",
+"uv_index": 0,
+"weather_code": 1,
+"wind_direction_10m": 108,
+"wind_gusts_10m": 18.4,
+"wind_speed_10m": 7
+},
+"daily": {
+"apparent_temperature_max": [
+28.3
+],
+"apparent_temperature_min": [
+13.8
+],
+"precipitation_probability_max": [
+9
+],
+"precipitation_sum": [
+0
+],
+"sunrise": [
+"2026-10-30T05:17"
+],
+"sunset": [
+"2026-10-30T18:01"
+],
+"temperature_2m_max": [
+27
+],
+"temperature_2m_min": [
+14.3
+],
+"time": [
+"2026-10-30"
+],
+"uv_index_max": [
+9.5
+],
+"weather_code": [
+3
+],
+"wind_direction_10m_dominant": [
+127
+],
+"wind_gusts_10m_max": [
+31.7
+],
+"wind_speed_10m_max": [
+14.2
+]
+},
+"date": "2026-10-30",
+"locationSlug": "harare",
+"provider": "open-meteo",
+"recordedAt": "2026-10-30T21:30:46Z",
+"source": "recorded"
+},
+{
+"current": {
+"apparent_temperature": 16.3,
+"cloud_cover": 18,
+"interval": 900,
+"is_day": 0,
+"precipitation": 0,
+"relative_humidity_2m": 67,
+"surface_pressure": 859.1,
+"temperature_2m": 17.5,
+"time": "2026-10-29T23:30",
+"uv_index": 0,
+"weather_code": 0,
+"wind_direction_10m": 124,
+"wind_gusts_10m": 23,
+"wind_speed_10m": 10.9
+},
+"daily": {
+"apparent_temperature_max": [
+30.3
+],
+"apparent_temperature_min": [
+16.6
+],
+"precipitation_probability_max": [
+74
+],
+"precipitation_sum": [
+1
+],
+"sunrise": [
+"2026-10-29T05:18"
+],
+"sunset": [
+"2026-10-29T18:00"
+],
+"temperature_2m_max": [
+27.5
+],
+"temperature_2m_min": [
+16.6
+],
+"time": [
+"2026-10-29"
+],
+"uv_index_max": [
+9.65
+],
+"weather_code": [
+51
+],
+"wind_direction_10m_dominant": [
+105
+],
+"wind_gusts_10m_max": [
+30.6
+],
+"wind_speed_10m_max": [
+12.8
+]
+},
+"date": "2026-10-29",
+"locationSlug": "harare",
+"provider": "open-meteo",
+"recordedAt": "2026-10-29T21:30:45Z",
+"source": "recorded"
+},
+{
+"current": {
+"apparent_temperature": 18.3,
+"cloud_cover": 3,
+"interval": 900,
+"is_day": 0,
+"precipitation": 0,
+"relative_humidity_2m": 83,
+"surface_pressure": 857.9,
+"temperature_2m": 18.3,
+"time": "2026-10-28T23:30",
+"uv_index": 0,
+"weather_code": 0,
+"wind_direction_10m": 126,
+"wind_gusts_10m": 29.9,
+"wind_speed_10m": 11.8
+},
+"daily": {
+"apparent_temperature_max": [
+35
+],
+"apparent_temperature_min": [
+18.6
+],
+"precipitation_probability_max": [
+94
+],
+"precipitation_sum": [
+6
+],
+"sunrise": [
+"2026-10-28T05:18"
+],
+"sunset": [
+"2026-10-28T18:00"
+],
+"temperature_2m_max": [
+33.5
+],
+"temperature_2m_min": [
+18
+],
+"time": [
+"2026-10-28"
+],
+"uv_index_max": [
+9.35
+],
+"weather_code": [
+81
+],
+"wind_direction_10m_dominant": [
+92
+],
+"wind_gusts_10m_max": [
+39.2
+],
+"wind_speed_10m_max": [
+18
+]
+},
+"date": "2026-10-28",
+"locationSlug": "harare",
+"provider": "open-meteo",
+"recordedAt": "2026-10-28T21:30:46Z",
+"source": "recorded"
+},
+{
+"current": {
+"apparent_temperature": 22.1,
+"cloud_cover": 36,
+"interval": 900,
+"is_day": 0,
+"precipitation": 0,
+"relative_humidity_2m": 30,
+"surface_pressure": 858,
+"temperature_2m": 23.9,
+"time": "2026-10-27T23:30",
+"uv_index": 0,
+"weather_code": 1,
+"wind_direction_10m": 131,
+"wind_gusts_10m": 12.6,
+"wind_speed_10m": 3.6
+},
+"daily": {
+"apparent_temperature_max": [
+32.4
+],
+"apparent_temperature_min": [
+15.5
+],
+"precipitation_probability_max": [
+0
+],
+"precipitation_sum": [
+0
+],
+"sunrise": [
+"2026-10-27T05:19"
+],
+"sunset": [
+"2026-10-27T18:00"
+],
+"temperature_2m_max": [
+32.5
+],
+"temperature_2m_min": [
+18.2
+],
+"time": [
+"2026-10-27"
+],
+"uv_index_max": [
+9.9
+],
+"weather_code": [
+2
+],
+"wind_direction_10m_dominant": [
+39
+],
+"wind_gusts_10m_max": [
+36.7
+],
+"wind_speed_10m_max": [
+16.6
+]
+},
+"date": "2026-10-27",
+"locationSlug": "harare",
+"provider": "open-meteo",
+"recordedAt": "2026-10-27T21:30:45Z",
+"source": "recorded"
+},
+{
+"current": {
+"apparent_temperature": 17.8,
+"cloud_cover": 0,
+"interval": 900,
+"is_day": 0,
+"precipitation": 0,
+"relative_humidity_2m": 39,
+"surface_pressure": 859.3,
+"temperature_2m": 20.9,
+"time": "2026-10-26T23:30",
+"uv_index": 0,
+"weather_code": 0,
+"wind_direction_10m": 45,
+"wind_gusts_10m": 31.7,
+"wind_speed_10m": 15.1
+},
+"daily": {
+"apparent_temperature_max": [
+29.6
+],
+"apparent_temperature_min": [
+15.8
+],
+"precipitation_probability_max": [
+0
+],
+"precipitation_sum": [
+0
+],
+"sunrise": [
+"2026-10-26T05:19"
+],
+"sunset": [
+"2026-10-26T17:59"
+],
+"temperature_2m_max": [
+30.1
+],
+"temperature_2m_min": [
+16
+],
+"time": [
+"2026-10-26"
+],
+"uv_index_max": [
+9.9
+],
+"weather_code": [
+1
+],
+"wind_direction_10m_dominant": [
+43
+],
+"wind_gusts_10m_max": [
+37.1
+],
+"wind_speed_10m_max": [
+15.3
+]
+},
+"date": "2026-10-26",
+"locationSlug": "harare",
+"provider": "open-meteo",
+"recordedAt": "2026-10-26T21:31:32Z",
+"source": "recorded"
+},
+{
+"current": {
+"apparent_temperature": 17.5,
+"cloud_cover": 1,
+"interval": 900,
+"is_day": 0,
+"precipitation": 0,
+"relative_humidity_2m": 68,
+"surface_pressure": 859.7,
+"temperature_2m": 18.8,
+"time": "2026-10-25T23:30",
+"uv_index": 0,
+"weather_code": 0,
+"wind_direction_10m": 56,
+"wind_gusts_10m": 30.6,
+"wind_speed_10m": 14.4
+},
+"daily": {
+"apparent_temperature_max": [
+28.5
+],
+"apparent_temperature_min": [
+16.2
+],
+"precipitation_probability_max": [
+2
+],
+"precipitation_sum": [
+0
+],
+"sunrise": [
+"2026-10-25T05:20"
+],
+"sunset": [
+"2026-10-25T17:59"
+],
+"temperature_2m_max": [
+28.2
+],
+"temperature_2m_min": [
+15.9
+],
+"time": [
+"2026-10-25"
+],
+"uv_index_max": [
+9.9
+],
+"weather_code": [
+3
+],
+"wind_direction_10m_dominant": [
+59
+],
+"wind_gusts_10m_max": [
+41
+],
+"wind_speed_10m_max": [
+15.4
+]
+},
+"date": "2026-10-25",
+"locationSlug": "harare",
+"provider": "open-meteo",
+"recordedAt": "2026-10-25T21:31:57Z",
+"source": "recorded"
+}
+],
+"days": 8,
+"end": "2026-11-01",
+"location": "harare",
+"missing": 0,
+"records": 8,
+"sources": [
+{
+"attribution": "Weather data by Open-Meteo.com, from ERA5 (Copernicus Climate Change Service / ECMWF)",
+"id": "open-meteo-archive",
+"licence": "CC BY 4.0",
+"licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+"name": "Open-Meteo (ERA5)",
+"url": "https://open-meteo.com"
+}
+],
+"start": "2026-10-25"
+}
