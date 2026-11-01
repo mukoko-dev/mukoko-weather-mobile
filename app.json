@@ -49,6 +49,7 @@
       [
         "expo-location",
         {
+          "locationWhenInUsePermission": "Allow Mukoko Weather to use your location to show the weather where you are.",
           "locationAlwaysAndWhenInUsePermission": "Allow Mukoko Weather to use your location to show local weather conditions."
         }
       ]
