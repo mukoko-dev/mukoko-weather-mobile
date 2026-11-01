@@ -14,7 +14,7 @@
 
 import { apiRequest, ROUTES } from "@/api/client";
 import { fetchLocation, type LocationSummary } from "@/api/locations";
-import { weatherCodeToInfo } from "@/shared/weather";
+import { type WeatherData, weatherCodeToInfo } from "@/shared/weather";
 
 export type DailyForecast = {
   /** The place's local calendar date, `YYYY-MM-DD`. */
@@ -59,6 +59,13 @@ export type WeatherResponse = {
   current: CurrentConditions;
   daily: DailyForecast[];
   hourly?: HourlyColumns;
+  /**
+   * The whole forecast as the Worker sent it (full hourly and daily columns,
+   * the place's UTC offset), for the screens that read "now" in the place's
+   * time and compute the tile insights. `hourly` above is the same series cut
+   * to start at the current hour.
+   */
+  forecast?: WeatherData;
   /** Where the forecast came from. `fallback` is a seasonal estimate. */
   source?: "tomorrow" | "open-meteo" | "fallback";
   fetchedAt?: string;
@@ -72,6 +79,7 @@ export type WeatherQuery = { slug: string } | { lat: number; lon: number };
 /** The Worker's answer. Everything is read defensively. */
 type WireWeather = {
   current?: Record<string, unknown>;
+  insights?: Record<string, unknown>;
   hourly?: Record<string, unknown>;
   daily?: Record<string, unknown>;
   timezone?: unknown;
@@ -157,6 +165,66 @@ export function toDaily(
   return rows;
 }
 
+/**
+ * The Worker's answer as the shared `WeatherData` model (Open-Meteo's own
+ * column names, which the ported web logic reads). Columns that are missing
+ * become empty arrays, so every reader gets a series, never `undefined`; a
+ * null inside a column stays null and the readers skip it. `undefined` when
+ * the answer has no current block or no hours at all.
+ */
+export function toForecast(raw: WireWeather): WeatherData | undefined {
+  if (!raw.current || column(raw.hourly, "time").length === 0) return undefined;
+  const hourlyKeys = [
+    "time",
+    "temperature_2m",
+    "apparent_temperature",
+    "relative_humidity_2m",
+    "precipitation_probability",
+    "precipitation",
+    "weather_code",
+    "visibility",
+    "cloud_cover",
+    "surface_pressure",
+    "wind_speed_10m",
+    "wind_direction_10m",
+    "wind_gusts_10m",
+    "uv_index",
+    "is_day",
+  ] as const;
+  const dailyKeys = [
+    "time",
+    "weather_code",
+    "temperature_2m_max",
+    "temperature_2m_min",
+    "apparent_temperature_max",
+    "apparent_temperature_min",
+    "sunrise",
+    "sunset",
+    "uv_index_max",
+    "precipitation_sum",
+    "precipitation_probability_max",
+    "wind_speed_10m_max",
+    "wind_gusts_10m_max",
+  ] as const;
+  const hourly = Object.fromEntries(
+    hourlyKeys.map((k) => [k, [...column(raw.hourly, k)]]),
+  );
+  const daily = Object.fromEntries(
+    dailyKeys.map((k) => [k, [...column(raw.daily, k)]]),
+  );
+  const offset = num(raw.utc_offset_seconds);
+  const forecast = {
+    current: raw.current,
+    hourly,
+    daily,
+    current_units: {},
+    insights: raw.insights,
+    timezone: typeof raw.timezone === "string" ? raw.timezone : undefined,
+    utc_offset_seconds: offset ?? undefined,
+  };
+  return forecast as unknown as WeatherData;
+}
+
 /** Most hours kept; the screens show the next 24. */
 const MAX_HOURS = 48;
 
@@ -208,6 +276,7 @@ export function toWeatherResponse(
     current,
     daily: toDaily(raw.daily),
     hourly: alignHourly(raw.hourly, current.observedAt),
+    forecast: toForecast(raw),
     source: sourceOf(meta.provider),
     fetchedAt: meta.fetchedAt ?? undefined,
     timezone: typeof raw.timezone === "string" ? raw.timezone : undefined,
