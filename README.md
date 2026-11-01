@@ -36,9 +36,10 @@ Shamwari AI chat, a preferences tab, and a per-location detail route.
 **Not yet released.** `eas.json` defines `development`, `preview` and
 `production` build profiles, but the only submit target is Android → Play
 Console **internal track, `draft` status**. There is no iOS submit
-configuration, and the app is in neither store. Note also that `app.json`
-declares no `updates` block or `runtimeVersion` even though `eas.json` names
-`preview` and `production` EAS Update channels.
+configuration, and the app is in neither store. EAS Update is set up
+(`expo-updates`, `runtimeVersion` policy `appVersion`, `updates.url`), and a
+workflow publishes the JavaScript of every push to `staging` (see "See it in
+Expo Go").
 
 ## Setup
 
@@ -72,6 +73,23 @@ npx expo start
 
 For a physical device, scan the QR code with the Expo Go app
 (`https://expo.dev/go`).
+
+## See it in Expo Go, without a computer
+
+Every push to `staging` publishes the app's JavaScript to EAS Update
+(`.eas/workflows/publish-preview-update.yml`, branch `staging`). To open the
+latest one on a phone:
+
+1. Install or update Expo Go to the SDK 58 version (`https://expo.dev/go`) and
+   sign in to the Expo account that belongs to the `nyuchi-web-services` team.
+2. Open the project's Updates page on expo.dev
+   (`https://expo.dev/accounts/nyuchi-web-services/projects/mukoko-weather/updates`),
+   pick the `staging` branch and the newest update, and scan the QR code or use
+   "Open in Expo Go".
+
+Expo Go carries only the native modules of its SDK, which is enough for this
+app today. A change that adds a native module needs a development build instead.
+The update calls the Cloudflare weather API only (`weather-api.mukoko.com`).
 
 ## Verify
 
