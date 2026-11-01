@@ -224,6 +224,18 @@ describe("a Mukoko host that is not on the allow-list", () => {
     expect(result.stderr).toMatch(/staging\.mukoko\.com is a Mukoko host/);
   });
 
+  it("keeps one door: a second Mukoko host, the tiles Worker's included, is refused", () => {
+    // Owner, 2026-11-01: "there's only one way into the thing". The weather
+    // overlay and base map tiles are requested as API routes on the one host.
+    for (const host of ["weather-tiles.mukoko.com", "tiles.mukoko.com"]) {
+      const result = run(
+        project({ "src/x.ts": `fetch("https://${host}/v1/map-tiles");` }),
+      );
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(`${host} is a Mukoko host`);
+    }
+  });
+
   it("does not mistake a look-alike for an allowed host", () => {
     const result = run(
       project({

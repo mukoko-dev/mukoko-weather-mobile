@@ -56,6 +56,15 @@ export interface WeatherData {
   current_units: Record<string, string>;
   /** Activity-specific insights — only available when Tomorrow.io is the provider */
   insights?: WeatherInsights;
+  /**
+   * The place's UTC offset in seconds. Every "current hour" and hour label is
+   * read in the PLACE's time with this, never the phone's clock.
+   */
+  utc_offset_seconds?: number;
+  /** IANA time zone of the place, for example `Africa/Harare`. */
+  timezone?: string;
+  /** True when the offset was estimated from the longitude. */
+  utc_offset_estimated?: boolean;
 }
 
 /** Extended weather data from Tomorrow.io for activity-aware insight cards */

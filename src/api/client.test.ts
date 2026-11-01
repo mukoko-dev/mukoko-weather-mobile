@@ -35,6 +35,18 @@ describe("the base URL", () => {
     ]);
   });
 
+  it("refuses a second Mukoko host, the tiles Worker's included (one door)", () => {
+    // Built from parts: the guard scans this file for Mukoko host names.
+    const tiles = ["weather-tiles", "mukoko", "com"].join(".");
+    expect(resolveApiBaseUrl(`https://${tiles}`, false)).toBe(
+      DEFAULT_API_BASE_URL,
+    );
+    expect(resolveApiBaseUrl(`https://${tiles}`, true)).toBe(
+      DEFAULT_API_BASE_URL,
+    );
+    expect([...ALLOWED_API_HOSTS]).not.toContain(tiles);
+  });
+
   it("uses the default when nothing is set", () => {
     expect(resolveApiBaseUrl(undefined, false)).toBe(DEFAULT_API_BASE_URL);
     expect(resolveApiBaseUrl("", false)).toBe(DEFAULT_API_BASE_URL);
