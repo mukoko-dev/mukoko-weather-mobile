@@ -14,6 +14,7 @@ import {
   __resetPreferencesForTests,
   addSavedLocation,
   hydratePreferences,
+  MAX_ACTIVITIES,
   MAX_SAVED_LOCATIONS,
   removeSavedLocation,
   setThemePreference,
@@ -51,13 +52,27 @@ describe("preferences store", () => {
     expect((await readStored())?.theme).toBe("dark");
   });
 
-  it("toggles activities on and off, preserving canonical order", async () => {
+  it("toggles activities on and off, keeping the order they were picked in", async () => {
     await hydratePreferences();
-    toggleActivity("travel");
-    toggleActivity("farming");
-    expect((await readStored())?.activities).toEqual(["farming", "travel"]);
-    toggleActivity("farming");
-    expect((await readStored())?.activities).toEqual(["travel"]);
+    toggleActivity("driving");
+    toggleActivity("crop-farming");
+    expect((await readStored())?.activities).toEqual([
+      "driving",
+      "crop-farming",
+    ]);
+    toggleActivity("driving");
+    expect((await readStored())?.activities).toEqual(["crop-farming"]);
+  });
+
+  it("ignores an id that cannot be an activity id and never grows past the bound", async () => {
+    await hydratePreferences();
+    toggleActivity("Not An Id");
+    toggleActivity("");
+    expect(await readStored()).toBeNull();
+    for (let i = 0; i < MAX_ACTIVITIES + 5; i += 1) toggleActivity(`a-${i}`);
+    expect(((await readStored())?.activities as string[]).length).toBe(
+      MAX_ACTIVITIES,
+    );
   });
 
   it("adds a saved location and reports the result", async () => {
@@ -98,7 +113,7 @@ describe("preferences store", () => {
       STORAGE_KEY,
       JSON.stringify({
         theme: "dark",
-        activities: ["farming", "not-real", "mining"],
+        activities: ["farming", "football", "football", "Bad Id", 7, "mining"],
         savedLocations: [
           { slug: "harare", name: "Harare" },
           { slug: "harare", name: "Harare dup" },
@@ -109,10 +124,12 @@ describe("preferences store", () => {
     await hydratePreferences();
     // A no-op mutation re-persists the normalised in-memory state.
     setThemePreference("dark"); // same value -> no write
-    toggleActivity("travel");
+    toggleActivity("driving");
     const stored = await readStored();
     expect(stored?.theme).toBe("dark");
-    expect(stored?.activities).toEqual(["farming", "mining", "travel"]);
+    // The old category name "farming" is dropped, the duplicate and the
+    // malformed ids too; "mining" is both a category and an activity id.
+    expect(stored?.activities).toEqual(["football", "mining", "driving"]);
     expect((stored?.savedLocations as unknown[]).length).toBe(1);
   });
 });

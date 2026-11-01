@@ -5,6 +5,7 @@ import {
   LANE_MINERAL,
   categoryMineral,
   laneMineral,
+  filterActivities,
   getActivitiesByCategory,
   getActivityById,
   getActivityLabels,
@@ -450,5 +451,42 @@ describe("LANE_MINERAL (the web's LANE_FILL and ACTIVITY_DOT_CLASS)", () => {
 
   it("falls back to copper for a category it does not know", () => {
     expect(laneMineral("not-a-category")).toBe("copper");
+  });
+});
+
+describe("filterActivities (the picker's list, as the web's ActivitiesTab)", () => {
+  it("returns everything for no query and the all category", () => {
+    expect(filterActivities(ACTIVITIES, "", "all")).toHaveLength(
+      ACTIVITIES.length,
+    );
+    expect(filterActivities(ACTIVITIES, "   ")).toHaveLength(ACTIVITIES.length);
+  });
+
+  it("matches a label, a description or a category, ignoring case", () => {
+    expect(filterActivities(ACTIVITIES, "BRAAI").map((a) => a.id)).toContain(
+      "barbecue",
+    );
+    expect(
+      filterActivities(ACTIVITIES, "shisanyama").map((a) => a.id),
+    ).toContain("barbecue");
+    expect(
+      filterActivities(ACTIVITIES, "sports").every(
+        (a) =>
+          a.category === "sports" ||
+          a.label.toLowerCase().includes("sports") ||
+          a.description.toLowerCase().includes("sports"),
+      ),
+    ).toBe(true);
+  });
+
+  it("narrows by category and by query together", () => {
+    const farming = filterActivities(ACTIVITIES, "", "farming");
+    expect(farming.length).toBeGreaterThan(0);
+    expect(farming.every((a) => a.category === "farming")).toBe(true);
+    expect(filterActivities(ACTIVITIES, "braai", "farming")).toEqual([]);
+  });
+
+  it("is empty for a query nothing matches", () => {
+    expect(filterActivities(ACTIVITIES, "zzzz-no-such-thing")).toEqual([]);
   });
 });

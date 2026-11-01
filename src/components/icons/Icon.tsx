@@ -45,12 +45,12 @@ const SUN_RAYS = [
 ];
 const MOON = "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z";
 
-type FrameProps = {
+export type FrameProps = {
   strokeWidth: number;
   children: (color: string) => ReactNode;
 };
 
-function Frame({
+export function Frame({
   size = 24,
   color,
   label,
@@ -78,7 +78,7 @@ function Frame({
   );
 }
 
-function paths(ds: string[]): ReactNode {
+export function paths(ds: string[]): ReactNode {
   return ds.map((d) => <Path key={d} d={d} />);
 }
 

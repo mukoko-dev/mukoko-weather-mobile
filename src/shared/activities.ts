@@ -638,3 +638,27 @@ export function searchActivities(query: string): Activity[] {
       a.category.includes(q),
   );
 }
+
+/**
+ * The picker's list: a text query (label, description or category contains it,
+ * case-insensitive) and a category ("all" for every one). The web's My Weather
+ * modal does the same inline (`ActivitiesTab`).
+ */
+export function filterActivities(
+  list: Activity[],
+  query: string,
+  category: ActivityCategory | "all" = "all",
+): Activity[] {
+  const q = query.toLowerCase().trim();
+  let items = list;
+  if (q) {
+    items = items.filter(
+      (a) =>
+        a.label.toLowerCase().includes(q) ||
+        a.description.toLowerCase().includes(q) ||
+        a.category.includes(q),
+    );
+  }
+  if (category !== "all") items = items.filter((a) => a.category === category);
+  return items;
+}
