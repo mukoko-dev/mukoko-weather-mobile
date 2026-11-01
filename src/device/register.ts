@@ -6,24 +6,32 @@
  * the API can hold a preference profile for it. The call is idempotent for a
  * given id, so it is safe on every cold start.
  *
- * It runs in release builds only. A development build (Expo Go, a dev client,
- * `npx expo start`) logs what it would send and writes nothing, so working on
- * the app never creates profiles on the production API.
+ * It runs in release builds only, and only while `DEVICE_REGISTRATION_ENABLED`
+ * is true. A development build (Expo Go, a dev client, `npx expo start`) logs
+ * what it would send and writes nothing, so working on the app never creates
+ * profiles on the production API.
  */
 
 import { createDeviceProfile } from "@/api/devices";
 import { getOrCreateDeviceId } from "@/device/identity";
+
+/**
+ * Off until a person's own synced database (CouchDB, owner 2026-11-01) replaces
+ * the server-side device profile: the app is not in a store, and an install
+ * profile on the API is not needed to show weather. Flip to true to register.
+ */
+export const DEVICE_REGISTRATION_ENABLED = false;
 
 export type RegisterDeviceResult =
   | { ok: true; serverId: string | null; stubbed: boolean }
   | { ok: false; error: string };
 
 /**
- * Register this install. `enabled` defaults to "not a development build";
- * tests pass it explicitly.
+ * Register this install. `enabled` defaults to "switched on and not a
+ * development build"; tests pass it explicitly.
  */
 export async function registerDevice(
-  enabled: boolean = !__DEV__,
+  enabled: boolean = DEVICE_REGISTRATION_ENABLED && !__DEV__,
 ): Promise<RegisterDeviceResult> {
   const deviceId = await getOrCreateDeviceId();
 
