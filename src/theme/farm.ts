@@ -97,3 +97,21 @@ export const FARM_DARK: FarmColors = {
 export function farmColorsFor(scheme: ColorSchemeName): FarmColors {
   return scheme === "dark" ? FARM_DARK : FARM_LIGHT;
 }
+
+/** Sizes the agriculture and place cards draw, in dp. */
+export const FARM_SIZE = {
+  /** The status dot beside a window's title (`h-2 w-2`). */
+  dot: 8,
+  /** A crop-calendar month cell, and the legend swatch beside a stage name. */
+  calendarCell: 24,
+  swatchWidth: 20,
+  swatchHeight: 12,
+  /** A chart: plot height, the y-axis label column, and the legend swatch. */
+  chartHeight: 176,
+  chartAxis: 44,
+  legendSwatch: 12,
+  /** The line and bar widths in a chart. */
+  chartLine: 2,
+  /** The gap a bar leaves beside its neighbour, as a share of its slot. */
+  barGap: 0.3,
+} as const;

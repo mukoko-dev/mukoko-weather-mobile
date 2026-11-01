@@ -50,7 +50,7 @@ type FrameProps = {
   children: (color: string) => ReactNode;
 };
 
-function Frame({
+export function Frame({
   size = 24,
   color,
   label,
@@ -78,7 +78,7 @@ function Frame({
   );
 }
 
-function paths(ds: string[]): ReactNode {
+export function paths(ds: string[]): ReactNode {
   return ds.map((d) => <Path key={d} d={d} />);
 }
 
