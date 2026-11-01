@@ -1,0 +1,17 @@
+# Publishes the app's JavaScript to EAS Update on every push to staging, so the
+# newest build can be opened in Expo Go (or a development build) from the
+# project's Updates page on expo.dev, with a QR code, without a computer.
+# Run it by hand with the Expo connector: workflow_run, file
+# publish-preview-update.yml, git ref staging.
+name: Publish preview update
+
+on:
+  push:
+    branches: ['staging']
+
+jobs:
+  publish_preview_update:
+    name: Publish preview update
+    type: update
+    params:
+      branch: ${{ github.ref_name || 'staging' }}
