@@ -30,6 +30,13 @@ const messages: Record<string, Record<string, string>> = {
       "Location access denied. Enable it in your browser settings.",
     "nav.locationFailed": "Unable to detect your location. Select one below.",
 
+    // Relative time — formatRelative()
+    "time.justNow": "just now",
+    "time.minutesAgo": "{count} min ago",
+    "time.hoursAgo": "{count} h ago",
+    "time.dayAgo": "{count} day ago",
+    "time.daysAgo": "{count} days ago",
+
     // Weather
     "weather.current": "Current weather conditions in {location}",
     "weather.feelsLike": "Feels like",
@@ -202,4 +209,27 @@ export function formatDate(
     month: "long",
     year: "numeric",
   }).format(date);
+}
+
+/**
+ * Relative time in the past, e.g. "just now", "5 min ago", "2 h ago",
+ * "1 day ago", "3 days ago". `now` is injectable for deterministic tests.
+ * Invalid dates format as "".
+ */
+export function formatRelative(
+  date: Date,
+  now: Date = new Date(),
+  locale: Locale = DEFAULT_LOCALE,
+): string {
+  const diffMs = now.getTime() - date.getTime();
+  if (Number.isNaN(diffMs)) return "";
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return t("time.justNow", undefined, locale);
+  if (mins < 60) return t("time.minutesAgo", { count: mins }, locale);
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return t("time.hoursAgo", { count: hrs }, locale);
+  const days = Math.floor(hrs / 24);
+  return days === 1
+    ? t("time.dayAgo", { count: 1 }, locale)
+    : t("time.daysAgo", { count: days }, locale);
 }

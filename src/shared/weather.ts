@@ -505,3 +505,33 @@ export function createFallbackWeather(
     },
   };
 }
+
+/**
+ * Map a WMO weather code to the two hazard insights the suitability rules read,
+ * as the web's `wmoToInsightHazards` (mukoko-weather `src/lib/weather.ts`):
+ *
+ * - Thunderstorm: 95-99 graduated by severity (95 = 70, 96/97 = 85, 99 = 95).
+ * - precipitationType: 0=none, 1=rain, 2=snow, 3=freezing rain/drizzle,
+ *   4=ice pellets.
+ *
+ * Used for the per-hour insights of the activity lane and trend line, which
+ * only have the hour's weather code to go on.
+ */
+export function wmoToInsightHazards(code: number): {
+  thunderstormProbability: number;
+  precipitationType: number;
+} {
+  let thunderstormProbability = 0;
+  if (code >= 99) thunderstormProbability = 95;
+  else if (code >= 96) thunderstormProbability = 85;
+  else if (code >= 95) thunderstormProbability = 70;
+
+  let precipitationType = 0;
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86))
+    precipitationType = 2; // Snow + snow showers
+  else if (code === 66 || code === 67 || code === 56 || code === 57)
+    precipitationType = 3; // Freezing rain + freezing drizzle
+  else if (code >= 51) precipitationType = 1; // Rain/drizzle/thunderstorm
+
+  return { thunderstormProbability, precipitationType };
+}
