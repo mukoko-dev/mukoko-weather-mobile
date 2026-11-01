@@ -19,7 +19,7 @@ import { mockFetch } from "./mock-fetch";
 import airQualityHarare from "./__fixtures__/air-quality-harare.json";
 import hazeHarare from "./__fixtures__/haze-harare.json";
 import historyHarare from "./__fixtures__/history-harare.json";
-import normalsHarare from "./__fixtures__/normals-harare.json";
+import normalsTodayHarare from "./__fixtures__/normals-today-harare.json";
 import normalsMonthlyHarare from "./__fixtures__/normals-monthly-harare.json";
 import weatherHarare from "./__fixtures__/weather-harare.json";
 
@@ -167,7 +167,7 @@ describe("haze", () => {
 
 describe("climate context", () => {
   it("reads today's normal high for the place's date", async () => {
-    const calls = mockFetch({ body: normalsHarare });
+    const calls = mockFetch({ body: normalsTodayHarare });
     expect(await fetchNormalHigh(-17.8252, 31.0335, "2026-11-01")).toBe(28.6);
     expect(calls[0].url).toBe(
       `${BASE}/v1/normals?lat=-17.825&lon=31.034&date=2026-11-01`,
