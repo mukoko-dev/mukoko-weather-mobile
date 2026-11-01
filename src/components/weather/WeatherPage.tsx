@@ -50,11 +50,30 @@ export function BackControl() {
   );
 }
 
+/**
+ * A country's English name from its ISO 3166-1 alpha-2 code ("ZW" is
+ * "Zimbabwe"), as the web's breadcrumb says it. Where the runtime has no region
+ * names the code itself is shown, never nothing.
+ */
+export function countryLabel(code: string | undefined): string | undefined {
+  if (!code) return undefined;
+  if (!/^[A-Za-z]{2}$/.test(code)) return code;
+  try {
+    return (
+      new Intl.DisplayNames(["en"], { type: "region" }).of(
+        code.toUpperCase(),
+      ) ?? code
+    );
+  } catch {
+    return code;
+  }
+}
+
 /** The trail under the top row: country, then province. */
 export function breadcrumbOf(
   location: WeatherResponse["location"],
 ): string | undefined {
-  const parts = [location?.country, location?.province].filter(
+  const parts = [countryLabel(location?.country), location?.province].filter(
     (p): p is string => typeof p === "string" && p.length > 0,
   );
   return parts.length > 0 ? parts.join(" / ") : undefined;

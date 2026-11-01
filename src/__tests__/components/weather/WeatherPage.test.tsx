@@ -12,6 +12,7 @@ import {
   WeatherError,
   WeatherPage,
   breadcrumbOf,
+  countryLabel,
   shareMessage,
 } from "@/components/weather/WeatherPage";
 
@@ -151,6 +152,28 @@ describe("WeatherPage", () => {
       "Zimbabwe",
     );
     expect(breadcrumbOf(undefined)).toBeUndefined();
+  });
+
+  it("says the country's name, not its ISO code, as the web does", () => {
+    expect(countryLabel("ZW")).toBe("Zimbabwe");
+    expect(countryLabel("zw")).toBe("Zimbabwe");
+    expect(
+      breadcrumbOf({ lat: 0, lon: 0, country: "ZW", province: "Harare" }),
+    ).toBe("Zimbabwe / Harare");
+    // Not a code: shown as given. Missing: nothing.
+    expect(countryLabel("Zimbabwe")).toBe("Zimbabwe");
+    expect(countryLabel(undefined)).toBeUndefined();
+  });
+
+  it("falls back to the code where the runtime has no region names", () => {
+    const spy = jest.spyOn(Intl, "DisplayNames").mockImplementation(() => {
+      throw new TypeError("Intl.DisplayNames is not supported");
+    });
+    try {
+      expect(countryLabel("ZW")).toBe("ZW");
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 
