@@ -1,17 +1,14 @@
 /**
  * Hourly-forecast extraction for the location detail screen.
  *
- * The typed `WeatherResponse` (src/api/weather.ts) only declares `current` and
- * `daily` — but the `/api/py/weather` response carries an untyped `hourly`
- * block at runtime (see the note in weather.ts: "new fields can be added
- * without breaking existing screens because we never use Object.keys"). Rather
- * than widen the shared, read-only type, we read `hourly` defensively here.
+ * The typed `WeatherResponse` (src/api/weather.ts) carries `hourly` as the
+ * Worker's raw columns (`/v1/weather`), so we read it defensively here.
  *
  * Two shapes are tolerated so this keeps working whichever backend answers:
  *   1. Normalised array   — `hourly: [{ time, temperature, precipitationProbability, weatherCode, isDay }]`
  *      (mirrors how `daily: DailyForecast[]` is normalised).
  *   2. Open-Meteo columns — `hourly: { time: string[], temperature_2m: number[], ... }`
- *      (the raw shape mukoko-weather's worker / Python endpoints return).
+ *      (the raw shape the weather Worker returns).
  *
  * When no usable hourly data is present we return `[]` and the caller hides the
  * section — never a crash.

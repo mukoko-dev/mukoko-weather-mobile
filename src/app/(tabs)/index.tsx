@@ -4,10 +4,10 @@
  * Flow:
  *   1. Ask for foreground location permission.
  *   2. If granted, get a fine-grained GPS fix (High accuracy) and resolve the
- *      specific place name via GET /api/py/geo?lat=&lon=&autoCreate=true (the
- *      backend reverse-geocodes to road/shop/suburb level and creates a
- *      community location on first visit).
- *   3. Fetch /api/py/weather?lat=&lon= and render hourly + current + 7-day.
+ *      specific place name via GET /v1/geo?lat=&lon=&autoCreate=true (the
+ *      Worker reverse-geocodes to road/shop/suburb level and answers a
+ *      `{name}--{geohash}` place; nothing is stored).
+ *   3. Fetch /v1/weather?lat=&lon= and render hourly + current + 7-day.
  *   4. Pull-to-refresh re-runs the weather fetch (skips re-geolocating).
  *
  * If permission is denied or no GPS fix is available we fall back to Harare
@@ -37,7 +37,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { type LocationSummary, geoLookup } from "@/api/locations";
+import { geoLookup } from "@/api/locations";
 import { fetchWeather, type WeatherResponse } from "@/api/weather";
 import { RADIUS, SPACING } from "@/brand/tokens";
 import { BaobabCard } from "@/components/BaobabCard";
@@ -58,16 +58,6 @@ const FALLBACK = { lat: -17.8252, lon: 31.0335, label: "Harare, ZW" };
 const WEB_MAX_WIDTH = 768;
 
 type Coords = { lat: number; lon: number; label?: string };
-
-/**
- * `/api/py/geo` response. The read-only `geoLookup` helper types the payload
- * as `{ location }`, but the current backend returns the resolved place under
- * `nearest` (with `redirectTo`/`isNew`). Read both defensively.
- */
-type GeoResult = {
-  location?: LocationSummary | null;
-  nearest?: LocationSummary | null;
-};
 
 type LoadState =
   | { kind: "loading" }
@@ -98,16 +88,12 @@ export default function WeatherHome() {
     }
   }, []);
 
-  /** Resolve (and auto-create) the fine-grained place name for a GPS fix. */
+  /** Name the exact place under a GPS fix (nothing is stored). */
   const resolveName = useCallback(
     async (loc: Coords): Promise<string | null> => {
       try {
-        const res = (await geoLookup(
-          loc.lat,
-          loc.lon,
-          true,
-        )) as unknown as GeoResult;
-        return res.nearest?.name ?? res.location?.name ?? null;
+        const { location } = await geoLookup(loc.lat, loc.lon, true);
+        return location?.name ?? null;
       } catch {
         return null;
       }
@@ -253,7 +239,9 @@ function ErrorState({
 
 function WeatherView({ weather }: { weather: WeatherResponse }) {
   const { current, daily } = weather;
-  const isDay = isDaytime(new Date());
+  // The place's own day/night when the Worker says it; the phone's clock only
+  // as a fallback.
+  const isDay = current.isDay ?? isDaytime(new Date());
   return (
     <>
       <ConditionHero current={current} isDay={isDay} />

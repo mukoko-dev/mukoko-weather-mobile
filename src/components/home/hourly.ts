@@ -1,11 +1,11 @@
 /**
  * Hourly forecast extraction.
  *
- * The Python `/api/py/weather` endpoint returns an `hourly` block of parallel
- * arrays (`time`, `temperature_2m`, `weather_code`, `precipitation_probability`,
- * …) — see `api/py/_weather.py`. The mobile `WeatherResponse` type only
- * declares the fields the UI consumed before hourly existed, so we read the
- * hourly block defensively here and zip the arrays into row objects.
+ * The weather Worker's `/v1/weather` answer carries an `hourly` block of
+ * parallel arrays (`time`, `temperature_2m`, `weather_code`,
+ * `precipitation_probability`, …). `src/api/weather.ts` keeps it as columns,
+ * cut to start at the place's current hour, so we read the block defensively
+ * here and zip the arrays into row objects.
  *
  * Pure module (no React) so the zipping + labelling logic is unit-testable.
  */

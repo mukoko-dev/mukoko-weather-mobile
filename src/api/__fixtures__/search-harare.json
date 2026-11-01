@@ -1,0 +1,42 @@
+{
+  "locations": [
+    {
+      "country": "ZW",
+      "elevation": 1490.0,
+      "lat": -17.83,
+      "lon": 31.05,
+      "name": "Harare",
+      "province": "Harare",
+      "provinceSlug": "harare-zw",
+      "slug": "harare",
+      "source": "seed",
+      "tags": ["city", "education"]
+    },
+    {
+      "country": "ZW",
+      "elevation": 1463.0,
+      "lat": -17.99,
+      "lon": 31.08,
+      "name": "Chitungwiza",
+      "province": "Harare",
+      "provinceSlug": "harare-zw",
+      "slug": "chitungwiza",
+      "source": "seed",
+      "tags": ["city"]
+    },
+    {
+      "country": "ZW",
+      "elevation": 1490.0,
+      "lat": -17.89,
+      "lon": 31.15,
+      "name": "Epworth",
+      "province": "Harare",
+      "provinceSlug": "harare-zw",
+      "slug": "epworth",
+      "source": "seed",
+      "tags": ["city"]
+    }
+  ],
+  "source": "places",
+  "total": 3
+}

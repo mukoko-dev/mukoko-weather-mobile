@@ -1,25 +1,26 @@
 /**
- * Shamwari chat endpoint — mirrors the web app's POST /api/py/chat.
+ * Shamwari chat: `POST /v1/ai/chat` on the weather Worker.
  *
- * The Python backend (api/py/_chat.py) runs Claude with tool use over the
- * shared weather / locations data. Request and response shapes match the web
- * client exactly:
+ * The Worker (`workers/ai`) fetches the weather for the places named in the
+ * message, puts it in the prompt and calls the model once. Request and
+ * response shapes:
  *
  *   request:  { message, history, activities? }
  *   response: { response, references, error? }
  *
- * The backend rate-limits to 20 requests/hour/IP, caps history at 10 messages,
- * and rejects messages longer than 2000 chars (HTTP 400). We enforce the same
- * limits client-side so we never send a request the server will reject, and we
- * translate error responses (rate-limit, service unavailable, network) into a
- * graceful assistant fallback so the UI always has something to render.
+ * The Worker rate-limits per client, caps history at 10 messages, and rejects
+ * messages longer than 2000 chars (HTTP 400) or carrying personal data (HTTP
+ * 422 `personal_data_detected`). We enforce the same length limits client-side
+ * so we never send a request the server will reject, and we translate error
+ * responses (rate-limit, service unavailable, network) into a graceful
+ * assistant fallback so the UI always has something to render.
  */
 
-import { ApiError, apiFetch } from "@/api/client";
+import { ApiError, apiFetch, parseProblem, ROUTES } from "@/api/client";
 
-/** Server rejects messages longer than this (api/py/_chat.py MAX_MESSAGE_LEN). */
+/** The Worker rejects messages longer than this (`MAX_MESSAGE_LEN`). */
 export const MAX_MESSAGE_LEN = 2000;
-/** Server truncates history to the last N messages (api/py/_chat.py MAX_HISTORY). */
+/** The Worker keeps the last N history messages (`MAX_HISTORY`). */
 export const MAX_HISTORY = 10;
 
 export type ChatRole = "user" | "assistant";
@@ -110,7 +111,7 @@ export async function sendChatMessage(
   }
 
   try {
-    const data = await apiFetch<ChatResponse>("/api/py/chat", {
+    const data = await apiFetch<ChatResponse>(ROUTES.chat, {
       method: "POST",
       json: body,
       signal: opts.signal,
@@ -125,6 +126,11 @@ export async function sendChatMessage(
     if (err instanceof Error && err.name === "AbortError") throw err;
 
     if (err instanceof ApiError) {
+      // Asking the person to remove personal details is written for them.
+      const problem = parseProblem(err.body);
+      if (problem.code === "personal_data_detected" && problem.message) {
+        return { response: problem.message, references: [], error: true };
+      }
       // The server may include a friendlier message in the JSON body; prefer it.
       const errBody = err.body;
       const bodyResponse =
