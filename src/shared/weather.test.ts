@@ -1,7 +1,6 @@
 /**
  * Pure-function tests for the ported Open-Meteo helpers.
- * We don't hit the network here — `fetchWeather` is exercised at the
- * integration layer (src/api/weather.ts).
+ * No network here: the app reads weather only through src/api/weather.ts.
  */
 
 import {

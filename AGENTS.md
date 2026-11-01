@@ -3,6 +3,10 @@
 Read the exact versioned docs at <https://docs.expo.dev/versions/v58.0.0/> before writing any code.
 The SDK 58 release notes and upgrade steps are at <https://expo.dev/changelog/sdk-58>; the Expo Router migration is at <https://docs.expo.dev/router/migrate/sdk-57-to-58/>.
 
+## One backend only
+
+The app talks to the Cloudflare weather API and nothing else: no website's server, no database, no weather provider (owner, 2026-11-01). The base URL and every route live in `src/api/client.ts`. Never add a database client or URL: if the app needs data the API does not serve, ask for an API route. `scripts/check-cloudflare-only.mjs` (run by `npm test`) fails on a retired host, a database URL or package, or a direct provider call.
+
 ## Track big work in GitHub issues
 
 Any substantial build, migration, investigation or multi-step task gets a GitHub issue in the repo that owns it — before or as work starts — so another session, agent or person can pick it up.

@@ -1,37 +1,46 @@
 # Mukoko Weather (mobile)
 
-> The Expo / React Native client for
-> [Mukoko Weather](https://weather.mukoko.com) — iOS and Android.
+> The Expo / React Native client for Mukoko Weather — iOS and Android.
 
 ![Expo](https://img.shields.io/badge/Expo-SDK_58-000020?style=flat-square&logo=expo&logoColor=white)
 ![React Native](https://img.shields.io/badge/React_Native-0.88-61DAFB?style=flat-square&logo=react&logoColor=000)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Platforms](https://img.shields.io/badge/Platforms-iOS_%7C_Android-lightgrey?style=flat-square)
 
-**Backend:** [weather.mukoko.com](https://weather.mukoko.com) | **Version:**
-1.0.0 | **Distribution:** not yet in either store
+**Backend:** the Cloudflare weather API, `weather-api.mukoko.com` |
+**Version:** 1.0.0 | **Distribution:** not yet in either store
 
 ---
 
 ## What it is
 
-A thin client over the Python API in
-[`nyuchi/mukoko-weather`](https://github.com/nyuchi/mukoko-weather). No weather
-logic is duplicated here: every call goes to that app's `/api/py/*` endpoints,
-and the repo owns only presentation, navigation, device identity and sign-in.
+A thin client over the Cloudflare weather API (the public Worker in
+[`mukoko-dev/mukoko-weather`](https://github.com/mukoko-dev/mukoko-weather),
+`workers/public-api`). No weather logic is duplicated here: every call goes to
+that API's `/v1/*` routes, and the repo owns only presentation, navigation,
+device identity and sign-in.
+
+**The app talks to the API, and only the API.** It connects to the Cloudflare
+backend and nothing else: no website's server, no database, no weather
+provider. Data platforms sit behind the API, not behind the app. The base URL
+and every route live in one place, `src/api/client.ts`, so moving to the Mukoko
+consumer API (`api.mukoko.com`) is a change to that file. `npm test` runs
+`scripts/check-cloudflare-only.mjs`, which fails on any retired host, database
+URL or client package, or direct provider call (see
+[One backend only](#one-backend-only)).
 
 Five surfaces: the weather home (GPS plus a 7-day forecast), explore/search,
 Shamwari AI chat, a preferences tab, and a per-location detail route.
 
-| Fact              | Value                                                                           |
-| ----------------- | ------------------------------------------------------------------------------- |
-| Display name      | Mukoko Weather                                                                  |
-| npm package name  | `mukoko-mobile` (the repo and app are `mukoko-weather-mobile` / Mukoko Weather) |
-| Bundle ID (iOS)   | `africa.nyuchi.mukoko.weather`                                                  |
-| Package (Android) | `africa.nyuchi.mukoko.weather`                                                  |
-| URL scheme        | `mukoko://`                                                                     |
-| EAS project       | `97f6eb48-2aac-42c2-b13d-5f68f1a86174` (owner `nyuchi-web-services`)            |
-| API base          | `https://weather.mukoko.com`, override with `EXPO_PUBLIC_API_URL`               |
+| Fact              | Value                                                                                    |
+| ----------------- | ---------------------------------------------------------------------------------------- |
+| Display name      | Mukoko Weather                                                                           |
+| npm package name  | `mukoko-mobile` (the repo and app are `mukoko-weather-mobile` / Mukoko Weather)          |
+| Bundle ID (iOS)   | `africa.nyuchi.mukoko.weather`                                                           |
+| Package (Android) | `africa.nyuchi.mukoko.weather`                                                           |
+| URL scheme        | `mukoko://`                                                                              |
+| EAS project       | `97f6eb48-2aac-42c2-b13d-5f68f1a86174` (owner `nyuchi-web-services`)                     |
+| API base          | `https://weather-api.mukoko.com`; `EXPO_PUBLIC_API_URL` may name another Cloudflare host |
 
 **Not yet released.** `eas.json` defines `development`, `preview` and
 `production` build profiles, but the only submit target is Android → Play
@@ -48,13 +57,17 @@ Expo SDK 58 needs Node.js 22.13 or newer on the 22 line, 24.3 or newer on the 24
 cd mukoko-weather-mobile
 npm install
 cp .env.example .env
-# Edit .env: set EXPO_PUBLIC_API_URL and EXPO_PUBLIC_WORKOS_CLIENT_ID
+# Edit .env: set EXPO_PUBLIC_WORKOS_CLIENT_ID (EXPO_PUBLIC_API_URL can stay as is)
 ```
 
-For local development against a Next.js dev server, set:
+`EXPO_PUBLIC_API_URL` must be a Cloudflare host (`weather-api.mukoko.com`, later
+`api.mukoko.com`). Any other value is ignored and the default is used. To work
+against a Worker on your own machine (`wrangler dev` in
+`mukoko-dev/mukoko-weather`), a development build also accepts an address on
+your own network:
 
 ```env
-EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:3000
+EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:8787
 ```
 
 The simulator can hit `localhost`, but a physical device on Expo Go needs your
@@ -76,9 +89,10 @@ For a physical device, scan the QR code with the Expo Go app
 ## Verify
 
 ```bash
-npm run typecheck   # tsc --noEmit
-npm test            # jest (smoke tests)
-npx expo-doctor     # SDK version + dependency checks
+npm run typecheck              # tsc --noEmit
+npm test                       # jest, including the one-backend guard
+npm run check:cloudflare-only  # the guard on its own
+npx expo-doctor                # SDK version + dependency checks
 ```
 
 ## Project layout
@@ -105,13 +119,15 @@ mukoko-weather-mobile/
       colors.ts                  # Light + dark palette (mineral-derived)
       typography.ts              # Type scale: hero/display/title/body/mono
     api/
-      client.ts                  # fetch wrapper -> mukoko-weather /api/py/*
-      weather.ts                 # /api/py/weather
-      locations.ts               # /api/py/locations/add, /api/py/search, /api/py/geo
-      auth.ts                    # WorkOS hosted sign-in via expo-auth-session
+      client.ts                  # base URL, ROUTES table, fetch wrapper, error parsing
+      weather.ts                 # GET /v1/weather (+ /v1/locations for a slug), converted to the screens' model
+      locations.ts               # GET /v1/search, /v1/geo, /v1/locations
+      chat.ts                    # POST /v1/ai/chat (Shamwari)
+      devices.ts                 # POST /v1/devices (device preference profile)
+      auth.ts                    # WorkOS hosted sign-in via expo-auth-session (switched off)
     device/
       identity.ts                # UUID v4 in SecureStore (Android/iOS) / localStorage (web)
-      register.ts                # POST device.devices payload (STUBBED — see below)
+      register.ts                # POST /v1/devices with the install id (release builds only)
     components/
       BrandText.tsx              # Typography + tone variants
       Header.tsx                 # Wordmark + 7-mineral stripe
@@ -123,31 +139,46 @@ mukoko-weather-mobile/
     images/                      # Icons, splash, tab glyphs
 ```
 
-## What's wired vs. stubbed
+## What's wired vs. switched off
 
-| Surface                                               | Status               | Notes                                                                                                                                                                                              |
-| ----------------------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Weather home (current + 7-day)                        | Live                 | Calls `GET /api/py/weather?lat&lon`                                                                                                                                                                |
-| Location detail (`/location/[slug]`)                  | Live                 | Calls `GET /api/py/weather?location=<slug>`                                                                                                                                                        |
-| Explore / add location                                | Live                 | Calls `POST /api/py/locations/add`                                                                                                                                                                 |
-| Shamwari AI tab                                       | Live                 | Full-viewport chat screen (`src/app/(tabs)/shamwari.tsx`) against `POST /api/py/chat`; mirrors the server's message-length, history and rate limits                                                |
-| Brand fonts (Noto Serif + Noto Sans + JetBrains Mono) | Live                 | Bundled via `@expo-google-fonts/*`                                                                                                                                                                 |
-| Device identity (SecureStore UUID)                    | Live                 | Generated on first launch                                                                                                                                                                          |
-| Device registration (`device.devices`)                | **Stubbed**          | Server endpoint `POST /api/py/devices/register` doesn't exist yet — payload is logged in dev. Flip `REGISTER_ENABLED` in `src/device/register.ts` once it lands.                                   |
-| WorkOS AuthKit sign-in                                | **Stubbed exchange** | The hosted page + redirect work end-to-end, but code exchange returns a stub session. Wire `POST /api/py/auth/mobile/exchange` in mukoko-weather and flip `EXCHANGE_ENABLED` in `src/api/auth.ts`. |
+| Surface                                               | Status           | Notes                                                                                                                                                                                                            |
+| ----------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Weather home (current + 7-day)                        | Live             | `GET /v1/weather?lat&lon`; the answer is converted to the screens' model in `src/api/weather.ts`                                                                                                                 |
+| Location detail (`/location/[slug]`)                  | Live             | `GET /v1/locations?slug=` for the coordinate, then `GET /v1/weather`                                                                                                                                             |
+| Explore / search                                      | Live             | `GET /v1/search?q=`                                                                                                                                                                                              |
+| Use my location                                       | Live             | `GET /v1/geo?lat&lon&autoCreate=true` names the exact place under the fix. Nothing is stored; the app has no route that creates a place                                                                          |
+| Shamwari AI tab                                       | Live             | Full-viewport chat screen (`src/app/(tabs)/shamwari.tsx`) against `POST /v1/ai/chat`; mirrors the Worker's message-length, history and rate limits                                                               |
+| Brand fonts (Noto Serif + Noto Sans + JetBrains Mono) | Live             | Bundled via `@expo-google-fonts/*`                                                                                                                                                                               |
+| Device identity (SecureStore UUID)                    | Live             | Generated on first launch                                                                                                                                                                                        |
+| Device registration                                   | Release only     | `POST /v1/devices` with the install id and nothing else. Development builds log and skip it, so working on the app creates no profile on the production API                                                      |
+| WorkOS AuthKit sign-in                                | **Switched off** | The API has no route to exchange the code for a session, so the screen says "Sign-in isn't available yet" and keeps no session. Flip `SIGN_IN_AVAILABLE` in `src/api/auth.ts` once it exists (design: issue #41) |
 
-### Why is auth/registration stubbed?
+### Needs a Cloudflare route first
 
-Phase 1A in mukoko-weather is bringing WorkOS AuthKit online for the web. The
-mobile token-exchange endpoint and the `device.devices` register endpoint
-aren't in main yet. Rather than blocking the bootstrap, we generate a stable
-local device id and short-circuit the network calls so the rest of the UI
-can be developed and reviewed.
+These are the gaps between the app and the Cloudflare backend. Each is a server
+change, not an app change:
 
-When mukoko-weather ships either endpoint, the changes here are tiny:
+- **Sign-in:** a token-exchange route on the Mukoko or Nyuchi API that takes
+  `{ code, codeVerifier, redirectUri }` and answers a session, holding the
+  WorkOS secret. Issue #41 has the design.
+- **Creating a place:** belongs to the Nyuchi API, not to a Worker and not to
+  this app. GPS uses `autoCreate=true`, which names the spot without storing it.
 
-- `src/device/register.ts` -> set `REGISTER_ENABLED = true`
-- `src/api/auth.ts` -> set `EXCHANGE_ENABLED = true`
+## One backend only
+
+Owner decisions (2026-11-01): the app connects to the Cloudflare backend and
+never to a website's server, and it connects to the API, never to a database.
+This is enforced, not just written down:
+
+- `src/api/client.ts` holds the one base URL and the table of routes. A value of
+  `EXPO_PUBLIC_API_URL` on any host but `weather-api.mukoko.com` or
+  `api.mukoko.com` is ignored.
+- `scripts/check-cloudflare-only.mjs` reads every text file in the project and
+  fails on a retired host, a database URL or name, a database or hosting-platform
+  package, a direct weather-provider call, or a URL on a Mukoko host that is
+  not on its allow-list. `npm test` runs it
+  (`src/__tests__/cloudflare-only.test.ts`), so the org's `vite-plus / test`
+  check runs it on every pull request.
 
 ## WorkOS environment variables
 
@@ -185,14 +216,18 @@ families are not used here.
 npm test
 ```
 
-28 test files, covering the API client and chat client, device identity and
-registration payloads, the shared weather/i18n/locations/ICAO helpers, brand
-tokens, and component render tests via `@testing-library/react-native`
-(`src/__tests__/` plus colocated `*.test.ts(x)` files).
+33 test files, covering the API client (URL building, base-URL rules, all three
+error formats), each route against answers recorded from the weather Worker, the
+chat, device and sign-in behaviour, the one-backend guard, device identity, the
+shared weather/i18n/locations/ICAO helpers, brand tokens, and component render
+tests via `@testing-library/react-native` (`src/__tests__/` plus colocated
+`*.test.ts(x)` files). The recorded answers are in `src/api/__fixtures__/`
+(GET reads of `weather-api.mukoko.com` on 2026-11-01); no test touches the
+network, and none writes to a production endpoint.
 
-> **These do not run in CI.** The only workflow in this repo is the org lint
-> gate; nothing runs `npm test`, `npm run typecheck`, or any EAS build. Run
-> them locally before pushing.
+The org's `vite-plus / test` check runs `npm test` on every pull request, and
+`vite-plus / check` runs the formatter, lint and type check. No workflow runs
+`npm run typecheck` on its own or any EAS build.
 
 ## Native build
 

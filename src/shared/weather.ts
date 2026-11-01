@@ -1,4 +1,4 @@
-/* Open-Meteo weather API client */
+/* Weather types and pure helpers. No network: the app reads weather only through src/api. */
 
 export interface CurrentWeather {
   temperature_2m: number;
@@ -140,81 +140,6 @@ export interface FrostAlert {
   startTime: string;
   endTime: string;
   message: string;
-}
-
-const CURRENT_PARAMS = [
-  "temperature_2m",
-  "relative_humidity_2m",
-  "apparent_temperature",
-  "precipitation",
-  "weather_code",
-  "cloud_cover",
-  "wind_speed_10m",
-  "wind_direction_10m",
-  "wind_gusts_10m",
-  "uv_index",
-  "surface_pressure",
-  "is_day",
-].join(",");
-
-const HOURLY_PARAMS = [
-  "temperature_2m",
-  "apparent_temperature",
-  "relative_humidity_2m",
-  "precipitation_probability",
-  "precipitation",
-  "weather_code",
-  "visibility",
-  "cloud_cover",
-  "surface_pressure",
-  "wind_speed_10m",
-  "wind_direction_10m",
-  "wind_gusts_10m",
-  "uv_index",
-  "is_day",
-].join(",");
-
-const DAILY_PARAMS = [
-  "weather_code",
-  "temperature_2m_max",
-  "temperature_2m_min",
-  "apparent_temperature_max",
-  "apparent_temperature_min",
-  "sunrise",
-  "sunset",
-  "uv_index_max",
-  "precipitation_sum",
-  "precipitation_probability_max",
-  "wind_speed_10m_max",
-  "wind_gusts_10m_max",
-].join(",");
-
-export async function fetchWeather(
-  lat: number,
-  lon: number,
-): Promise<WeatherData> {
-  const params = new URLSearchParams({
-    latitude: lat.toString(),
-    longitude: lon.toString(),
-    current: CURRENT_PARAMS,
-    hourly: HOURLY_PARAMS,
-    daily: DAILY_PARAMS,
-    timezone: "auto",
-    forecast_days: "7",
-  });
-
-  const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, {
-    // Note: Next.js `next: { revalidate: 900 }` cache hint stripped — RN
-    // runtime doesn't honour it. Mobile relies on server-side caching via
-    // the mukoko-weather API gateway.
-    signal: AbortSignal.timeout(10_000), // 10s timeout
-  });
-
-  if (!res.ok) {
-    throw new Error(`Weather API error: ${res.status}`);
-  }
-
-  return res.json();
 }
 
 /**

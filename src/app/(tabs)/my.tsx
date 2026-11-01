@@ -18,7 +18,13 @@ import { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getSession, signOut, type Session } from "@/api/auth";
+import {
+  getSession,
+  SIGN_IN_AVAILABLE,
+  SIGN_IN_UNAVAILABLE_MESSAGE,
+  signOut,
+  type Session,
+} from "@/api/auth";
 import { RADIUS, SPACING, TOUCH_TARGET_MIN } from "@/brand/tokens";
 import { BaobabCard } from "@/components/BaobabCard";
 import { BrandText } from "@/components/BrandText";
@@ -95,26 +101,29 @@ export default function MyScreen() {
           ) : (
             <>
               <BrandText variant="body" tone="textSecondary">
-                Sign in to sync saved locations and preferences across your
-                devices.
+                {SIGN_IN_AVAILABLE
+                  ? "Sign in to sync saved locations and preferences across your devices."
+                  : SIGN_IN_UNAVAILABLE_MESSAGE}
               </BrandText>
-              <Pressable
-                onPress={onSignIn}
-                accessibilityRole="button"
-                accessibilityLabel="Sign in with Mukoko"
-                style={[
-                  styles.btnPrimary,
-                  { backgroundColor: palette.primary },
-                ]}
-              >
-                <BrandText
-                  variant="bodyBold"
-                  tone="text"
-                  style={{ color: palette.onPrimary }}
+              {SIGN_IN_AVAILABLE ? (
+                <Pressable
+                  onPress={onSignIn}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign in with Mukoko"
+                  style={[
+                    styles.btnPrimary,
+                    { backgroundColor: palette.primary },
+                  ]}
                 >
-                  Sign in with Mukoko
-                </BrandText>
-              </Pressable>
+                  <BrandText
+                    variant="bodyBold"
+                    tone="text"
+                    style={{ color: palette.onPrimary }}
+                  >
+                    Sign in with Mukoko
+                  </BrandText>
+                </Pressable>
+              ) : null}
             </>
           )}
         </BaobabCard>

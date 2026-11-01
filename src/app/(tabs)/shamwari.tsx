@@ -6,7 +6,7 @@
  * the bottom tab nav. On the empty state we greet the user and offer
  * suggested-prompt chips.
  *
- * Wiring: POST /api/py/chat via the typed client in src/api/chat.ts. Loading,
+ * Wiring: POST /v1/ai/chat via the typed client in src/api/chat.ts. Loading,
  * errors and rate-limits degrade gracefully to an on-brand fallback reply.
  *
  * Surface mineral: sodalite (Mzizi — AI / deep-reasoning). See the chat
