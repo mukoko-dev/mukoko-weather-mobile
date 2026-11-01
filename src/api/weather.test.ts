@@ -12,6 +12,7 @@ import {
   fetchWeather,
   toCurrent,
   toDaily,
+  toForecast,
   toWeatherResponse,
 } from "@/api/weather";
 import { mockFetch } from "@/api/mock-fetch";
@@ -179,6 +180,73 @@ describe("toWeatherResponse", () => {
     expect(weather.daily).toEqual([]);
     expect(weather.hourly).toBeUndefined();
     expect(weather.current.temperature).toBeNull();
+  });
+});
+
+describe("toForecast", () => {
+  const forecast = toForecast(weatherHarare)!;
+
+  it("keeps the whole recorded forecast in the shared model, for the place's own time", () => {
+    expect(forecast.utc_offset_seconds).toBe(7200);
+    expect(forecast.timezone).toBe("Africa/Harare");
+    expect(forecast.current.temperature_2m).toBe(15.6);
+    // The full series, not cut to the current hour: the tiles read "today".
+    expect(forecast.hourly.time).toHaveLength(36);
+    expect(forecast.hourly.time[0]).toBe("2026-11-01T00:00");
+    expect(forecast.daily.time).toHaveLength(7);
+    expect(forecast.daily.sunrise[0]).toBe("2026-11-01T05:16");
+    expect(forecast.insights?.dewPoint).toBe(9);
+  });
+
+  it("carries every column the screens read, equal in length to the hours", () => {
+    for (const key of [
+      "temperature_2m",
+      "apparent_temperature",
+      "relative_humidity_2m",
+      "precipitation_probability",
+      "precipitation",
+      "weather_code",
+      "visibility",
+      "cloud_cover",
+      "surface_pressure",
+      "wind_speed_10m",
+      "wind_direction_10m",
+      "wind_gusts_10m",
+      "uv_index",
+      "is_day",
+    ] as const) {
+      expect(forecast.hourly[key]).toHaveLength(36);
+    }
+  });
+
+  it("is a copy: changing it does not change the answer", () => {
+    forecast.hourly.temperature_2m[0] = 99;
+    expect(weatherHarare.hourly.temperature_2m[0]).not.toBe(99);
+  });
+
+  it("turns a missing column into an empty one, never undefined", () => {
+    const raw = {
+      current: { temperature_2m: 20 },
+      hourly: { time: ["2026-11-01T00:00"], temperature_2m: [20] },
+    };
+    const f = toForecast(raw)!;
+    expect(f.hourly.wind_gusts_10m).toEqual([]);
+    expect(f.daily.sunrise).toEqual([]);
+    expect(f.utc_offset_seconds).toBeUndefined();
+  });
+
+  it("is undefined when there is nothing to read", () => {
+    expect(toForecast({})).toBeUndefined();
+    expect(toForecast({ current: { temperature_2m: 1 } })).toBeUndefined();
+    expect(
+      toForecast({ hourly: { time: ["2026-11-01T00:00"] } }),
+    ).toBeUndefined();
+  });
+
+  it("is on the converted response beside the aligned hourly columns", () => {
+    const weather = toWeatherResponse(weatherHarare);
+    expect(weather.forecast?.hourly.time).toHaveLength(36);
+    expect(weather.hourly?.time[0]).toBe("2026-11-01T02:00");
   });
 });
 
