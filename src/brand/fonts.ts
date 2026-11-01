@@ -11,13 +11,19 @@ import {
 import {
   NotoSans_400Regular,
   NotoSans_600SemiBold,
+  NotoSans_700Bold,
 } from "@expo-google-fonts/noto-sans";
-import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono";
+import {
+  JetBrainsMono_400Regular,
+  JetBrainsMono_600SemiBold,
+} from "@expo-google-fonts/jetbrains-mono";
 
 export const BRAND_FONTS = {
   NotoSerif_400Regular,
   NotoSerif_600SemiBold,
   NotoSans_400Regular,
   NotoSans_600SemiBold,
+  NotoSans_700Bold,
   JetBrainsMono_400Regular,
+  JetBrainsMono_600SemiBold,
 } as const;

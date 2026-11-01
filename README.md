@@ -123,19 +123,22 @@ mukoko-weather-mobile/
       _layout.tsx                # Root Stack — fonts, auth init, device register
       (tabs)/                    # Bottom tab group
         _layout.tsx              # NativeTabs config
-        index.tsx                # Weather (home) — GPS + 7-day forecast
+        index.tsx                # Weather (home) — GPS, then the shared WeatherPage
         explore.tsx              # Search / add a location
         shamwari.tsx             # AI chat placeholder
         my.tsx                   # Account, device id, sign-in
-      location/[slug].tsx        # /location/harare etc.
+      location/[slug].tsx        # /location/harare etc. — the same WeatherPage, with Back
       sign-in.tsx                # WorkOS AuthKit launcher
       sign-in-callback.tsx       # OAuth redirect target (mukoko://sign-in-callback)
     brand/
       tokens.ts                  # 7 minerals, spacing, radius, font families
       fonts.ts                   # @expo-google-fonts/* loader map
     theme/
-      colors.ts                  # Light + dark palette (mineral-derived)
-      typography.ts              # Type scale: hero/display/title/body/mono
+      mzizi.ts                   # Weather screens' tokens, mirrored from the web: space, type scale, radius, touch, page colours
+      sky.ts                     # The eight page skies (light + dark), stars, rain streaks
+      colors.ts                  # Light + dark palette for the other tabs (mineral-derived)
+      typography.ts              # Type scale for the other tabs: hero/display/title/body/mono
+    shared/                      # Pure logic ported from the web (hero, hourly outlook, place-time, tile insights), with the web's tests
     api/
       client.ts                  # base URL, ROUTES table, fetch wrapper, error parsing
       weather.ts                 # GET /v1/weather (+ /v1/locations for a slug), converted to the screens' model
@@ -149,10 +152,22 @@ mukoko-weather-mobile/
     components/
       BrandText.tsx              # Typography + tone variants
       Header.tsx                 # Wordmark + 7-mineral stripe
-      MetricCard.tsx             # Stat card (humidity, wind, etc.)
-      WeatherIcon.tsx            # WMO code -> emoji glyph
+      icons/Icon.tsx             # Drawn weather + interface icons (react-native-svg); no emoji
+      weather/                   # The location page, one component per web section:
+        WeatherScroll.tsx        #   page container: sky, gutters, safe areas, status bar
+        WeatherSky.tsx           #   the page sky (expo-linear-gradient)
+        SkyHero.tsx              #   the open-sky hero
+        ConditionsCard.tsx       #   outlook sentence + hourly strip (place time)
+        ConditionTiles.tsx       #   wind, UV, feels like, visibility, rain, humidity, pressure, sun
+        DailyCard.tsx            #   the week
+        WeatherSkeleton.tsx      #   structural loading state
+        WeatherPage.tsx          #   one page for both screens; error state
     hooks/
-      usePalette.ts              # Reads OS color scheme -> palette
+      usePalette.ts              # Reads OS color scheme -> palette (other tabs)
+      usePageColors.ts           # The web's page colours for the weather screens
+      useNow.ts                  # The current instant, refreshed each minute
+      useReduceMotion.ts         # OS Reduce Motion, live
+    test-utils/                  # Mocks and recorded-answer fixtures for the tests
   assets/
     images/                      # Icons, splash, tab glyphs
 ```
@@ -161,7 +176,7 @@ mukoko-weather-mobile/
 
 | Surface                                               | Status           | Notes                                                                                                                                                                                                                                                                                                  |
 | ----------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Weather home (current + 7-day)                        | Live             | `GET /v1/weather?lat&lon`; the answer is converted to the screens' model in `src/api/weather.ts`                                                                                                                                                                                                       |
+| Weather home (sky, hero, Conditions, tiles, 7-day)    | Live             | `GET /v1/weather?lat&lon`; the answer is converted to the screens' model in `src/api/weather.ts`                                                                                                                                                                                                       |
 | Location detail (`/location/[slug]`)                  | Live             | `GET /v1/locations?slug=` for the coordinate, then `GET /v1/weather`                                                                                                                                                                                                                                   |
 | Explore / search                                      | Live             | `GET /v1/search?q=`                                                                                                                                                                                                                                                                                    |
 | Use my location                                       | Live             | `GET /v1/geo?lat&lon&autoCreate=true` names the exact place under the fix. Nothing is stored; the app has no route that creates a place                                                                                                                                                                |
