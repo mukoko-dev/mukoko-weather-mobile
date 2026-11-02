@@ -24,6 +24,7 @@ import { useEffect } from "react";
 import { useColorScheme, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { recordAppOpen } from "@/analytics";
 import { initAuth } from "@/api/auth";
 import { BRAND_FONTS } from "@/brand/fonts";
 import { BrandStripe } from "@/components/BrandStripe";
@@ -42,6 +43,8 @@ export default function RootLayout() {
     // Fire-and-forget; the result is logged in dev. We don't want to gate
     // the UI on device registration succeeding.
     void registerDevice();
+    // first_open, once per install id; queued on the phone (src/analytics).
+    recordAppOpen();
   }, []);
 
   useEffect(() => {

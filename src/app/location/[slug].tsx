@@ -12,6 +12,7 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 
+import { coarsePlace, track } from "@/analytics";
 import { fetchWeather, type WeatherResponse } from "@/api/weather";
 import {
   BackControl,
@@ -46,6 +47,10 @@ export default function LocationScreen() {
       try {
         const weather = await fetchWeather({ slug }, signal);
         setState({ kind: "ready", weather });
+        track("forecast_shown", {
+          surface: "place",
+          place: coarsePlace(weather.location ?? {}),
+        });
       } catch (err) {
         if (signal?.aborted) return;
         setState({
