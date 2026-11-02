@@ -21,7 +21,6 @@
  * card's accent only.
  */
 
-import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { type AgricultureResult } from "@/api/agriculture";
@@ -78,6 +77,8 @@ export type AgricultureSnapshotProps = Omit<
 > & {
   /** The user's farming crops (activity ids), possibly none. */
   crops: readonly string[];
+  /** Changes when the page pulls a new forecast: the farm data asks again. */
+  refreshKey?: unknown;
 };
 
 type Ready = Extract<AgricultureResult, { kind: "ready" }>["data"];
@@ -321,7 +322,8 @@ export function AgricultureSnapshotView({
   variant = "card",
   onOpenInsights,
 }: AgricultureSnapshotViewProps) {
-  const body = useMemo(() => {
+  // No memo: the state, the place and the callback are new each render.
+  const body = (() => {
     if (state.status === "loading") return <CardLoading what="farm weather" />;
     if (state.status === "unavailable") {
       return (
@@ -348,7 +350,7 @@ export function AgricultureSnapshotView({
         onOpenInsights={onOpenInsights}
       />
     );
-  }, [state, place, variant, onOpenInsights]);
+  })();
 
   return (
     <PlaceCard accent="malachite" testID="agriculture-snapshot">
@@ -360,9 +362,10 @@ export function AgricultureSnapshotView({
 /** The card that loads its own data (the location page). */
 export function AgricultureSnapshot({
   crops,
+  refreshKey,
   ...rest
 }: AgricultureSnapshotProps) {
-  const state = useAgriculture(rest.place, crops);
+  const state = useAgriculture(rest.place, crops, refreshKey);
   return <AgricultureSnapshotView {...rest} state={state} />;
 }
 

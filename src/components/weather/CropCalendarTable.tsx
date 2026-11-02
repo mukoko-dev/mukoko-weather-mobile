@@ -50,7 +50,7 @@ export function stageStyle(
 /** "Plant: Nov to Dec. Harvest: Apr to May." for VoiceOver. */
 export function spokenStages(crop: CropCalendar): string {
   return STAGE_ORDER.flatMap((stage) => {
-    const months = crop.months[stage];
+    const months = crop.months?.[stage];
     if (!months?.length) return [];
     return [
       `${STAGE_LABELS[stage]}: ${monthRange(months).replace(/–/g, " to ")}.`,

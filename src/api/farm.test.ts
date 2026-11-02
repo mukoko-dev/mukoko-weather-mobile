@@ -11,7 +11,11 @@ import {
   fetchNormalsOn,
   fetchWindowNormals,
 } from "@/api/agri-history";
-import { fetchAgriculture, readAgriculture } from "@/api/agriculture";
+import {
+  AGRICULTURE_TTL_MS,
+  fetchAgriculture,
+  readAgriculture,
+} from "@/api/agriculture";
 import { fetchEnso, readEnso } from "@/api/enso";
 import { mockFetch } from "@/api/mock-fetch";
 import {
@@ -30,6 +34,10 @@ import errorInvalid from "./__fixtures__/error-invalid-request.json";
 import historyHarare from "./__fixtures__/history-harare-8.json";
 import normalsHarare from "./__fixtures__/normals-harare.json";
 import profileHarare from "./__fixtures__/profile-harare.json";
+import { clearAgricultureCache } from "@/api/agriculture";
+
+// The farm answer is shared between screens: each test starts with none.
+beforeEach(() => clearAgricultureCache());
 
 const BASE = "https://weather-api.mukoko.com";
 const HARARE = { slug: "harare", lat: -17.83, lon: 31.05, country: "ZW" };
@@ -330,11 +338,9 @@ describe("GET /v1/history and /v1/normals for the 30-day card", () => {
     );
   });
 
-  it("reads a failed normals request as no normals, so the card keeps what it has", async () => {
+  it("rejects a failed normals request, so the card can offer Try again", async () => {
     mockFetch({ status: 500, body: { error: "boom" } });
-    expect(await fetchNormalsOn(0, 0, "2026-11-01")).toEqual({
-      available: false,
-    });
+    await expect(fetchNormalsOn(0, 0, "2026-11-01")).rejects.toThrow();
   });
 
   it("averages the two ends of the window, asking in order", async () => {
@@ -358,5 +364,35 @@ describe("GET /v1/history and /v1/normals for the 30-day card", () => {
     const calls = mockFetch({ body: { available: false } });
     expect(await fetchWindowNormals(0, 0)).toEqual({ available: false });
     expect(calls).toHaveLength(1);
+  });
+});
+
+describe("GET /v1/agriculture, shared between the card and the page", () => {
+  it("reuses a ready answer, and asks again when fresh or once it is old", async () => {
+    const calls = mockFetch(
+      { body: agricultureHarare },
+      { body: agricultureHarare },
+      { body: agricultureHarare },
+    );
+    const t0 = Date.UTC(2026, 10, 1, 8);
+    await fetchAgriculture(HARARE, [], undefined, { now: t0 });
+    await fetchAgriculture(HARARE, [], undefined, { now: t0 + 60_000 });
+    expect(calls).toHaveLength(1);
+    await fetchAgriculture(HARARE, [], undefined, { now: t0, fresh: true });
+    expect(calls).toHaveLength(2);
+    await fetchAgriculture(HARARE, [], undefined, {
+      now: t0 + AGRICULTURE_TTL_MS + 60_000,
+    });
+    expect(calls).toHaveLength(3);
+  });
+
+  it("never reuses an unavailable answer, so Try again always asks", async () => {
+    const calls = mockFetch(
+      { body: { available: false, reason: "provider_unavailable" } },
+      { body: agricultureHarare },
+    );
+    expect((await fetchAgriculture(HARARE, [])).kind).toBe("unavailable");
+    expect((await fetchAgriculture(HARARE, [])).kind).toBe("ready");
+    expect(calls).toHaveLength(2);
   });
 });

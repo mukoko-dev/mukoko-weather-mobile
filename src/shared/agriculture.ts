@@ -350,6 +350,12 @@ export function isAgricultureReady(
   return Boolean(
     data?.available &&
     data.windows &&
+    // Every window the cards draw, each with a status: an answer missing one
+    // is unavailable, never a crash of the whole page.
+    WINDOW_ORDER.every(
+      (k) =>
+        typeof (data.windows as Partial<FarmWindows>)[k]?.status === "string",
+    ) &&
     data.rain &&
     data.headline &&
     data.verdict,
@@ -458,7 +464,7 @@ export function stageForMonth(
   month: number,
 ): CropStage | null {
   for (const stage of STAGE_ORDER) {
-    if (crop.months[stage]?.includes(month)) return stage;
+    if (crop.months?.[stage]?.includes(month)) return stage;
   }
   return null;
 }

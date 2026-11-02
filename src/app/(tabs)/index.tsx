@@ -23,17 +23,17 @@ import { useCallback, useEffect, useState } from "react";
 
 import { geoLookup, type LocationSummary } from "@/api/locations";
 import { fetchWeather, type WeatherResponse } from "@/api/weather";
-import { weatherForPage } from "@/api/place";
+import {
+  HARARE_DEFAULT,
+  PLACE_LOOKUP_TIMEOUT_MS,
+  fallbackPlace,
+  weatherForPage,
+} from "@/api/place";
 import { WeatherError, WeatherPage } from "@/components/weather/WeatherPage";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
 
 /** Harare, Mukoko's editorial default, used when there is no location fix. */
-const FALLBACK = {
-  lat: -17.8252,
-  lon: 31.0335,
-  label: "Harare",
-  slug: "harare",
-};
+const FALLBACK = HARARE_DEFAULT;
 
 type Coords = {
   lat: number;
@@ -80,11 +80,21 @@ export default function WeatherHome() {
    */
   const resolvePlace = useCallback(
     async (loc: Coords): Promise<LocationSummary | null> => {
+      // A slow or hung reverse geocode never keeps the place cards away:
+      // after the timeout they are drawn for the bare point.
+      let timer: ReturnType<typeof setTimeout> | undefined;
       try {
-        const { location } = await geoLookup(loc.lat, loc.lon, !loc.fallback);
-        return location;
+        const timeout = new Promise<null>((resolve) => {
+          timer = setTimeout(() => resolve(null), PLACE_LOOKUP_TIMEOUT_MS);
+        });
+        const lookup = geoLookup(loc.lat, loc.lon, !loc.fallback).then(
+          ({ location }) => location,
+        );
+        return await Promise.race([lookup, timeout]);
       } catch {
         return null;
+      } finally {
+        clearTimeout(timer);
       }
     },
     [],
@@ -108,23 +118,50 @@ export default function WeatherHome() {
       // Start the weather at once; name the place alongside, so a slow
       // geocode never holds the first paint.
       void load(loc);
-      const place = await resolvePlace(loc);
+      const found = await resolvePlace(loc);
       // Settled whether or not it was named: the place cards wait for this, so
       // they ask the Worker once, for the place, not first for the bare point.
-      setCoords((prev) => ({
-        ...(prev ?? loc),
-        ...(place ? { label: place.name, slug: place.slug, place } : {}),
-        settled: true,
-      }));
+      // The Harare default keeps its own name and links.
+      setCoords((prev) => {
+        const base = prev ?? loc;
+        if (loc.fallback) {
+          return { ...base, place: fallbackPlace(found), settled: true };
+        }
+        return {
+          ...base,
+          ...(found
+            ? { label: found.name, slug: found.slug, place: found }
+            : {}),
+          settled: true,
+        };
+      });
     })();
   }, [load, resolveLocation, resolvePlace]);
 
   const onRefresh = useCallback(async () => {
     if (!coords) return;
     setRefreshing(true);
-    await load(coords);
+    // A fix the lookup could not name (slow, failed) gets another try.
+    const naming =
+      coords.settled && !coords.place && !coords.fallback
+        ? resolvePlace(coords).then((found) => {
+            if (found) {
+              setCoords((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      label: found.name,
+                      slug: found.slug,
+                      place: found,
+                    }
+                  : prev,
+              );
+            }
+          })
+        : Promise.resolve();
+    await Promise.all([load(coords), naming]);
     setRefreshing(false);
-  }, [coords, load]);
+  }, [coords, load, resolvePlace]);
 
   const onRetry = useCallback(() => {
     if (!coords) return;

@@ -301,6 +301,7 @@ export function WeatherPage({
             <AgricultureSnapshot
               place={farmPlace}
               crops={crops}
+              refreshKey={weather}
               onOpenInsights={
                 farmPlace.slug
                   ? () => openAgriculture(farmPlace.slug as string)

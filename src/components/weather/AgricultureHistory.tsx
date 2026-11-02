@@ -43,6 +43,10 @@ export type AgricultureHistoryProps = {
 
 const TITLE = "Past 30 days against normal";
 
+/** Said when only the normals could not be loaded. */
+export const NORMALS_FAILED_NOTE =
+  "The normals could not be loaded, so there is no comparison yet.";
+
 export function AgricultureHistory({
   slug,
   lat,
@@ -78,6 +82,9 @@ export function AgricultureHistory({
   const answer = history.status === "ready" ? history.data : null;
   const noRecord = history.status === "ready" && history.data === null;
   const failed = history.status === "unavailable";
+  // The normals can fail on their own: the comparison is then lost, so the
+  // card says so and offers Try again too.
+  const normalsFailed = normals.status === "unavailable";
   const summary = summarizeHistory((answer?.data ?? []) as never[]);
   const normal =
     normals.status === "ready" && normals.data.available ? normals.data : null;
@@ -137,9 +144,15 @@ export function AgricultureHistory({
           so only the forecast model&apos;s rain and the normals are shown.
         </CardBody>
       ) : null}
-      {failed || answer?.degraded ? (
+      {failed || normalsFailed || answer?.degraded ? (
         <View style={styles.trouble} testID="agriculture-history-trouble">
-          <CardBody>{failed ? HISTORY_FAILED_NOTE : DEGRADED_NOTE}</CardBody>
+          <CardBody>
+            {failed
+              ? HISTORY_FAILED_NOTE
+              : answer?.degraded
+                ? DEGRADED_NOTE
+                : NORMALS_FAILED_NOTE}
+          </CardBody>
           <PillButton label="Try again" variant="outline" onPress={retry} />
         </View>
       ) : null}

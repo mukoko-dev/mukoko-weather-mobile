@@ -102,3 +102,31 @@ export function weatherForPage(
   if (!fix?.settled) return weather;
   return withPlace(weather, fix, fix.place);
 }
+
+/** Harare, Mukoko's editorial default, used when there is no location fix. */
+export const HARARE_DEFAULT = {
+  lat: -17.8252,
+  lon: 31.0335,
+  label: "Harare",
+  slug: "harare",
+  country: "ZW",
+};
+
+/** How long the place cards wait for the place to be named. */
+export const PLACE_LOOKUP_TIMEOUT_MS = 8_000;
+
+/**
+ * The place for the Harare default: the lookup's answer only when it IS
+ * Harare (find-only can return a nearby stored spot), else Harare as the app
+ * knows it. The default never takes another place's name or links.
+ */
+export function fallbackPlace(found: LocationSummary | null): LocationSummary {
+  if (found?.slug === HARARE_DEFAULT.slug) return found;
+  return {
+    slug: HARARE_DEFAULT.slug,
+    name: HARARE_DEFAULT.label,
+    country: HARARE_DEFAULT.country,
+    lat: HARARE_DEFAULT.lat,
+    lon: HARARE_DEFAULT.lon,
+  };
+}

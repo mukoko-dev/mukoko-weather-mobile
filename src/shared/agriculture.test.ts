@@ -154,15 +154,31 @@ describe("readiness + forecast slicing", () => {
     expect(
       isAgricultureReady({ available: false } as AgricultureResponse),
     ).toBe(false);
+    const windows = {
+      spray: { status: "go" },
+      plant: { status: "go" },
+      harvest: { status: "caution" },
+      irrigate: { status: "no" },
+    };
     expect(
       isAgricultureReady({
         available: true,
-        windows: {},
+        windows,
         rain: {},
         headline: "Good day to spray.",
         verdict: "go",
       } as unknown as AgricultureResponse),
     ).toBe(true);
+    // A window missing (an older Worker) is unavailable, never a crash later.
+    expect(
+      isAgricultureReady({
+        available: true,
+        windows: { ...windows, irrigate: undefined },
+        rain: {},
+        headline: "Good day to spray.",
+        verdict: "go",
+      } as unknown as AgricultureResponse),
+    ).toBe(false);
     // A missing verdict or headline is never papered over with a made-up one.
     expect(
       isAgricultureReady({

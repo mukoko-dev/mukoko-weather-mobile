@@ -29,6 +29,10 @@ import {
   setWindow,
 } from "@/test-utils/mocks";
 import { HAS_EMOJI, allText } from "@/test-utils/weather-fixtures";
+import { clearAgricultureCache } from "@/api/agriculture";
+
+// The farm answer is shared between screens: each test starts with none.
+beforeEach(() => clearAgricultureCache());
 
 jest.mock("expo-router", () => require("@/test-utils/mocks").routerMock());
 jest.mock("react-native-safe-area-context", () =>

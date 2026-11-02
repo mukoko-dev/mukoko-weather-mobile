@@ -5,6 +5,8 @@
 
 import { type LocationSummary } from "@/api/locations";
 import {
+  HARARE_DEFAULT,
+  fallbackPlace,
   placeOf,
   placeOfSummary,
   weatherForPage,
@@ -104,5 +106,34 @@ describe("weatherForPage (when the Weather tab lets the place cards start)", () 
       settled: true,
     });
     expect(settled.location).toEqual({ lat: fix.lat, lon: fix.lon });
+  });
+});
+
+describe("the Harare default's place", () => {
+  it("keeps the lookup's answer only when it is Harare", () => {
+    const harare = {
+      slug: "harare",
+      name: "Harare",
+      lat: -17.83,
+      lon: 31.05,
+      country: "ZW",
+      province: "Harare",
+    };
+    expect(fallbackPlace(harare)).toBe(harare);
+  });
+
+  it("never takes a nearby stored spot's name or links, and survives a failed lookup", () => {
+    const nearby = {
+      slug: "avenues--ksy4dd7",
+      name: "Avenues",
+      lat: -17.82,
+      lon: 31.04,
+    };
+    for (const found of [nearby, null]) {
+      const place = fallbackPlace(found);
+      expect(place.slug).toBe(HARARE_DEFAULT.slug);
+      expect(place.name).toBe("Harare");
+      expect(place.country).toBe("ZW");
+    }
   });
 });

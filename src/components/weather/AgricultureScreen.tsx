@@ -14,6 +14,7 @@ import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { useAgriculture } from "@/hooks/useAgriculture";
+import { longitudeOffsetSeconds } from "@/shared/location-time";
 import { useNow } from "@/hooks/useNow";
 import { usePlaceProfile } from "@/hooks/usePlaceProfile";
 import {
@@ -62,7 +63,12 @@ export function AgricultureScreen({
     state.status === "ready" && state.data.kind === "ready"
       ? state.data.data
       : null;
-  const month = locationMonth(ready?.utcOffsetSeconds, now.getTime());
+  // The place's month: the farm answer's offset, else one estimated from the
+  // longitude (as the API does), never the UTC clock.
+  const month = locationMonth(
+    ready?.utcOffsetSeconds ?? longitudeOffsetSeconds(place.lon),
+    now.getTime(),
+  );
   const advice = useMemo(
     () => (ready ? cropAdvice(crops, ready) : []),
     [ready, crops],

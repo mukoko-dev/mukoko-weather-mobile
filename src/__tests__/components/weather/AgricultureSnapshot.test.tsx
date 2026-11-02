@@ -13,6 +13,10 @@ import { type PlaceInfo } from "@/shared/place-info";
 import agricultureOff from "@/api/__fixtures__/agriculture-unavailable.json";
 import { RECORDED, type Route, routeFetch } from "@/test-utils/farm-fetch";
 import { HAS_EMOJI, allText } from "@/test-utils/weather-fixtures";
+import { clearAgricultureCache } from "@/api/agriculture";
+
+// The farm answer is shared between screens: each test starts with none.
+beforeEach(() => clearAgricultureCache());
 
 jest.mock("expo-router", () => require("@/test-utils/mocks").routerMock());
 jest.mock("react-native-safe-area-context", () =>

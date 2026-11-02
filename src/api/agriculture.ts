@@ -66,16 +66,50 @@ export function readAgriculture(raw: unknown): AgricultureResult {
   return { kind: "ready", data };
 }
 
-/** Farm weather for a place and the user's farming crops. */
+/** How long a farm answer is reused between screens (card, then page). */
+export const AGRICULTURE_TTL_MS = 10 * 60 * 1000;
+
+const cache = new Map<string, { result: AgricultureResult; at: number }>();
+const inflight = new Map<string, Promise<AgricultureResult>>();
+
+/** Forget every cached answer (tests). */
+export function clearAgricultureCache() {
+  cache.clear();
+  inflight.clear();
+}
+
+/**
+ * Farm weather for a place and the user's farming crops. One request per
+ * place and crop list at a time, and a ready answer is reused for
+ * `AGRICULTURE_TTL_MS`, so opening the insights page from the card does not
+ * ask again. `fresh` skips the reuse (pull to refresh). An unavailable answer
+ * or a failure is never reused, so "Try again" always asks.
+ */
 export async function fetchAgriculture(
   location: AgriLocationRef,
   crops: readonly string[],
   signal?: AbortSignal,
+  opts: { fresh?: boolean; now?: number } = {},
 ): Promise<AgricultureResult> {
-  return readAgriculture(
-    await apiFetch<unknown>(ROUTES.agriculture, {
-      query: agricultureQuery(location, crops),
-      signal,
-    }),
-  );
+  const query = agricultureQuery(location, crops);
+  const key = JSON.stringify(query);
+  const now = opts.now ?? Date.now();
+  const hit = cache.get(key);
+  if (!opts.fresh && hit && now - hit.at <= AGRICULTURE_TTL_MS) {
+    return hit.result;
+  }
+  const running = opts.fresh ? undefined : inflight.get(key);
+  const request =
+    running ??
+    apiFetch<unknown>(ROUTES.agriculture, { query, signal })
+      .then(readAgriculture)
+      .then((result) => {
+        if (result.kind === "ready") cache.set(key, { result, at: now });
+        return result;
+      })
+      .finally(() => {
+        if (inflight.get(key) === request) inflight.delete(key);
+      });
+  if (!running) inflight.set(key, request);
+  return request;
 }

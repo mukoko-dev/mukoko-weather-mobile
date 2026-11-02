@@ -21,13 +21,10 @@ import {
   readHistoryAnswer,
   readNormals,
 } from "@/shared/agri-history";
+import { queryDegrees } from "@/shared/agriculture";
 
 /** How long a first view may wait for the archives. */
 export const HISTORY_TIMEOUT_MS = 20_000;
-
-function roundCoord(n: number): number {
-  return Math.round(n * 1000) / 1000;
-}
 
 /** An abort signal that fires when `signal` does or after `ms`. */
 function withTimeout(
@@ -96,17 +93,14 @@ export async function fetchNormalsOn(
   date: string,
   signal?: AbortSignal,
 ): Promise<Normals> {
-  try {
-    return readNormals(
-      await apiFetch<unknown>(ROUTES.normals, {
-        query: { lat: roundCoord(lat), lon: roundCoord(lon), date },
-        signal,
-      }),
-    );
-  } catch (err) {
-    if (signal?.aborted) throw err;
-    return { available: false };
-  }
+  // A failed request rejects (the card offers Try again); the Worker saying it
+  // has no normals here is `available: false`, a state of its own.
+  return readNormals(
+    await apiFetch<unknown>(ROUTES.normals, {
+      query: { lat: queryDegrees(lat), lon: queryDegrees(lon), date },
+      signal,
+    }),
+  );
 }
 
 /**
