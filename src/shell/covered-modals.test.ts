@@ -56,6 +56,32 @@ describe("uncoverModals", () => {
     ]);
   });
 
+  it("keeps a modal opened on a modal (sign-in from the menu)", () => {
+    expect(
+      uncoverModals({
+        key: "root",
+        routes: [route("(tabs)"), route("menu"), route("sign-in")],
+      }),
+    ).toBeNull();
+  });
+
+  it("drops the covered modals but keeps a modal above the page", () => {
+    const fix = uncoverModals({
+      key: "root",
+      routes: [
+        route("(tabs)"),
+        route("map"),
+        route("location/[slug]"),
+        route("menu"),
+      ],
+    });
+    expect(fix?.state.routes.map((r) => r.name)).toEqual([
+      "(tabs)",
+      "location/[slug]",
+      "menu",
+    ]);
+  });
+
   it("does nothing without state", () => {
     expect(uncoverModals(undefined)).toBeNull();
     expect(uncoverModals({ routes: [] })).toBeNull();

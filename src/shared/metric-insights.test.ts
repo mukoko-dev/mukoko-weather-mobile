@@ -285,6 +285,18 @@ describe("uvInsight", () => {
     expect(r.value).toBe(0);
     expect(r.peakToday).toBe(8);
     expect(Number.isInteger(r.value)).toBe(true);
+    // The gauge sits at the number shown.
+    expect(r.positionPct).toBe(0);
+  });
+
+  it("gives the sentence the tile's label, from the same whole number", () => {
+    const w = makeWeather({
+      current: { uv_index: 2.4 },
+      hourly: { uv_index: fill(HOURS, 2.4) },
+    });
+    const r = uvInsight(w, NOW);
+    expect(r.label).toBe("Low");
+    expect(r.sentence).toBe("Low for the rest of the day.");
   });
 
   it("says low for the rest of the day when UV stays under 3", () => {
@@ -341,7 +353,7 @@ describe("uvInsight", () => {
     ).toBe(100);
     expect(
       uvInsight(makeWeather({ current: { uv_index: 5.5 } }), NOW).positionPct,
-    ).toBe(39);
+    ).toBe(43); // the whole number shown, 6 (issue #73)
   });
 
   it("reports unavailable data without throwing", () => {

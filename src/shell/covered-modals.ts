@@ -10,7 +10,12 @@
  */
 
 /** The root stack's modal routes (src/app/_layout.tsx). */
-export const MODAL_ROUTES: ReadonlySet<string> = new Set(["menu", "map"]);
+export const MODAL_ROUTES: ReadonlySet<string> = new Set([
+  "menu",
+  "map",
+  "sign-in",
+  "sign-in-callback",
+]);
 
 export type NavRoute = { key: string; name: string; state?: NavState };
 export type NavState = {
@@ -28,13 +33,18 @@ export function uncoverModals(
   state: NavState | undefined,
 ): { target: string; state: NavState } | null {
   if (!state?.routes?.length) return null;
-  const last = state.routes.length - 1;
+  // A modal is covered only by a page (a card) above it. A modal opened on a
+  // modal (sign-in from the menu) is a normal stack of sheets and stays.
+  let lastPage = -1;
+  state.routes.forEach((r, i) => {
+    if (!MODAL_ROUTES.has(r.name)) lastPage = i;
+  });
   const covered = state.routes.some(
-    (r, i) => i < last && MODAL_ROUTES.has(r.name),
+    (r, i) => i < lastPage && MODAL_ROUTES.has(r.name),
   );
   if (covered && state.key) {
     const routes = state.routes.filter(
-      (r, i) => i === last || !MODAL_ROUTES.has(r.name),
+      (r, i) => i >= lastPage || !MODAL_ROUTES.has(r.name),
     );
     return {
       target: state.key,

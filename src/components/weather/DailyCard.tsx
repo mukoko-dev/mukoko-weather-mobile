@@ -71,7 +71,8 @@ export function dayRows(forecast: WeatherData): DayRow[] {
     const info = weatherCodeToInfo(d.weather_code[i]);
     const high = highs[i];
     const low = lows[i];
-    const uv = d.uv_index_max[i];
+    // A whole number, as the index is (issue #73).
+    const uv = Math.round(d.uv_index_max[i] ?? 0);
     const name = dayName(date, i);
     return {
       date,
@@ -89,9 +90,8 @@ export function dayRows(forecast: WeatherData): DayRow[] {
       gust: Math.round(d.wind_gusts_10m_max[i]),
       feelsHigh: Math.round(d.apparent_temperature_max[i]),
       feelsLow: Math.round(d.apparent_temperature_min[i]),
-      // A whole number, as the index is (issue #73).
-      uv: Math.round(uv ?? 0),
-      uvLabel: uvLevel(Math.round(uv ?? 0)).label,
+      uv,
+      uvLabel: uvLevel(uv).label,
     };
   });
 }

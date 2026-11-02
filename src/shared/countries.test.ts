@@ -19,6 +19,13 @@ describe("COUNTRY_NAMES", () => {
     expect(countryName(undefined)).toBeUndefined();
   });
 
+  it("never takes a retired or grouping code for a country", () => {
+    for (const code of ["AN", "ZR", "SU", "UK", "EU", "UN", "YU"]) {
+      expect(countryName(code)).toBeUndefined();
+    }
+    expect(countryName("XK")).toBe("Kosovo");
+  });
+
   it("holds only two-letter codes", () => {
     for (const code of Object.keys(COUNTRY_NAMES)) {
       expect(code).toMatch(/^[A-Z]{2}$/);

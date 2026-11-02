@@ -7,6 +7,8 @@
  * can never be "explore", "locations", "my", …), not the website's.
  */
 
+import { countryName } from "./countries";
+
 /** `LOCATION_SLUG_RE` from the web's `src/lib/location-gate.ts`. */
 export const LOCATION_SLUG_RE = /^[a-z0-9-]{1,80}$/;
 
@@ -56,14 +58,8 @@ const PLATFORM_HASH_RE = /-[0-9a-f]{6}$/;
 
 /** True for a two-letter segment that is a real ISO 3166-1 region code. */
 function isRegionCode(part: string): boolean {
-  if (!/^[a-z]{2}$/.test(part)) return false;
-  try {
-    const upper = part.toUpperCase();
-    const label = new Intl.DisplayNames(["en"], { type: "region" }).of(upper);
-    return !!label && label !== upper;
-  } catch {
-    return false;
-  }
+  // The static table: Hermes has no Intl.DisplayNames (issue #72).
+  return /^[a-z]{2}$/.test(part) && countryName(part) !== undefined;
 }
 
 /**
