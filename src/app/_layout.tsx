@@ -13,7 +13,8 @@
  *     </ThemeProvider>
  *   </SafeAreaProvider>
  *
- * /location/[slug], /sign-in, and /sign-in-callback push above the tabs.
+ * /location/[slug] (and its /forecast and /atmosphere pages), /sign-in, and
+ * /sign-in-callback push above the tabs.
  * The (tabs) group renders the actual bottom Tabs.
  */
 
@@ -62,19 +63,30 @@ export default function RootLayout() {
         <View style={{ flex: 1, flexDirection: "row" }}>
           <BrandStripe width={3} />
           <View style={{ flex: 1 }}>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            {/* No native header by default: a place's pages (the location, its
+                forecast and atmosphere pages, and any page added under it) carry
+                their own top row with Back. The sign-in modals keep theirs. */}
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
               <Stack.Screen
                 name="location/[slug]"
-                options={{ headerShown: false, presentation: "card" }}
+                options={{ presentation: "card" }}
               />
               <Stack.Screen
                 name="sign-in"
-                options={{ title: "Sign in", presentation: "modal" }}
+                options={{
+                  headerShown: true,
+                  title: "Sign in",
+                  presentation: "modal",
+                }}
               />
               <Stack.Screen
                 name="sign-in-callback"
-                options={{ title: "Signing in...", presentation: "modal" }}
+                options={{
+                  headerShown: true,
+                  title: "Signing in...",
+                  presentation: "modal",
+                }}
               />
             </Stack>
           </View>

@@ -37,6 +37,7 @@ import { type WeatherData } from "@/shared/weather";
 import { usePageColors } from "@/hooks/usePageColors";
 
 import { InsightCard, InsightGrid, InsightRow } from "./InsightCard";
+import { SectionHeader } from "./SectionHeader";
 import {
   CompassDial,
   MiniBars,
@@ -50,6 +51,8 @@ import { SIZE } from "@/theme/mzizi";
 export type ConditionTilesProps = {
   forecast: WeatherData;
   now: Date;
+  /** Opens the place's /atmosphere page; no link without it. */
+  onOpenTrends?: () => void;
 };
 
 /** The big numeral on a tile: Noto Serif, h2, weight 600, line = type size. */
@@ -69,7 +72,11 @@ function MetricValue({ children }: { children: string }) {
   );
 }
 
-export function ConditionTiles({ forecast, now }: ConditionTilesProps) {
+export function ConditionTiles({
+  forecast,
+  now,
+  onOpenTrends,
+}: ConditionTilesProps) {
   const { colors } = usePageColors();
   const wind = windInsight(forecast, now);
   const uv = uvInsight(forecast, now);
@@ -87,15 +94,21 @@ export function ConditionTiles({ forecast, now }: ConditionTilesProps) {
 
   return (
     <InsightGrid>
-      <WxText
-        type="h6"
-        weight={600}
-        family="serif"
-        color={colors.textPrimary}
-        accessibilityRole="header"
-      >
-        Conditions
-      </WxText>
+      <SectionHeader
+        title="Conditions"
+        titleColor={colors.textPrimary}
+        actionColor={colors.primary}
+        action={
+          onOpenTrends
+            ? {
+                label: "24h trends",
+                spoken: "24-hour trends",
+                onPress: onOpenTrends,
+                testID: "trends-link",
+              }
+            : undefined
+        }
+      />
       <InsightRow>
         <InsightCard
           label="Wind"
