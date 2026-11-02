@@ -219,44 +219,8 @@ export function SheetSection({
   );
 }
 
-/** A label and its value on one row: the sheets' "related readings". */
-export function StatTile({ label, value }: { label: string; value: string }) {
-  const { colors } = usePageColors();
-  return (
-    <View
-      accessible
-      accessibilityLabel={`${label}: ${value}`}
-      style={[
-        styles.stat,
-        { backgroundColor: colors.card, borderColor: colors.border },
-      ]}
-    >
-      <WxText type="bodySm" color={colors.textTertiary}>
-        {label}
-      </WxText>
-      <WxText type="body" weight={600} color={colors.textPrimary}>
-        {value}
-      </WxText>
-    </View>
-  );
-}
-
-/** Two columns of `StatTile`s (one column at the largest text size). */
-export function StatGrid({
-  stats,
-}: {
-  stats: readonly { label: string; value: string }[];
-}) {
-  return (
-    <View style={styles.statGrid}>
-      {stats.map((s) => (
-        <View key={s.label} style={styles.statCell}>
-          <StatTile label={s.label} value={s.value} />
-        </View>
-      ))}
-    </View>
-  );
-}
+// The sheets' "related readings" are the app's one stat tile, in StatTiles.tsx.
+export { StatGrid, StatTile } from "./StatTiles";
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
@@ -271,13 +235,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: SIZE.pillPadX,
   },
-  stat: {
-    flex: 1,
-    borderRadius: RADIUS.card,
-    borderWidth: BORDER.rest,
-    padding: SPACE.cozy,
-    gap: SPACE.hair,
-  },
-  statGrid: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.stack },
-  statCell: { flexBasis: "45%", flexGrow: 1, minWidth: 0 },
 });

@@ -45,7 +45,12 @@ const WIDTH = {
   temp: 28,
   dial: 80,
   sentence: "75%",
+  season: "60%",
 } as const;
+
+/** The season line's badge: two lines of body text, its padding and border. */
+const SEASON_BADGE_HEIGHT =
+  lineHeightOf("body") * 2 + SPACE.hair * 2 + BORDER.rest * 2;
 
 /** The pieces of the skeleton the tests count. */
 export const SKELETON = { hours: 8, tilesRows: 2 } as const;
@@ -198,6 +203,20 @@ function ConditionsSkeleton() {
           </View>
         ))}
       </View>
+      <View
+        testID="skeleton-season"
+        style={[
+          styles.season,
+          { borderTopColor: withAlpha(SKY_FG, SKY_SURFACE.card.border) },
+        ]}
+      >
+        <Bar
+          color={bar}
+          width={WIDTH.season}
+          height={SEASON_BADGE_HEIGHT}
+          radius={RADIUS.input}
+        />
+      </View>
     </View>
   );
 }
@@ -305,6 +324,12 @@ const styles = StyleSheet.create({
     marginTop: SPACE.hair,
     paddingBottom: SPACE.stack,
     borderBottomWidth: BORDER.rest,
+  },
+  season: {
+    marginTop: SPACE.stack,
+    paddingTop: SPACE.stack,
+    borderTopWidth: BORDER.rest,
+    alignItems: "center",
   },
   hours: {
     flexDirection: "row",
