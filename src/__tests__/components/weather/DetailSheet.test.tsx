@@ -58,9 +58,10 @@ describe("DetailSheet", () => {
     expect(tree.getByText("Wind is air moving.")).toBeTruthy();
     expect(tree.getByLabelText("Gusts: 20 km/h")).toBeTruthy();
     // Section headings are VoiceOver headers.
-    expect(
-      tree.getAllByRole("header").map((h) => h.props.children),
-    ).toEqual(["Wind", "Next 24 hours"]);
+    expect(tree.getAllByRole("header").map((h) => h.props.children)).toEqual([
+      "Wind",
+      "Next 24 hours",
+    ]);
   });
 
   it("holds VoiceOver inside, is the system page sheet, and closes by back or swipe", async () => {
@@ -87,7 +88,9 @@ describe("DetailSheet", () => {
       </DetailSheet>,
     );
     const close = tree.getByLabelText("Close");
-    const style = StyleSheet.flatten(close.props.style) as { minHeight: number };
+    const style = StyleSheet.flatten(close.props.style) as {
+      minHeight: number;
+    };
     expect(style.minHeight).toBeGreaterThanOrEqual(TOUCH.min);
     await fireEvent.press(close);
     expect(onClose).toHaveBeenCalledTimes(1);

@@ -182,10 +182,20 @@ describe("SeriesChart", () => {
       <SeriesChart
         title="Rain"
         labels={[]}
-        series={[{ key: "r", label: "Rain", unit: "mm", values: [null, null], color: "#0b6fb8" }]}
+        series={[
+          {
+            key: "r",
+            label: "Rain",
+            unit: "mm",
+            values: [null, null],
+            color: "#0b6fb8",
+          },
+        ]}
         left={{ format: String }}
       />,
     );
-    expect(tree.getByRole("image").props.accessibilityLabel).toBe("Rain. Rain: no data.");
+    expect(tree.getByRole("image").props.accessibilityLabel).toBe(
+      "Rain. Rain: no data.",
+    );
   });
 });

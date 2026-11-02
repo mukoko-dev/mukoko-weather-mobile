@@ -19,7 +19,13 @@ import {
 export type { AqiLevel };
 
 export type PollutantKey =
-  "pm2_5" | "pm10" | "o3" | "no2" | "so2" | "co" | "nh3";
+  | "pm2_5"
+  | "pm10"
+  | "o3"
+  | "no2"
+  | "so2"
+  | "co"
+  | "nh3";
 
 /** The slice of the Worker's answer the detail reads. */
 export interface AirQualityReading {

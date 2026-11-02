@@ -33,7 +33,10 @@ export function routeFetch(routes: RouteReplies): RecordedCall[] {
     const headers: Record<string, string> = {
       "content-type": "application/json",
       ...Object.fromEntries(
-        Object.entries(reply.headers ?? {}).map(([k, v]) => [k.toLowerCase(), v]),
+        Object.entries(reply.headers ?? {}).map(([k, v]) => [
+          k.toLowerCase(),
+          v,
+        ]),
       ),
     };
     return {

@@ -4,12 +4,7 @@
  * the WHO comparison and the guidance with its not-medical-advice line.
  */
 
-import {
-  act,
-  fireEvent,
-  render,
-  waitFor,
-} from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { AirQualityCard } from "@/components/weather/AirQualityCard";
 import { AirQualityDetail } from "@/components/weather/AirQualityDetail";
@@ -67,7 +62,9 @@ describe("AirQualityCard states", () => {
       <AirQualityCard lat={-17.8} lon={31} now={NOW} />,
     );
     await waitFor(() =>
-      expect(tree.getByText("Air quality is unavailable right now.")).toBeTruthy(),
+      expect(
+        tree.getByText("Air quality is unavailable right now."),
+      ).toBeTruthy(),
     );
     const retry = tree.getByLabelText("Try again");
     expect(retry.props.accessibilityRole).toBe("button");
@@ -110,7 +107,9 @@ describe("AirQualityDetail", () => {
     const tree = await open();
     expect(tree.getByText("What it means for you")).toBeTruthy();
     expect(tree.getByText(GUIDANCE_DISCLAIMER)).toBeTruthy();
-    expect(tree.getByText(/Acceptable\. Unusually sensitive people/)).toBeTruthy();
+    expect(
+      tree.getByText(/Acceptable\. Unusually sensitive people/),
+    ).toBeTruthy();
   });
 
   it("lists the main pollutant first, a gap as No data, and the WHO comparison", async () => {

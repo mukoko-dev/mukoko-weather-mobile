@@ -13,7 +13,11 @@ import {
 import { SectionBoundary } from "@/components/weather/SectionBoundary";
 import { Text } from "react-native";
 import { setWindow } from "@/test-utils/mocks";
-import { HAS_EMOJI, allText, harareWeather } from "@/test-utils/weather-fixtures";
+import {
+  HAS_EMOJI,
+  allText,
+  harareWeather,
+} from "@/test-utils/weather-fixtures";
 
 beforeEach(() => setWindow(393, 852));
 
@@ -25,7 +29,12 @@ describe("ForecastExtras", () => {
   });
 
   it("draws nothing when the answer has neither", async () => {
-    const weather = { ...harareWeather(), minutely: undefined, models: undefined, modelsTime: undefined };
+    const weather = {
+      ...harareWeather(),
+      minutely: undefined,
+      models: undefined,
+      modelsTime: undefined,
+    };
     const tree = await render(<ForecastExtras weather={weather} />);
     expect(tree.toJSON()).toBeNull();
   });
@@ -65,7 +74,9 @@ describe("MinutelyCard", () => {
       <MinutelyCard minutely={{ time: [], precipitation: [0, 0, 0.5, 0.2] }} />,
     );
     expect(tree.getByText("Rain starting in ~30 min.")).toBeTruthy();
-    expect(tree.getByLabelText(/^Rain, next hour\. Rain \(mm\): from 0 mm at Now/)).toBeTruthy();
+    expect(
+      tree.getByLabelText(/^Rain, next hour\. Rain \(mm\): from 0 mm at Now/),
+    ).toBeTruthy();
   });
 });
 
@@ -85,7 +96,9 @@ describe("ModelComparisonCard", () => {
     // The two extra blend members the Worker sends are not drawn, and no raw id shows.
     expect(JSON.stringify(tree.toJSON())).not.toContain("ukmo_global");
     expect(JSON.stringify(tree.toJSON())).not.toContain("jma_gsm");
-    expect(tree.getByText(/^The models are up to [\d.]+° apart at their widest\.$/)).toBeTruthy();
+    expect(
+      tree.getByText(/^The models are up to [\d.]+° apart at their widest\.$/),
+    ).toBeTruthy();
     expect(HAS_EMOJI.test(allText(tree.toJSON()))).toBe(false);
   });
 
@@ -97,8 +110,12 @@ describe("ModelComparisonCard", () => {
 
 describe("SectionBoundary", () => {
   it("shows a compact fallback instead of taking the page down", async () => {
-    const spy = jest.spyOn(console, "error").mockImplementation(() => undefined);
-    const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    const spy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const warn = jest
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
     function Boom(): never {
       throw new Error("chart exploded");
     }

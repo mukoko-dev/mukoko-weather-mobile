@@ -17,10 +17,16 @@ import { DARK, LIGHT, MINERAL_EDGE, contrastRatio } from "@/theme/mzizi";
 import { frostColor } from "@/theme/weather-scales";
 import { type FrostAlert } from "@/shared/weather";
 import { IPHONE_INSETS, setInsets, setWindow } from "@/test-utils/mocks";
-import { HAS_EMOJI, allText, harareWeather } from "@/test-utils/weather-fixtures";
+import {
+  HAS_EMOJI,
+  allText,
+  harareWeather,
+} from "@/test-utils/weather-fixtures";
 
 jest.mock("expo-router", () => require("@/test-utils/mocks").routerMock());
-jest.mock("expo-status-bar", () => require("@/test-utils/mocks").statusBarMock());
+jest.mock("expo-status-bar", () =>
+  require("@/test-utils/mocks").statusBarMock(),
+);
 jest.mock("react-native-safe-area-context", () =>
   require("@/test-utils/mocks").safeAreaMock(),
 );
@@ -63,32 +69,49 @@ describe("FrostAlertBanner", () => {
   it.each([
     ["light", LIGHT],
     ["dark", DARK],
-  ] as const)("holds 4.5:1 for its text in %s on any sky (opaque card under the tint)", (scheme, page) => {
-    for (const risk of ["moderate", "high", "severe"] as const) {
-      const edge = frostColor(risk, scheme);
-      // The tint over the card colour, as drawn.
-      const n = parseInt(edge.slice(1), 16);
-      const mix = (c: number, e: number) =>
-        Math.round(c * (1 - BANNER_TINT.frost) + e * BANNER_TINT.frost);
-      const c = parseInt(page.card.slice(1), 16);
-      const blended = `#${[16, 8, 0]
-        .map((sh) => mix((c >> sh) & 255, (n >> sh) & 255).toString(16).padStart(2, "0"))
-        .join("")}`;
-      expect(contrastRatio(page.textPrimary, blended)).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio(page.textSecondary, blended)).toBeGreaterThanOrEqual(4.5);
-    }
-  });
+  ] as const)(
+    "holds 4.5:1 for its text in %s on any sky (opaque card under the tint)",
+    (scheme, page) => {
+      for (const risk of ["moderate", "high", "severe"] as const) {
+        const edge = frostColor(risk, scheme);
+        // The tint over the card colour, as drawn.
+        const n = parseInt(edge.slice(1), 16);
+        const mix = (c: number, e: number) =>
+          Math.round(c * (1 - BANNER_TINT.frost) + e * BANNER_TINT.frost);
+        const c = parseInt(page.card.slice(1), 16);
+        const blended = `#${[16, 8, 0]
+          .map((sh) =>
+            mix((c >> sh) & 255, (n >> sh) & 255)
+              .toString(16)
+              .padStart(2, "0"),
+          )
+          .join("")}`;
+        expect(contrastRatio(page.textPrimary, blended)).toBeGreaterThanOrEqual(
+          4.5,
+        );
+        expect(
+          contrastRatio(page.textSecondary, blended),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    },
+  );
 });
 
 describe("WeatherUnavailableBanner", () => {
   it("is informational: polite, and offers Refresh now when it can", async () => {
     const onRefresh = jest.fn();
-    const tree = await render(<WeatherUnavailableBanner onRefresh={onRefresh} />);
-    expect(tree.getByText("Live weather data temporarily unavailable")).toBeTruthy();
+    const tree = await render(
+      <WeatherUnavailableBanner onRefresh={onRefresh} />,
+    );
+    expect(
+      tree.getByText("Live weather data temporarily unavailable"),
+    ).toBeTruthy();
     expect(
       tree.getByText(/Showing seasonal estimates for this location/),
     ).toBeTruthy();
-    expect(tree.getByTestId("unavailable-banner").props.accessibilityLiveRegion).toBe("polite");
+    expect(
+      tree.getByTestId("unavailable-banner").props.accessibilityLiveRegion,
+    ).toBe("polite");
     await fireEvent.press(tree.getByLabelText("Refresh now"));
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
@@ -99,18 +122,26 @@ describe("WeatherUnavailableBanner", () => {
   });
 
   it("uses the gold edge (the web's warmth) and holds 4.5:1 in both themes", () => {
-    for (const [scheme, page] of [["light", LIGHT], ["dark", DARK]] as const) {
+    for (const [scheme, page] of [
+      ["light", LIGHT],
+      ["dark", DARK],
+    ] as const) {
       const edge = MINERAL_EDGE.gold[scheme];
       const n = parseInt(edge.slice(1), 16);
       const c = parseInt(page.card.slice(1), 16);
       const blended = `#${[16, 8, 0]
         .map((sh) =>
-          Math.round(((c >> sh) & 255) * (1 - BANNER_TINT.warning) + ((n >> sh) & 255) * BANNER_TINT.warning)
+          Math.round(
+            ((c >> sh) & 255) * (1 - BANNER_TINT.warning) +
+              ((n >> sh) & 255) * BANNER_TINT.warning,
+          )
             .toString(16)
             .padStart(2, "0"),
         )
         .join("")}`;
-      expect(contrastRatio(page.textPrimary, blended)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(page.textPrimary, blended)).toBeGreaterThanOrEqual(
+        4.5,
+      );
     }
   });
 });
@@ -125,7 +156,9 @@ describe("in the page", () => {
   });
 
   it("shows no notice for a healthy answer", async () => {
-    const tree = await render(<WeatherPage weather={harareWeather()} name="Harare" />);
+    const tree = await render(
+      <WeatherPage weather={harareWeather()} name="Harare" />,
+    );
     expect(tree.queryByTestId("unavailable-banner")).toBeNull();
     expect(tree.queryByTestId("frost-banner")).toBeNull();
   });
@@ -139,7 +172,9 @@ describe("in the page", () => {
         ...weather.forecast!,
         hourly: {
           ...hourly,
-          temperature_2m: hourly.temperature_2m.map((t, i) => (i === 3 ? -1 : t)),
+          temperature_2m: hourly.temperature_2m.map((t, i) =>
+            i === 3 ? -1 : t,
+          ),
         },
       },
     };

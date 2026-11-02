@@ -4,12 +4,7 @@
  * Worker is a recorded set of answers, routed by path.
  */
 
-import {
-  act,
-  fireEvent,
-  render,
-  waitFor,
-} from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { ConditionTiles } from "@/components/weather/ConditionTiles";
 
@@ -51,7 +46,12 @@ describe("the cards that ask the Worker", () => {
   it("shows air quality first under the heading, then haze, then the tiles", async () => {
     routeFetch(ALL_ROUTES);
     const tree = await render(
-      <ConditionTiles forecast={forecast} now={NOW} point={POINT} slug="harare" />,
+      <ConditionTiles
+        forecast={forecast}
+        now={NOW}
+        point={POINT}
+        slug="harare"
+      />,
     );
     await waitFor(() => expect(tree.getByText("Moderate")).toBeTruthy());
     await waitFor(() => expect(tree.getByTestId("haze-card")).toBeTruthy());
@@ -124,7 +124,9 @@ describe("Averages and Moon", () => {
     );
     expect(tree.getByTestId("averages-tile-loading")).toBeTruthy();
     await act(async () => release());
-    await waitFor(() => expect(tree.getByLabelText(/^Averages\./)).toBeTruthy());
+    await waitFor(() =>
+      expect(tree.getByLabelText(/^Averages\./)).toBeTruthy(),
+    );
     expect(tree.queryByTestId("averages-tile-loading")).toBeNull();
     expect(tree.getByText("Normal high 29°")).toBeTruthy();
   });
@@ -154,7 +156,9 @@ describe("Averages and Moon", () => {
     );
     const moon = getByLabelText(/^Moon\./);
     // 2026-11-01: a waning moon; Harare is southern hemisphere, UTC+2.
-    expect(moon.props.accessibilityLabel).toMatch(/% lit\. Moonrise \d{2}:\d{2}( tomorrow)?\./);
+    expect(moon.props.accessibilityLabel).toMatch(
+      /% lit\. Moonrise \d{2}:\d{2}( tomorrow)?\./,
+    );
   });
 });
 
@@ -172,7 +176,9 @@ describe("opening a tile", () => {
     expect(tree.getByText("Beaufort")).toBeTruthy();
     // The chart is one image with a spoken summary.
     expect(
-      tree.getByLabelText(/^Wind, next 24 hours\. Wind speed \(km\/h\): from 9 km\/h at Now to 12 km\/h at 01:00/),
+      tree.getByLabelText(
+        /^Wind, next 24 hours\. Wind speed \(km\/h\): from 9 km\/h at Now to 12 km\/h at 01:00/,
+      ),
     ).toBeTruthy();
   });
 
@@ -206,7 +212,9 @@ describe("opening a tile", () => {
     expect(tile.props.accessibilityRole).toBe("button");
     expect(tile.props.accessibilityHint).toBe("Opens details");
     await fireEvent.press(tile);
-    expect(tree.getAllByText(label, { exact: false }).length).toBeGreaterThan(0);
+    expect(tree.getAllByText(label, { exact: false }).length).toBeGreaterThan(
+      0,
+    );
     expect(tree.getByLabelText("Close")).toBeTruthy();
   });
 
@@ -215,7 +223,9 @@ describe("opening a tile", () => {
     const tree = await render(
       <ConditionTiles forecast={forecast} now={NOW} point={POINT} />,
     );
-    await waitFor(() => expect(tree.getByLabelText(/^Air quality\./)).toBeTruthy());
+    await waitFor(() =>
+      expect(tree.getByLabelText(/^Air quality\./)).toBeTruthy(),
+    );
     await fireEvent.press(tree.getByLabelText(/^Air quality\./));
     expect(tree.getByText("68 Moderate")).toBeTruthy();
     expect(tree.getByText("What it means for you")).toBeTruthy();
@@ -225,11 +235,20 @@ describe("opening a tile", () => {
   it("opens the Averages detail from its tile and reads the Worker's monthly normals", async () => {
     routeFetch(ALL_ROUTES);
     const tree = await render(
-      <ConditionTiles forecast={forecast} now={NOW} point={POINT} slug="harare" />,
+      <ConditionTiles
+        forecast={forecast}
+        now={NOW}
+        point={POINT}
+        slug="harare"
+      />,
     );
-    await waitFor(() => expect(tree.getByLabelText(/^Averages\./)).toBeTruthy());
+    await waitFor(() =>
+      expect(tree.getByLabelText(/^Averages\./)).toBeTruthy(),
+    );
     await fireEvent.press(tree.getByLabelText(/^Averages\./));
-    await waitFor(() => expect(tree.getByText("Monthly averages")).toBeTruthy());
+    await waitFor(() =>
+      expect(tree.getByText("Monthly averages")).toBeTruthy(),
+    );
     expect(tree.getByLabelText("Temperature")).toBeTruthy();
     expect(tree.getByLabelText("Precipitation")).toBeTruthy();
   });

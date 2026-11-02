@@ -3,19 +3,18 @@
  * (the chart's text alternative), and its states against the Worker.
  */
 
-import {
-  act,
-  fireEvent,
-  render,
-  waitFor,
-} from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { AveragesDetail } from "@/components/weather/AveragesDetail";
 import { routeFetch } from "@/api/mock-routes";
 import historyHarare from "@/api/__fixtures__/history-harare.json";
 import normalsMonthlyHarare from "@/api/__fixtures__/normals-monthly-harare.json";
 import { IPHONE_INSETS, setInsets, setWindow } from "@/test-utils/mocks";
-import { HAS_EMOJI, allText, harareWeather } from "@/test-utils/weather-fixtures";
+import {
+  HAS_EMOJI,
+  allText,
+  harareWeather,
+} from "@/test-utils/weather-fixtures";
 
 jest.mock("react-native-safe-area-context", () =>
   require("@/test-utils/mocks").safeAreaMock(),
@@ -48,7 +47,9 @@ describe("AveragesDetail", () => {
     );
     expect(tree.getByLabelText("Loading monthly averages")).toBeTruthy();
     await act(async () => release());
-    await waitFor(() => expect(tree.getByText("Monthly averages")).toBeTruthy());
+    await waitFor(() =>
+      expect(tree.getByText("Monthly averages")).toBeTruthy(),
+    );
   });
 
   it("has Temperature and Precipitation tabs, Temperature first and selected", async () => {
@@ -56,10 +57,18 @@ describe("AveragesDetail", () => {
     const tree = await render(
       <AveragesDetail data={forecast} lat={-17.8} lon={31} />,
     );
-    await waitFor(() => expect(tree.getByLabelText("Temperature")).toBeTruthy());
-    expect(tree.getByLabelText("Temperature").props.accessibilityState).toEqual({ selected: true });
-    expect(tree.getByLabelText("Precipitation").props.accessibilityState).toEqual({ selected: false });
-    expect(tree.getByLabelText("Temperature").props.accessibilityRole).toBe("tab");
+    await waitFor(() =>
+      expect(tree.getByLabelText("Temperature")).toBeTruthy(),
+    );
+    expect(tree.getByLabelText("Temperature").props.accessibilityState).toEqual(
+      { selected: true },
+    );
+    expect(
+      tree.getByLabelText("Precipitation").props.accessibilityState,
+    ).toEqual({ selected: false });
+    expect(tree.getByLabelText("Temperature").props.accessibilityRole).toBe(
+      "tab",
+    );
   });
 
   it("gives the chart a text alternative: twelve months in a table, this month marked", async () => {
@@ -67,14 +76,18 @@ describe("AveragesDetail", () => {
     const tree = await render(
       <AveragesDetail data={forecast} lat={-17.8} lon={31} />,
     );
-    await waitFor(() => expect(tree.getByText("Monthly averages")).toBeTruthy());
+    await waitFor(() =>
+      expect(tree.getByText("Monthly averages")).toBeTruthy(),
+    );
     expect(
       tree.getByLabelText("Jan: average high 25°, average low 16°"),
     ).toBeTruthy();
     // 2026-11-01 is November.
     const nov = tree.getByLabelText(/^Nov: average high .*, this month$/);
     expect(nov.props.accessibilityState).toEqual({ selected: true });
-    expect(tree.getAllByLabelText(/^[A-Z][a-z]{2}: average high/)).toHaveLength(12);
+    expect(tree.getAllByLabelText(/^[A-Z][a-z]{2}: average high/)).toHaveLength(
+      12,
+    );
   });
 
   it("switches to rainfall and reads rainy days", async () => {
@@ -82,9 +95,13 @@ describe("AveragesDetail", () => {
     const tree = await render(
       <AveragesDetail data={forecast} lat={-17.8} lon={31} />,
     );
-    await waitFor(() => expect(tree.getByLabelText("Precipitation")).toBeTruthy());
+    await waitFor(() =>
+      expect(tree.getByLabelText("Precipitation")).toBeTruthy(),
+    );
     await fireEvent.press(tree.getByLabelText("Precipitation"));
-    expect(tree.getByLabelText("Precipitation").props.accessibilityState).toEqual({ selected: true });
+    expect(
+      tree.getByLabelText("Precipitation").props.accessibilityState,
+    ).toEqual({ selected: true });
     expect(
       tree.getByLabelText("Jan: average rain 213 mm, 21 rainy days"),
     ).toBeTruthy();
@@ -95,10 +112,18 @@ describe("AveragesDetail", () => {
     const tree = await render(
       <AveragesDetail data={forecast} lat={-17.8} lon={31} slug="harare" />,
     );
-    await waitFor(() => expect(tree.getByText("Monthly averages")).toBeTruthy());
-    expect(tree.getByText(/^Next 7 days: highs average \d+° against a normal \d+°\./)).toBeTruthy();
     await waitFor(() =>
-      expect(tree.getByText(/^Last 9 recorded days: highs average/)).toBeTruthy(),
+      expect(tree.getByText("Monthly averages")).toBeTruthy(),
+    );
+    expect(
+      tree.getByText(
+        /^Next 7 days: highs average \d+° against a normal \d+°\./,
+      ),
+    ).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        tree.getByText(/^Last 9 recorded days: highs average/),
+      ).toBeTruthy(),
     );
   });
 
@@ -140,11 +165,15 @@ describe("AveragesDetail", () => {
     );
     await waitFor(() =>
       expect(
-        tree.getByText("Monthly averages are unavailable for this place right now."),
+        tree.getByText(
+          "Monthly averages are unavailable for this place right now.",
+        ),
       ).toBeTruthy(),
     );
     await fireEvent.press(tree.getByLabelText("Try again"));
-    await waitFor(() => expect(tree.getByText("Monthly averages")).toBeTruthy());
+    await waitFor(() =>
+      expect(tree.getByText("Monthly averages")).toBeTruthy(),
+    );
   });
 
   it("is unavailable at once, with no request, without a point", async () => {

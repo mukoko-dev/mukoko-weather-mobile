@@ -24,10 +24,16 @@ describe("HazeCard", () => {
     expect(tree.getByLabelText("Visibility: 32.2 km")).toBeTruthy();
     expect(tree.getByLabelText("PM2.5: 20 µg/m³")).toBeTruthy();
     expect(
-      tree.getByText("Sensitive groups should cut back on prolonged outdoor exertion."),
+      tree.getByText(
+        "Sensitive groups should cut back on prolonged outdoor exertion.",
+      ),
     ).toBeTruthy();
     expect(tree.getByText(/Worst around 06:00/)).toBeTruthy();
-    expect(tree.getByText(/Southern African burning season · Jun–Oct \(out of season now\)/)).toBeTruthy();
+    expect(
+      tree.getByText(
+        /Southern African burning season · Jun–Oct \(out of season now\)/,
+      ),
+    ).toBeTruthy();
     expect(HAS_EMOJI.test(allText(tree.toJSON()))).toBe(false);
   });
 
@@ -38,9 +44,7 @@ describe("HazeCard", () => {
   ])("draws nothing for %s", async (_name, body) => {
     routeFetch({ "/v1/haze": { body } });
     const tree = await render(<HazeCard lat={-17.8} lon={31} />);
-    await waitFor(() =>
-      expect(JSON.stringify(tree.toJSON())).toBe("null"),
-    );
+    await waitFor(() => expect(JSON.stringify(tree.toJSON())).toBe("null"));
   });
 
   it("draws nothing when the request fails (no empty card, no error card)", async () => {
@@ -59,14 +63,22 @@ describe("HazeCard", () => {
       pm25: 80,
       visibilityKm: 2.5,
       advice: [],
-      official: { source: "NEA Singapore", metric: "PSI", value: 142, band: "Unhealthy", region: "West" },
+      official: {
+        source: "NEA Singapore",
+        metric: "PSI",
+        value: 142,
+        band: "Unhealthy",
+        region: "West",
+      },
       attribution: "Test attribution",
       fetchedAt: "2026-11-01T00:00:00Z",
     });
     const tree = await render(<HazeBody data={data} />);
     expect(tree.getByLabelText("Dust, Heavy level")).toBeTruthy();
     expect(tree.getByLabelText("Dust: 120 µg/m³")).toBeTruthy();
-    expect(tree.getByText("NEA Singapore PSI 142 · Unhealthy · West")).toBeTruthy();
+    expect(
+      tree.getByText("NEA Singapore PSI 142 · Unhealthy · West"),
+    ).toBeTruthy();
     expect(tree.getByText("Test attribution")).toBeTruthy();
   });
 });

@@ -70,7 +70,9 @@ describe("MetricDetailSheet", () => {
       expect(tree.getByText(detail.sentence)).toBeTruthy();
       expect(tree.getByText(detail.about)).toBeTruthy();
       for (const stat of detail.stats) {
-        expect(tree.getByLabelText(`${stat.label}: ${stat.value}`)).toBeTruthy();
+        expect(
+          tree.getByLabelText(`${stat.label}: ${stat.value}`),
+        ).toBeTruthy();
       }
       expect(HAS_EMOJI.test(allText(tree.toJSON()))).toBe(false);
     },
@@ -95,7 +97,10 @@ describe("MetricDetailSheet", () => {
   it("the UV sheet adds the coming days' peak UV with the WHO category", async () => {
     const tree = await render(sheet("uv"));
     expect(tree.getByText("Peak UV, next days")).toBeTruthy();
-    expect(tree.getAllByText(/^[\d.]+ (Low|Moderate|High|Very high|Extreme)$/).length).toBeGreaterThan(1);
+    expect(
+      tree.getAllByText(/^[\d.]+ (Low|Moderate|High|Very high|Extreme)$/)
+        .length,
+    ).toBeGreaterThan(1);
   });
 
   it("the moon sheet gives the phase, the lit part and the moonrise in the place's clock", async () => {
