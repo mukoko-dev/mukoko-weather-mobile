@@ -7,11 +7,13 @@ import {
   areaPath,
   chartGeometry,
   describeChart,
+  MIN_BAR_HEIGHT,
   labelIndices,
   linePath,
   niceTicks,
   runsOf,
   valuesOf,
+  yGutter,
   yScale,
 } from "./agri-chart";
 import { type AgricultureResponse, forecastChartRows } from "./agriculture";
@@ -44,6 +46,24 @@ describe("niceTicks", () => {
     expect(niceTicks(0, 0.8)).toEqual([0, 0.5, 1]);
   });
 
+  it("never prints floating-point noise in a tick (3 x 0.2 is 0.6000000000000001)", () => {
+    expect(niceTicks(0, 0.5)).toEqual([0, 0.2, 0.4, 0.6]);
+    expect(niceTicks(0, 0.3)).toEqual([0, 0.1, 0.2, 0.3]);
+    expect(niceTicks(0, 0.07)).toEqual([0, 0.05, 0.1]);
+    expect(niceTicks(-0.5, 0.5)).toEqual([-0.5, 0, 0.5]);
+    for (const [lo, hi] of [
+      [0, 0.5],
+      [0, 1.3],
+      [0, 7.7],
+      [0.1, 0.9],
+      [0, 0.011],
+    ]) {
+      for (const t of niceTicks(lo, hi)) {
+        expect(String(t).length).toBeLessThanOrEqual(6);
+      }
+    }
+  });
+
   it("pads a flat series instead of dividing by zero", () => {
     const t = niceTicks(5, 5);
     expect(t[0]).toBeLessThan(5);
@@ -74,6 +94,20 @@ describe("valuesOf and yScale", () => {
       min: 0,
       max: 24,
     });
+  });
+
+  it("draws no tick the axis cuts off (a 0 to 24 axis has none at 30)", () => {
+    const s = yScale(rows, [rain], { min: 0, max: 24, format: String });
+    expect(s.ticks.every((t) => t >= 0 && t <= 24)).toBe(true);
+    expect(s.ticks).toEqual([0, 10, 20]);
+  });
+
+  it("gives all-zero bars a floor at 0, not an axis that runs down to -1", () => {
+    const zero = [{ rainMm: 0 }, { rainMm: 0 }];
+    const s = yScale(zero, [rain], mm);
+    expect(s.min).toBe(0);
+    expect(s.max).toBeGreaterThan(0);
+    expect(s.ticks.every((t) => t >= 0)).toBe(true);
   });
 
   it("lets a line series sit above zero (a temperature does not start at 0)", () => {
@@ -113,6 +147,20 @@ describe("labelIndices", () => {
   });
 });
 
+describe("yGutter", () => {
+  it("fits the widest y label, and never less than the standard gutter", () => {
+    // "-100 mm" at 12 dp type needs about 52 dp; a fixed 44 dp cut it to "00 mm".
+    expect(yGutter(["0 mm", "-50 mm", "-100 mm"], 12, 8, 44)).toBeGreaterThan(
+      44,
+    );
+    expect(yGutter(["-100 mm"], 12, 8, 44)).toBeGreaterThanOrEqual(
+      Math.ceil(7 * 12 * 0.62),
+    );
+    expect(yGutter(["0", "5"], 12, 8, 44)).toBe(44);
+    expect(yGutter([], 12, 8, 44)).toBe(44);
+  });
+});
+
 describe("chartGeometry on the recorded 16 days", () => {
   const g = chartGeometry(rows, [rain, et0], mm, BOX);
 
@@ -126,16 +174,31 @@ describe("chartGeometry on the recorded 16 days", () => {
     expect(g.yTicks[0].label).toBe("0 mm");
   });
 
-  it("draws one bar per day that has rain data, none for a null, all inside the box", () => {
+  it("draws one bar per day that has rain, none for a null or a dry day, all inside the box", () => {
     const rainSeries = g.series[0];
-    const withRain = rows.filter((r) => typeof r.rainMm === "number").length;
-    expect(rainSeries.bars).toHaveLength(withRain);
-    expect(withRain).toBeLessThan(rows.length + 1);
+    // A day with 0 mm has no bar (an empty slot, not a hairline), and a null
+    // is no bar either.
+    const wet = rows.filter(
+      (r) => typeof r.rainMm === "number" && r.rainMm > 0,
+    ).length;
+    expect(wet).toBeGreaterThan(0);
+    expect(wet).toBeLessThan(rows.length);
+    expect(rainSeries.bars).toHaveLength(wet);
     for (const b of rainSeries.bars) {
       expect(b.x).toBeGreaterThanOrEqual(0);
       expect(b.x + b.width).toBeLessThanOrEqual(BOX.width + 0.001);
-      expect(b.height).toBeGreaterThanOrEqual(1);
+      expect(b.height).toBeGreaterThanOrEqual(MIN_BAR_HEIGHT);
     }
+  });
+
+  it("draws nothing for a value on the zero line", () => {
+    const dry = chartGeometry(
+      [{ rainMm: 0 }, { rainMm: 0 }, { rainMm: 3 }],
+      [rain],
+      mm,
+      BOX,
+    );
+    expect(dry.series[0].bars).toHaveLength(1);
   });
 
   it("splits the ET₀ line where the forecast has no value", () => {

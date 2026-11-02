@@ -35,6 +35,8 @@ import {
   chartGeometry,
   describeChart,
   linePath,
+  yGutter,
+  yScale,
 } from "@/shared/agri-chart";
 import { type AgriChartRow } from "@/shared/agriculture";
 import { type FarmColors, FARM_SIZE } from "@/theme/farm";
@@ -66,6 +68,8 @@ export function toneColor(farm: FarmColors, tone: string): string {
 const MAX_X_LABELS = 5;
 /** Room under the plot for the x labels. */
 const FOOTER = TYPE.caption.size + SPACE.cozy * 2;
+/** Room above the plot, so the top y label is not cut by the drawing's edge. */
+const TOP_INSET = Math.ceil(TYPE.caption.size / 2) + 1;
 
 export type AgriSeriesChartProps = {
   title: string;
@@ -120,12 +124,21 @@ export function AgriSeriesChart({
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) =>
     setWidth(Math.floor(e.nativeEvent.layout.width));
-  const plotWidth = Math.max(0, width - FARM_SIZE.chartAxis);
+  // The left gutter fits the widest y label ("-100 mm"), never less than the
+  // standard one, and the plot starts a little below the top so the first
+  // label is not cut in half by the edge of the drawing.
+  const gutter = yGutter(
+    yScale(rows, series, axis).ticks.map(axis.format),
+    TYPE.caption.size,
+    SPACE.snug,
+    FARM_SIZE.chartAxis,
+  );
+  const plotWidth = Math.max(0, width - gutter);
   const geo =
     plotWidth > 0
       ? chartGeometry(rows, series, axis, {
           width: plotWidth,
-          height: FARM_SIZE.chartHeight,
+          height: FARM_SIZE.chartHeight - TOP_INSET,
           footer: FOOTER,
           barGap: FARM_SIZE.barGap,
           maxXLabels: MAX_X_LABELS,
@@ -156,16 +169,16 @@ export function AgriSeriesChart({
             {geo.yTicks.map((t) => (
               <G key={t.label + t.y}>
                 <Line
-                  x1={FARM_SIZE.chartAxis}
+                  x1={gutter}
                   x2={width}
-                  y1={t.y}
-                  y2={t.y}
+                  y1={t.y + TOP_INSET}
+                  y2={t.y + TOP_INSET}
                   stroke={colors.border}
                   strokeWidth={BORDER.rest}
                 />
                 <SvgText
-                  x={FARM_SIZE.chartAxis - SPACE.snug}
-                  y={t.y + TYPE.caption.size / 3}
+                  x={gutter - SPACE.snug}
+                  y={t.y + TOP_INSET + TYPE.caption.size / 3}
                   textAnchor="end"
                   fill={colors.textTertiary}
                   {...text}
@@ -174,7 +187,7 @@ export function AgriSeriesChart({
                 </SvgText>
               </G>
             ))}
-            <G x={FARM_SIZE.chartAxis}>
+            <G x={gutter} y={TOP_INSET}>
               {geo.series.map(({ spec, runs, bars, areas }) => {
                 const color = toneColor(farm, spec.tone);
                 return (
@@ -232,7 +245,7 @@ export function AgriSeriesChart({
                   <SvgText
                     key={t.label + i}
                     x={first ? 0 : last ? plotWidth : t.x}
-                    y={FARM_SIZE.chartHeight - SPACE.cozy}
+                    y={FARM_SIZE.chartHeight - SPACE.cozy - TOP_INSET}
                     textAnchor={first ? "start" : last ? "end" : "middle"}
                     fill={colors.textTertiary}
                     {...text}

@@ -45,9 +45,12 @@ export function niceTicks(min: number, max: number, count = 3): number[] {
   const step = (frac <= 1 ? 1 : frac <= 2 ? 2 : frac <= 5 ? 5 : 10) * pow;
   const first = Math.floor(min / step) * step;
   const last = Math.ceil(max / step) * step;
+  // A tick is `n * step` and `3 * 0.2` is 0.6000000000000001: round to the
+  // step's own decimals so a label never prints floating-point noise.
+  const decimals = Math.max(0, Math.ceil(-Math.log10(step) - 1e-9));
   const ticks: number[] = [];
   for (let v = first; v <= last + step / 2; v += step) {
-    ticks.push(Math.round(v / step) * step);
+    ticks.push(Number((Math.round(v / step) * step).toFixed(decimals)));
   }
   return ticks;
 }
@@ -92,10 +95,21 @@ export function yScale(
   if (hasBars) {
     lo = Math.min(lo, 0);
     hi = Math.max(hi, 0);
+    // Bars all at zero still have a floor at 0 and a ceiling above it, not an
+    // axis that runs down to -1 under the plot.
+    if (hi === 0 && lo === 0) hi = 1;
   }
   if (axis.min !== undefined) lo = axis.min;
   if (axis.max !== undefined) hi = axis.max;
-  const ticks = niceTicks(lo, hi);
+  const all = niceTicks(lo, hi);
+  // A tick the axis cuts off is not drawn (a 0 to 24 axis has no tick at 30,
+  // which would sit above the plot).
+  const inside = all.filter(
+    (t) =>
+      (axis.min === undefined || t >= axis.min) &&
+      (axis.max === undefined || t <= axis.max),
+  );
+  const ticks = inside.length > 0 ? inside : all;
   return {
     ticks,
     min: axis.min ?? ticks[0],
@@ -173,6 +187,26 @@ export interface ChartGeometry {
   baseline: number;
 }
 
+/** A bar shorter than this (px) is not drawn. */
+export const MIN_BAR_HEIGHT = 0.5;
+
+/** What one character of a y tick label is, in em ("-100 mm" in Noto Sans is about 0.62 per character). */
+export const Y_TICK_EM = 0.62;
+
+/**
+ * The room the y tick labels need to the left of the plot: the widest label
+ * and `gap`, never under `floor`. A fixed gutter cut "-100 mm" down to "00 mm".
+ */
+export function yGutter(
+  labels: readonly string[],
+  fontSize: number,
+  gap: number,
+  floor: number,
+): number {
+  const widest = Math.max(0, ...labels.map((l) => l.length));
+  return Math.max(floor, Math.ceil(widest * fontSize * Y_TICK_EM + gap));
+}
+
 export interface ChartBox {
   width: number;
   height: number;
@@ -215,12 +249,15 @@ export function chartGeometry(
       const w = slot * (1 - box.barGap);
       pts.forEach((p) => {
         if (!p) return;
-        const top = Math.min(p.y, baseline);
+        const height = Math.abs(baseline - p.y);
+        // A value on the zero line has no height: nothing is drawn, so a dry
+        // day is an empty slot, not a hairline that reads as a reading.
+        if (height < MIN_BAR_HEIGHT) return;
         bars.push({
           x: p.x - w / 2,
-          y: top,
+          y: Math.min(p.y, baseline),
           width: w,
-          height: Math.max(1, Math.abs(baseline - p.y)),
+          height,
         });
       });
     }
