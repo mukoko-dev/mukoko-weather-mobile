@@ -36,7 +36,7 @@ import {
 } from "@/shared/activities";
 import { toggleActivity, usePreferences } from "@/state/preferences";
 import { BORDER, RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
-import { LANE, mineralColor, onMineral } from "@/theme/ratings";
+import { LANE, inkOn, mineralColor } from "@/theme/ratings";
 
 import { DetailSheet } from "./DetailSheet";
 import { PillButton } from "./PillButton";
@@ -109,7 +109,6 @@ export function ActivityPickerSheet({
           label="All"
           selected={category === "all"}
           fill={colors.primary}
-          ink={onMineral(scheme)}
           onPress={() => setCategory("all")}
         />
         {categories.map((c) => (
@@ -118,7 +117,6 @@ export function ActivityPickerSheet({
             label={c.label}
             selected={category === c.id}
             fill={mineralColor(categoryMineral(c.id), colors, scheme)}
-            ink={onMineral(scheme)}
             onPress={() => setCategory(c.id)}
           />
         ))}
@@ -196,16 +194,15 @@ function Chip({
   label,
   selected,
   fill,
-  ink,
   onPress,
 }: {
   label: string;
   selected: boolean;
   fill: string;
-  ink: string;
   onPress: () => void;
 }) {
   const { colors } = usePageColors();
+  const ink = inkOn(fill);
   return (
     <Pressable
       accessibilityRole="button"
@@ -273,7 +270,7 @@ function Tile({
           style={[styles.check, { backgroundColor: mineral }]}
           importantForAccessibility="no-hide-descendants"
         >
-          <CheckIcon size={SIZE.iconSm} color={onMineral(scheme)} />
+          <CheckIcon size={SIZE.iconSm} color={inkOn(mineral)} />
         </View>
       ) : null}
       <ActivityIcon

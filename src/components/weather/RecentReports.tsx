@@ -33,6 +33,7 @@ import { BORDER, RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
 import {
   SEVERITY_TINT,
   mineralColor,
+  ratingInk,
   severityColor,
   severityOfReport,
 } from "@/theme/ratings";
@@ -149,7 +150,9 @@ export function RecentReports({
           <View style={styles.list}>
             {reports.map((r) => {
               const info = getReportTypeInfo(r.reportType);
-              const tone = severityColor(severityOfReport(r.severity), scheme);
+              const sev = severityOfReport(r.severity);
+              const tone = severityColor(sev, scheme);
+              const ink = ratingInk(sev, scheme, colors);
               const hasVoted = voted.has(r.id);
               return (
                 <View
@@ -186,7 +189,7 @@ export function RecentReports({
                           type="caption"
                           weight={700}
                           uppercase
-                          color={tone}
+                          color={ink}
                         >
                           {r.severity}
                         </WxText>

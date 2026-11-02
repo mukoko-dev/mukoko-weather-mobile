@@ -20,7 +20,12 @@ import { type ColorSchemeName } from "react-native";
 
 import { type CategoryMineral, type LaneMineral } from "@/shared/activities";
 import { type SuitabilityLevel } from "@/shared/suitability";
-import { MINERAL_EDGE, type Mineral, type PageColors } from "@/theme/mzizi";
+import {
+  MINERAL_EDGE,
+  type Mineral,
+  type PageColors,
+  contrastRatio,
+} from "@/theme/mzizi";
 
 // ---------------------------------------------------------------------------
 // Severity — `--color-severity-*`
@@ -106,6 +111,53 @@ export function isSeverityName(v: string): v is SeverityName {
 /** The tint behind a severity word: the severity colour at 10%, as the web. */
 export const SEVERITY_TINT = 0.1;
 
+/** `fg` at `alpha` over `bg`, as #rrggbb: the colour the eye sees. */
+export function blend(fg: string, bg: string, alpha: number): string {
+  const f = parseInt(fg.slice(1), 16);
+  const b = parseInt(bg.slice(1), 16);
+  const mix = (shift: number) =>
+    Math.round(
+      ((f >> shift) & 255) * alpha + ((b >> shift) & 255) * (1 - alpha),
+    );
+  return `#${[16, 8, 0]
+    .map((shift) => mix(shift).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+/** The floor for text on any surface (WCAG AA, and Mzizi's own rule). */
+export const TEXT_CONTRAST = 4.5;
+
+/**
+ * The colour a severity WORD is written in, on its own 10% tint over the card.
+ * It is the severity colour itself, as on the web, unless that fails 4.5:1 on
+ * its tint (the web's `severity-high` orange does in the light theme, 4.02:1),
+ * in which case the word is written in the primary text colour and the tint
+ * and the border keep the severity colour. The word is what carries the
+ * rating either way.
+ */
+export function ratingInk(
+  name: SeverityName,
+  scheme: ColorSchemeName,
+  colors: PageColors,
+): string {
+  const color = severityColor(name, scheme);
+  const tint = blend(color, colors.card, SEVERITY_TINT);
+  return contrastRatio(color, tint) >= TEXT_CONTRAST
+    ? color
+    : colors.textPrimary;
+}
+
+/**
+ * The text colour on a filled colour: white or near-black, whichever is
+ * clearer (the web's `--mineral-*-fg` pair, chosen per fill). The better of
+ * the two is always at least 4.58:1 for a text-sized fill.
+ */
+export function inkOn(fill: string): string {
+  return contrastRatio(ON_FILL.light, fill) >= contrastRatio(ON_FILL.dark, fill)
+    ? ON_FILL.light
+    : ON_FILL.dark;
+}
+
 // ---------------------------------------------------------------------------
 // Category minerals
 // ---------------------------------------------------------------------------
@@ -121,11 +173,6 @@ export function mineralColor(
 ): string {
   if (mineral === "primary") return colors.primary;
   return MINERAL_EDGE[mineral][scheme === "dark" ? "dark" : "light"];
-}
-
-/** Text on a filled mineral (`--mineral-*-fg`), and on `primary`. */
-export function onMineral(scheme: ColorSchemeName): string {
-  return ON_FILL[scheme === "dark" ? "dark" : "light"];
 }
 
 // ---------------------------------------------------------------------------

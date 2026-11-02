@@ -14,7 +14,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { usePageColors } from "@/hooks/usePageColors";
 import { useReduceMotion } from "@/hooks/useReduceMotion";
 import { BORDER, RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
-import { ON_FILL } from "@/theme/ratings";
+import { inkOn } from "@/theme/ratings";
 
 import { WxText } from "./WxText";
 
@@ -52,7 +52,7 @@ export function PillButton({
   const { colors, scheme } = usePageColors();
   const reduceMotion = useReduceMotion();
   const filled = variant === "filled";
-  const ink = filled ? ON_FILL[scheme] : colors.textPrimary;
+  const ink = filled ? inkOn(colors.primary) : colors.textPrimary;
   return (
     <Pressable
       accessibilityRole="button"

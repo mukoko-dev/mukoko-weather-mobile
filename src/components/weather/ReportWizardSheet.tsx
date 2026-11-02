@@ -46,7 +46,7 @@ import {
   getReportTypeInfo,
 } from "@/shared/report-types";
 import { BORDER, RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
-import { SEVERITY_TINT, ON_FILL, severityColor } from "@/theme/ratings";
+import { SEVERITY_TINT, inkOn, severityColor } from "@/theme/ratings";
 
 import { SINGLE_COLUMN_FONT_SCALE } from "./InsightCard";
 import { DetailSheet } from "./DetailSheet";
@@ -368,7 +368,10 @@ export function ReportWizardSheet({
               { backgroundColor: severityColor("low", scheme) },
             ]}
           >
-            <CheckIcon size={SIZE.iconMd} color={ON_FILL[scheme]} />
+            <CheckIcon
+              size={SIZE.iconMd}
+              color={inkOn(severityColor("low", scheme))}
+            />
           </View>
           <WxText type="body" color={colors.textSecondary} align="center">
             Your {info?.label.toLowerCase() ?? "weather"} report for{" "}

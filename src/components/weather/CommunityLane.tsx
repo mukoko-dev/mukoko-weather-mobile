@@ -65,7 +65,7 @@ import {
   NO_DATA_HEIGHT,
   PAST_OPACITY,
   mineralColor,
-  onMineral,
+  inkOn,
 } from "@/theme/ratings";
 
 import { selectedActivities } from "./ActivitiesSheet";
@@ -219,7 +219,7 @@ export function CommunityLane({ slug, forecast, now }: CommunityLaneProps) {
                     <ReportTypeIcon
                       type={lead.type}
                       size={SIZE.iconMd}
-                      color={onMineral(scheme)}
+                      color={inkOn(mineralColor("copper", colors, scheme))}
                     />
                   </View>
                   <View
@@ -379,6 +379,7 @@ export function CommunityLane({ slug, forecast, now }: CommunityLaneProps) {
                   ).map((cell) => (
                     <View
                       key={cell.index}
+                      testID={`lane-${lane.activity.id}-cell-${cell.index}`}
                       style={[
                         styles.cell,
                         cell.index === LANE_PAST_HOURS
@@ -391,6 +392,7 @@ export function CommunityLane({ slug, forecast, now }: CommunityLaneProps) {
                       ]}
                     >
                       <View
+                        testID={`lane-${lane.activity.id}-bar-${cell.index}`}
                         style={[
                           styles.bar,
                           cell.level

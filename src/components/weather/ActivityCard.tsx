@@ -30,6 +30,7 @@ import {
   LANE,
   SEVERITY_TINT,
   mineralColor,
+  ratingInk,
   severityColor,
   severityOfRating,
 } from "@/theme/ratings";
@@ -79,8 +80,12 @@ export function ActivityCard({
     [activity, forecast],
   );
 
-  const tone = rating
-    ? severityColor(severityOfRating(rating.level, rating.colorClass), scheme)
+  const severity = rating
+    ? severityOfRating(rating.level, rating.colorClass)
+    : null;
+  const tone = severity ? severityColor(severity, scheme) : colors.textTertiary;
+  const ink = severity
+    ? ratingInk(severity, scheme, colors)
     : colors.textTertiary;
 
   return (
@@ -121,12 +126,16 @@ export function ActivityCard({
             </WxText>
             {rating ? (
               <View
+                testID={`activity-rating-${activity.id}`}
                 style={[
                   styles.badge,
-                  { backgroundColor: withAlpha(tone, SEVERITY_TINT) },
+                  {
+                    backgroundColor: withAlpha(tone, SEVERITY_TINT),
+                    borderColor: tone,
+                  },
                 ]}
               >
-                <WxText type="body" weight={700} color={tone}>
+                <WxText type="body" weight={700} color={ink}>
                   {rating.label}
                 </WxText>
               </View>
@@ -208,6 +217,7 @@ const styles = StyleSheet.create({
     gap: SPACE.snug,
   },
   badge: {
+    borderWidth: BORDER.rest,
     borderRadius: RADIUS.sm,
     paddingHorizontal: SPACE.cozy,
     paddingVertical: SPACE.hair,
