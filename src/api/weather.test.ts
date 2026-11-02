@@ -8,8 +8,10 @@
 
 import { ApiError } from "@/api/client";
 import {
+  ensureUtcOffset,
   alignHourly,
   fetchWeather,
+  fetchWeatherRecord,
   toCurrent,
   toDaily,
   toForecast,
@@ -324,5 +326,71 @@ describe("fetchWeather", () => {
       headers: { "X-Weather-Provider": "fallback" },
     });
     expect((await fetchWeather({ lat: 1, lon: 2 })).source).toBe("fallback");
+  });
+});
+
+describe("the place's UTC offset, always (issue #64)", () => {
+  // The seasonal estimate as the Worker sends it today: zoned instants and no
+  // `utc_offset_seconds`.
+  const noOffset = {
+    current: { time: "2026-11-03T15:31:00Z", temperature_2m: 24 },
+    hourly: {
+      time: ["2026-11-03T16:00:00Z", "2026-11-03T17:00:00Z"],
+      temperature_2m: [24, 23],
+    },
+    daily: { time: ["2026-11-03"] },
+  };
+
+  it("stamps the longitude estimate when the Worker sent none, as its ensure_utc_offset does", () => {
+    expect(ensureUtcOffset(noOffset, 31.05)).toMatchObject({
+      utc_offset_seconds: 7200,
+      utc_offset_estimated: true,
+    });
+    expect(ensureUtcOffset(noOffset, -77)).toMatchObject({
+      utc_offset_seconds: -18900,
+    });
+    // A provider offset always wins.
+    expect(
+      ensureUtcOffset({ ...noOffset, utc_offset_seconds: 3600 }, 31.05),
+    ).toMatchObject({ utc_offset_seconds: 3600 });
+    expect(ensureUtcOffset(noOffset, undefined)).toBe(noOffset);
+  });
+
+  it("reads a coordinate's answer in the place's zone, never the phone's", async () => {
+    mockFetch({
+      body: noOffset,
+      headers: { "X-Weather-Provider": "fallback" },
+    });
+    const weather = await fetchWeather({ lat: -17.83, lon: 31.05 });
+    expect(weather.utcOffsetSeconds).toBe(7200);
+    expect(weather.utcOffsetEstimated).toBe(true);
+    expect(weather.forecast?.utc_offset_seconds).toBe(7200);
+  });
+
+  it("uses the place's own longitude for a slug's answer", async () => {
+    mockFetch(
+      { body: locationHarare },
+      { body: noOffset, headers: { "X-Weather-Provider": "fallback" } },
+    );
+    const weather = await fetchWeather({ slug: "harare" });
+    expect(weather.utcOffsetSeconds).toBe(7200);
+  });
+});
+
+describe("the stored copy's offset (issue #64)", () => {
+  it("is stamped before the record is kept, so freshness reads the place's zone", async () => {
+    mockFetch({
+      body: {
+        current: { time: "2026-11-03T15:31:00Z" },
+        hourly: { time: ["2026-11-03T16:00:00Z"] },
+      },
+      headers: { "X-Weather-Provider": "fallback" },
+    });
+    const { record, weather } = await fetchWeatherRecord({
+      lat: -17.83,
+      lon: 31.05,
+    });
+    expect(record.raw.utc_offset_seconds).toBe(7200);
+    expect(weather.forecast?.utc_offset_estimated).toBe(true);
   });
 });
