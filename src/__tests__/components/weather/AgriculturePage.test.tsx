@@ -256,7 +256,8 @@ describe("the charts", () => {
     expect(rain.props.accessibilityLabel).toMatch(
       /Rain \(mm\): lowest 0 mm on .*highest/,
     );
-    expect(tree.getAllByRole("image").length).toBe(6);
+    // Each is the app's one chart: one adjustable element with its summary.
+    expect(tree.getAllByRole("adjustable").length).toBe(6);
   });
 
   it("leaves out a chart with no data instead of an empty frame (soil thins out after ~9 days)", async () => {
@@ -275,7 +276,7 @@ describe("the charts", () => {
 
   it("draws nothing when there are no days", async () => {
     const tree = await render(<AgricultureCharts daily={[]} />);
-    expect(tree.queryAllByRole("image")).toHaveLength(0);
+    expect(tree.queryAllByRole("adjustable")).toHaveLength(0);
   });
 });
 

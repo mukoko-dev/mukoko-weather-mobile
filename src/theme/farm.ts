@@ -106,14 +106,4 @@ export const FARM_SIZE = {
   calendarCell: 24,
   swatchWidth: 20,
   swatchHeight: 12,
-  /** A chart: plot height, the y-axis label column, and the legend swatch. */
-  chartHeight: 176,
-  chartAxis: 44,
-  legendSwatch: 12,
-  /** The line and bar widths in a chart. */
-  chartLine: 2,
-  /** Dash and gap of a dashed series line. */
-  dash: "6 4",
-  /** The gap a bar leaves beside its neighbour, as a share of its slot. */
-  barGap: 0.3,
 } as const;

@@ -6,17 +6,18 @@
  * card, malachite at 40% for the agriculture cards, the plain border colour
  * for a quiet card inside a page of cards.
  *
+ * The surface is the app's one card, `PageCard`; this only picks the accent.
  * Also the small pieces every such card is made of: its heading (Noto Serif,
  * h6, weight 600), a body line and a quiet note.
  */
 
 import { type ReactNode } from "react";
-import { StyleSheet, View } from "react-native";
 
 import { useFarmColors } from "@/hooks/useFarmColors";
 import { usePageColors } from "@/hooks/usePageColors";
-import { BORDER, RADIUS, SPACE, withAlpha } from "@/theme/mzizi";
+import { withAlpha } from "@/theme/mzizi";
 
+import { PageCard } from "./PageCard";
 import { WxText } from "./WxText";
 
 export type CardAccent = "primary" | "malachite" | "quiet";
@@ -41,15 +42,9 @@ export function PlaceCard({
         ? colors.border
         : withAlpha(colors.primary, 0.25);
   return (
-    <View
-      testID={testID}
-      style={[
-        styles.card,
-        { backgroundColor: colors.card, borderColor: border },
-      ]}
-    >
+    <PageCard testID={testID} borderColor={border}>
       {children}
-    </View>
+    </PageCard>
   );
 }
 
@@ -100,12 +95,3 @@ export function CardNote({
     </WxText>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: RADIUS.card,
-    borderWidth: BORDER.rest,
-    padding: SPACE.card,
-    gap: SPACE.stack,
-  },
-});
