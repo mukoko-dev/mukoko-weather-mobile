@@ -9,7 +9,7 @@
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { type TrailItem, trailText } from "@/shared/place-trail";
-import { SPACE, TOUCH, lineHeightOf } from "@/theme/mzizi";
+import { SPACE, TEXT_SCALE_MAX, TOUCH, lineHeightOf } from "@/theme/mzizi";
 
 import { WxText } from "./WxText";
 
@@ -37,7 +37,11 @@ export function PlaceTrail({ items, onHome, color }: PlaceTrailProps) {
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
             >
-              <WxText type="bodySm" color={color}>
+              <WxText
+                type="bodySm"
+                color={color}
+                maxFontSizeMultiplier={TEXT_SCALE_MAX.chrome}
+              >
                 /
               </WxText>
             </View>
@@ -55,7 +59,11 @@ export function PlaceTrail({ items, onHome, color }: PlaceTrailProps) {
                 right: SPACE.snug,
               }}
             >
-              <WxText type="bodySm" color={color}>
+              <WxText
+                type="bodySm"
+                color={color}
+                maxFontSizeMultiplier={TEXT_SCALE_MAX.chrome}
+              >
                 {item.label}
               </WxText>
             </Pressable>
@@ -72,6 +80,7 @@ export function PlaceTrail({ items, onHome, color }: PlaceTrailProps) {
                 type="bodySm"
                 weight={item.kind === "current" ? 600 : 400}
                 color={color}
+                maxFontSizeMultiplier={TEXT_SCALE_MAX.chrome}
               >
                 {item.label}
               </WxText>

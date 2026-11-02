@@ -8,7 +8,9 @@
  */
 
 import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+
+import { SINGLE_COLUMN_FONT_SCALE } from "@/components/weather/InsightCard";
 
 import { HomeIcon, NavigationIcon } from "@/components/icons/Icon";
 import { WxText } from "@/components/weather/WxText";
@@ -20,7 +22,15 @@ import {
   tempLabel,
   type CardSummary,
 } from "@/shell/location-card";
-import { BORDER, RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
+import {
+  BORDER,
+  RADIUS,
+  SIZE,
+  SPACE,
+  TEXT_SCALE_MAX,
+  TOUCH,
+  withAlpha,
+} from "@/theme/mzizi";
 import {
   NEUTRAL_SKY,
   SKY_FG,
@@ -59,6 +69,10 @@ export function LocationWeatherCard({
   const stops = skyStops(summary?.family ?? NEUTRAL_SKY, dark);
   const label = cardAccessibleName({ name, summary, isCurrent, isHome });
   const eyebrow = isCurrent ? "My Location" : isHome ? "Home" : null;
+  // At large text sizes the two columns stack, so the name is not cut to
+  // "Br…" beside the temperature (issue #78).
+  const { fontScale } = useWindowDimensions();
+  const stacked = fontScale > SINGLE_COLUMN_FONT_SCALE;
 
   return (
     <View style={styles.wrap} testID={testID}>
@@ -69,6 +83,8 @@ export function LocationWeatherCard({
         onPress={onPress}
         style={({ pressed }) => [
           styles.card,
+          stacked && styles.stacked,
+          stacked && onMore ? styles.stackedClearMore : null,
           { transform: pressed && !reduceMotion ? [{ scale: 0.98 }] : [] },
         ]}
       >
@@ -76,7 +92,7 @@ export function LocationWeatherCard({
           colors={[stops.top, stops.mid, stops.bottom]}
           style={StyleSheet.absoluteFill}
         />
-        <View style={styles.left}>
+        <View style={[styles.left, stacked && styles.leftStacked]}>
           {eyebrow ? (
             <View style={styles.eyebrow}>
               {isCurrent ? (
@@ -91,6 +107,7 @@ export function LocationWeatherCard({
                 tracking="widest"
                 uppercase
                 color={SKY_FG_DIM}
+                maxFontSizeMultiplier={TEXT_SCALE_MAX.chrome}
               >
                 {eyebrow}
               </WxText>
@@ -115,7 +132,13 @@ export function LocationWeatherCard({
                 : "Weather unavailable"}
           </WxText>
         </View>
-        <View style={[styles.right, onMore ? styles.clearMore : null]}>
+        <View
+          style={[
+            styles.right,
+            stacked && styles.rightStacked,
+            onMore && !stacked ? styles.clearMore : null,
+          ]}
+        >
           <WxText type="h2" weight={400} color={SKY_FG} tabular>
             {summary ? tempLabel(summary.temperature) : "--"}
           </WxText>
@@ -166,6 +189,12 @@ const styles = StyleSheet.create({
   left: { flex: 1, minWidth: 0, gap: SPACE.hair },
   eyebrow: { flexDirection: "row", alignItems: "center", gap: SPACE.tight },
   right: { alignItems: "flex-end" },
+  // Stacked: each column is its content's height (no flex basis 0), and the
+  // card leaves the ⋯ control its corner.
+  stacked: { flexDirection: "column", alignItems: "stretch" },
+  stackedClearMore: { paddingRight: TOUCH.min + SPACE.hair },
+  rightStacked: { alignItems: "flex-start" },
+  leftStacked: { flex: 0, flexGrow: 0 },
   // Leave room for the ⋯ control at the card's top-right corner.
   clearMore: { paddingTop: TOUCH.min - SPACE.card },
   more: {

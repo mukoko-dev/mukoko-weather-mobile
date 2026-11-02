@@ -47,13 +47,14 @@ import {
 import { SunTimesCard } from "./SunTimesCard";
 import { HeroTopRow } from "./SkyHero";
 import { WeatherScroll } from "./WeatherScroll";
+import { countryLabel } from "@/shared/place-info";
+import { subPageTrail } from "@/shared/place-trail";
 import { goHome } from "./navigation";
 import {
   BackControl,
   WeatherError,
   openSettings,
   shareWeather,
-  trailOf,
 } from "./WeatherPage";
 import { WxText } from "./WxText";
 
@@ -133,16 +134,16 @@ export function DetailPage({
     >
       <HeroTopRow
         name={name}
-        trail={[
-          // Home / Country / Province / Place / Forecast: the place is a step
-          // on the way here, and the detail page is the current one.
-          ...trailOf(weather.location, name).map((item) =>
-            item.kind === "current"
-              ? { ...item, kind: "plain" as const }
-              : item,
-          ),
-          { label: title, kind: "current" },
-        ]}
+        // Home / Country / Province / Place / Forecast: the place is a step
+        // on the way here, and the detail page is the current one.
+        trail={subPageTrail(
+          {
+            name,
+            countryName: countryLabel(weather.location?.country),
+            province: weather.location?.province,
+          },
+          title,
+        )}
         onHome={goHome}
         leading={
           <BackControl

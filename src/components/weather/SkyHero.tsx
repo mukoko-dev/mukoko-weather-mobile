@@ -16,7 +16,7 @@
  */
 
 import { type ReactNode } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, useWindowDimensions } from "react-native";
 
 import {
   NavigationIcon,
@@ -34,7 +34,13 @@ import {
 } from "@/shared/hero";
 import { type TrailItem } from "@/shared/place-trail";
 import { weatherCodeToInfo } from "@/shared/weather";
-import { SIZE, SPACE, RADIUS, lineHeightOf } from "@/theme/mzizi";
+import {
+  SIZE,
+  SPACE,
+  RADIUS,
+  TEXT_SCALE_MAX,
+  lineHeightOf,
+} from "@/theme/mzizi";
 import { LANE } from "@/theme/ratings";
 import { SKY_FG, SKY_FG_DIM } from "@/theme/sky";
 
@@ -95,6 +101,7 @@ function EyebrowBadge({ badge }: { badge: HeroBadge }) {
         uppercase
         tracking="widest"
         color={SKY_FG_DIM}
+        maxFontSizeMultiplier={TEXT_SCALE_MAX.chrome}
       >
         {heroBadgeLabel(badge)}
       </WxText>
@@ -171,6 +178,7 @@ export function SkyHero({
     typeof temperature === "number" && Number.isFinite(temperature);
   const rounded = hasTemp ? Math.round(temperature) : null;
   const localTime = heroLocalTime(now, utcOffsetSeconds);
+  const { fontScale } = useWindowDimensions();
 
   return (
     <View testID="sky-hero">
@@ -203,6 +211,7 @@ export function SkyHero({
               family="mono"
               tracking="widest"
               color={SKY_FG_DIM}
+              maxFontSizeMultiplier={TEXT_SCALE_MAX.chrome}
             >
               {localTime}
             </WxText>
@@ -239,14 +248,25 @@ export function SkyHero({
           {rounded === null ? "—" : `${rounded}°`}
         </WxText>
 
+        {/* The glyph grows with the text it sits beside, and a long
+            condition wraps instead of running off the edge (issue #68). */}
         <View style={[styles.condition, styles.next]}>
           <WeatherIcon
             code={weatherCode}
             isDay={isDay}
-            size={SIZE.iconHero}
+            size={Math.round(
+              SIZE.iconHero *
+                Math.max(1, Math.min(fontScale, TEXT_SCALE_MAX.h5)),
+            )}
             color={SKY_FG}
           />
-          <WxText type="h5" weight={400} color={SKY_FG}>
+          <WxText
+            type="h5"
+            weight={400}
+            color={SKY_FG}
+            align="center"
+            style={styles.conditionText}
+          >
             {info.label}
           </WxText>
         </View>
@@ -328,7 +348,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: SPACE.tight,
+    maxWidth: "100%",
   },
+  conditionText: { flexShrink: 1 },
   highLow: {
     flexDirection: "row",
     flexWrap: "wrap",

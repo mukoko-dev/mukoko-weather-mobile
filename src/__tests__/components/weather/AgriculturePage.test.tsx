@@ -76,7 +76,8 @@ describe("the agriculture page", () => {
     const tree = await render(screen());
     expect(tree.getByText("Harare Agriculture")).toBeTruthy();
     expect(tree.getByTestId("place-trail").props.accessibilityLabel).toBe(
-      "Breadcrumb: Home / Harare / Agriculture",
+      // Home / Country / Place / page, as Forecast and Atmosphere (#79).
+      "Breadcrumb: Home / Zimbabwe / Harare / Agriculture",
     );
     expect(
       await tree.findByText("Good day to spray, harvest and irrigate."),

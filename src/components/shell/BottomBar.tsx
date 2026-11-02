@@ -19,7 +19,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WxText } from "@/components/weather/WxText";
 import { usePageColors } from "@/hooks/usePageColors";
 import { type LaneChip } from "@/shared/location-pager";
-import { BORDER, RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
+import {
+  BORDER,
+  RADIUS,
+  SIZE,
+  SPACE,
+  TOUCH,
+  withAlpha,
+  TEXT_SCALE_MAX,
+} from "@/theme/mzizi";
 import { BAR, chipColorsFor } from "@/theme/shell";
 
 import { PlaceLane } from "./PlaceLane";
@@ -80,6 +88,10 @@ export function BottomBar({
             style={StyleSheet.absoluteFill}
             glassEffectStyle="regular"
             colorScheme={scheme}
+            // Clear glass lets a white card's text show through behind the
+            // labels (issue #77); the card tint keeps them legible over any
+            // page, as the web's `bg-card/90 backdrop-blur`.
+            tintColor={withAlpha(colors.card, BAR.glassTint)}
           />
         ) : null}
         <BarItem
@@ -144,7 +156,13 @@ function BarItem({
       ]}
     >
       {icon(fg)}
-      <WxText type="caption" weight={600} color={fg} numberOfLines={1}>
+      <WxText
+        type="caption"
+        weight={600}
+        color={fg}
+        numberOfLines={1}
+        maxFontSizeMultiplier={TEXT_SCALE_MAX.chrome}
+      >
         {label}
       </WxText>
     </Pressable>

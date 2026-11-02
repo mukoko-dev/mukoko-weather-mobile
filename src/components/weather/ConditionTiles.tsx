@@ -57,7 +57,10 @@ import { HazeCard } from "./HazeCard";
 import { InsightCard, InsightGrid, InsightRow } from "./InsightCard";
 import { MetricDetailSheet } from "./MetricDetailSheet";
 import { MetricValue } from "./MetricValue";
+import { SKY_FG } from "@/theme/sky";
+
 import { SectionHeader } from "./SectionHeader";
+import { OnSky } from "./SkyExtent";
 import { answerKey } from "./answer-key";
 import { ChartErrorBoundary } from "./ChartErrorBoundary";
 import {
@@ -181,21 +184,25 @@ export function ConditionTiles({
   return (
     <>
       <InsightGrid>
-        <SectionHeader
-          title="Conditions"
-          titleColor={colors.textPrimary}
-          actionColor={colors.primary}
-          action={
-            onOpenTrends
-              ? {
-                  label: "24h trends",
-                  spoken: "24-hour trends",
-                  onPress: onOpenTrends,
-                  testID: "trends-link",
-                }
-              : undefined
-          }
-        />
+        {/* On the sky, kept there by OnSky, so white is always legible
+            (issue #61). */}
+        <OnSky>
+          <SectionHeader
+            title="Conditions"
+            titleColor={SKY_FG}
+            actionColor={SKY_FG}
+            action={
+              onOpenTrends
+                ? {
+                    label: "24h trends",
+                    spoken: "24-hour trends",
+                    onPress: onOpenTrends,
+                    testID: "trends-link",
+                  }
+                : undefined
+            }
+          />
+        </OnSky>
         {point ? (
           <>
             <ChartErrorBoundary
