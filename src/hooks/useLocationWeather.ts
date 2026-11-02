@@ -4,6 +4,11 @@
  * words), plus pull-to-refresh and retry. A place the app has just shown is
  * `ready` at once from the in-memory cache (src/hooks/weather-cache.ts);
  * otherwise it is fetched through the one API door.
+ *
+ * The state belongs to the slug it was loaded for. If the screen stays mounted
+ * while the slug changes (a route reused for another place), the old place's
+ * weather is never shown under the new one: the hook reads the new place from
+ * the cache, or starts at `loading` and fetches it.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -16,11 +21,18 @@ export type DetailLoad =
   | { kind: "ready"; weather: WeatherResponse }
   | { kind: "error"; message: string };
 
+/** What a place shows before its own answer arrives. */
+function initialLoad(slug: string | undefined): DetailLoad {
+  const hit = slug ? recallWeather(slug) : undefined;
+  return hit ? { kind: "ready", weather: hit } : { kind: "loading" };
+}
+
 export function useLocationWeather(slug: string | undefined) {
-  const [state, setState] = useState<DetailLoad>(() => {
-    const hit = slug ? recallWeather(slug) : undefined;
-    return hit ? { kind: "ready", weather: hit } : { kind: "loading" };
-  });
+  const [held, setHeld] = useState<{
+    slug: string | undefined;
+    load: DetailLoad;
+  }>(() => ({ slug, load: initialLoad(slug) }));
+  const state = held.slug === slug ? held.load : initialLoad(slug);
   const [refreshing, setRefreshing] = useState(false);
 
   // Every update lands after the awaited fetch, never synchronously in the
@@ -31,15 +43,18 @@ export function useLocationWeather(slug: string | undefined) {
       try {
         const weather = await fetchWeather({ slug }, signal);
         rememberWeather(slug, weather);
-        setState({ kind: "ready", weather });
+        setHeld({ slug, load: { kind: "ready", weather } });
       } catch (err) {
         if (signal?.aborted) return;
-        setState({
-          kind: "error",
-          message:
-            err instanceof Error
-              ? err.message
-              : "We could not load the weather.",
+        setHeld({
+          slug,
+          load: {
+            kind: "error",
+            message:
+              err instanceof Error
+                ? err.message
+                : "We could not load the weather.",
+          },
         });
       }
     },
@@ -62,9 +77,9 @@ export function useLocationWeather(slug: string | undefined) {
   }, [load]);
 
   const onRetry = useCallback(() => {
-    setState({ kind: "loading" });
+    setHeld({ slug, load: { kind: "loading" } });
     void load();
-  }, [load]);
+  }, [load, slug]);
 
   return { state, refreshing, onRefresh, onRetry };
 }

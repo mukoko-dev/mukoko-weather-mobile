@@ -15,16 +15,28 @@ type Props = {
   name: string;
   /** The text colour (the section's own surface decides it). */
   color: string;
+  /**
+   * A section that has failed draws its children again when this changes, so
+   * a crash on one answer is not final: the next answer (a refresh) gets
+   * another go. Leave it out and a failure lasts as long as the section does.
+   */
+  resetKey?: string;
   children: ReactNode;
 };
 
-type State = { failed: boolean };
+type State = { failed: boolean; key: string | undefined };
 
 export class ChartErrorBoundary extends Component<Props, State> {
-  state: State = { failed: false };
+  state: State = { failed: false, key: this.props.resetKey };
 
-  static getDerivedStateFromError(): State {
+  static getDerivedStateFromError(): Partial<State> {
     return { failed: true };
+  }
+
+  static getDerivedStateFromProps(props: Props, state: State): State | null {
+    return props.resetKey === state.key
+      ? null
+      : { failed: false, key: props.resetKey };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {

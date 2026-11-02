@@ -61,24 +61,38 @@ function titleCaseSlug(slug: string | undefined): string {
     .join(" ");
 }
 
-/** "Harare · 1490m": the web's subtitle without the season (that is the place profile). */
+/**
+ * "Harare · 1490m": the web's subtitle without the season (that is the place
+ * profile). An elevation of exactly 0 is the API's placeholder for a place it
+ * has not measured (a spot under a GPS fix), not a height, so it is left out
+ * rather than printed as "0m".
+ */
 export function detailSubtitle(
   location: WeatherResponse["location"],
 ): string | undefined {
+  const elevation = location?.elevation;
   const parts = [
     location?.province,
-    typeof location?.elevation === "number"
-      ? `${Math.round(location.elevation)}m`
+    typeof elevation === "number" &&
+    Number.isFinite(elevation) &&
+    Math.round(elevation) !== 0
+      ? `${Math.round(elevation)}m`
       : undefined,
   ].filter((p): p is string => typeof p === "string" && p.length > 0);
   return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
-type SectionProps = { name: string; color: string; children: React.ReactNode };
+type SectionProps = {
+  name: string;
+  color: string;
+  /** A section that failed draws again when this changes (a new answer). */
+  resetKey?: string;
+  children: React.ReactNode;
+};
 
-function Section({ name, color, children }: SectionProps) {
+function Section({ name, color, resetKey, children }: SectionProps) {
   return (
-    <ChartErrorBoundary name={name} color={color}>
+    <ChartErrorBoundary name={name} color={color} resetKey={resetKey}>
       {children}
     </ChartErrorBoundary>
   );
@@ -109,6 +123,8 @@ export function DetailPage({
   const title = SUB_ROUTE_TITLE[sub];
   const subtitle = detailSubtitle(weather.location);
   const offset = weather.utcOffsetSeconds;
+  // A new answer (refresh) gives a section that crashed on the last one another go.
+  const resetKey = `${weather.fetchedAt ?? ""}|${current.observedAt ?? ""}`;
 
   return (
     <WeatherScroll
@@ -147,17 +163,25 @@ export function DetailPage({
         </View>
         {forecast && sub === "forecast" ? (
           <>
-            <Section name="hourly forecast" color={SKY_FG_DIM}>
+            <Section
+              name="hourly forecast"
+              color={SKY_FG_DIM}
+              resetKey={resetKey}
+            >
               <HourlyForecastCard
                 hourly={forecast.hourly}
                 utcOffsetSeconds={offset}
                 now={now}
               />
             </Section>
-            <Section name="daily forecast" color={SKY_FG_DIM}>
+            <Section
+              name="daily forecast"
+              color={SKY_FG_DIM}
+              resetKey={resetKey}
+            >
               <DailyCard forecast={forecast} />
             </Section>
-            <Section name="sun times" color={SKY_FG_DIM}>
+            <Section name="sun times" color={SKY_FG_DIM} resetKey={resetKey}>
               <SunTimesCard
                 daily={forecast.daily}
                 utcOffsetSeconds={offset}
@@ -168,10 +192,18 @@ export function DetailPage({
         ) : null}
         {forecast && sub === "atmosphere" ? (
           <>
-            <Section name="atmospheric conditions" color={SKY_FG_DIM}>
+            <Section
+              name="atmospheric conditions"
+              color={SKY_FG_DIM}
+              resetKey={resetKey}
+            >
               <ConditionTiles forecast={forecast} now={now} />
             </Section>
-            <Section name="atmospheric details" color={SKY_FG_DIM}>
+            <Section
+              name="atmospheric details"
+              color={SKY_FG_DIM}
+              resetKey={resetKey}
+            >
               <AtmosphericDetailsCard
                 hourly={forecast.hourly}
                 utcOffsetSeconds={offset}

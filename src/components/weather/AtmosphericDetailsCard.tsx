@@ -6,6 +6,7 @@
  * empty message).
  */
 
+import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { usePageColors } from "@/hooks/usePageColors";
@@ -35,7 +36,12 @@ export function AtmosphericDetailsCard({
 }: AtmosphericDetailsCardProps) {
   const { colors } = usePageColors();
   const border = useCardBorder("quiet");
-  const data = prepareAtmosphericData(hourly, utcOffsetSeconds, now);
+  // The series are rebuilt only for a new answer, offset or instant, so the
+  // charts' own memos (axes, labels, model) hold between the page's re-renders.
+  const data = useMemo(
+    () => prepareAtmosphericData(hourly, utcOffsetSeconds, now),
+    [hourly, utcOffsetSeconds, now],
+  );
   const sections = [
     {
       title: "Humidity & Cloud Cover",

@@ -273,6 +273,35 @@ describe("one crash stays in its own card", () => {
     );
     expect(fine.queryByTestId("chart-error")).toBeNull();
   });
+
+  it("a failed section draws again when the next answer arrives, and only then", async () => {
+    let broken = true;
+    const Flaky = () => {
+      if (broken) throw new Error("bad column");
+      return <></>;
+    };
+    const tree = await render(
+      <ChartErrorBoundary name="pressure chart" color="#000000" resetKey="a">
+        <Flaky />
+      </ChartErrorBoundary>,
+    );
+    expect(tree.getByTestId("chart-error")).toBeTruthy();
+    // The same answer again (a re-render) does not retry a section that failed.
+    broken = false;
+    await tree.rerender(
+      <ChartErrorBoundary name="pressure chart" color="#000000" resetKey="a">
+        <Flaky />
+      </ChartErrorBoundary>,
+    );
+    expect(tree.getByTestId("chart-error")).toBeTruthy();
+    // A new answer gets another go.
+    await tree.rerender(
+      <ChartErrorBoundary name="pressure chart" color="#000000" resetKey="b">
+        <Flaky />
+      </ChartErrorBoundary>,
+    );
+    expect(tree.queryByTestId("chart-error")).toBeNull();
+  });
 });
 
 describe("the subtitle", () => {
@@ -290,6 +319,20 @@ describe("the subtitle", () => {
       "Harare",
     );
     expect(detailSubtitle(undefined)).toBeUndefined();
+  });
+
+  it("never prints the API's placeholder height of 0 as a real one", () => {
+    // A spot under a GPS fix comes back with elevation 0 (unmeasured).
+    expect(
+      detailSubtitle({ province: "Harare", elevation: 0, lat: 0, lon: 0 }),
+    ).toBe("Harare");
+    expect(detailSubtitle({ elevation: 0, lat: 0, lon: 0 })).toBeUndefined();
+    expect(detailSubtitle({ elevation: 0.4, lat: 0, lon: 0 })).toBeUndefined();
+    // A real height below sea level is still a height.
+    expect(detailSubtitle({ elevation: -430, lat: 0, lon: 0 })).toBe("-430m");
+    expect(
+      detailSubtitle({ elevation: Number.NaN, lat: 0, lon: 0 }),
+    ).toBeUndefined();
   });
 });
 
@@ -379,6 +422,62 @@ describe("the screen: every state", () => {
     );
     expect(tree.getByText("No place was chosen.")).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("a route reused for another place never shows the first place's weather", async () => {
+    const bulawayo = {
+      ...harareWeather(),
+      location: {
+        ...harareWeather().location!,
+        slug: "bulawayo",
+        name: "Bulawayo",
+      },
+    };
+    fetchMock.mockResolvedValueOnce(harareWeather());
+    const tree = await render(
+      <LocationDetailScreen slug="harare" sub="forecast" />,
+    );
+    await settle();
+    expect(tree.getByText("Harare Forecast")).toBeTruthy();
+
+    // The slug changes while the screen stays mounted: the old place goes at once.
+    fetchMock.mockReturnValueOnce(new Promise(() => undefined));
+    await tree.rerender(
+      <LocationDetailScreen slug="bulawayo" sub="forecast" />,
+    );
+    expect(tree.queryByText("Harare Forecast")).toBeNull();
+    expect(tree.getByTestId("detail-skeleton")).toBeTruthy();
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      { slug: "bulawayo" },
+      expect.anything(),
+    );
+
+    // And a place the app already holds opens from memory under the new slug.
+    rememberWeather("bulawayo", bulawayo);
+    await tree.rerender(
+      <LocationDetailScreen slug="bulawayo" sub="forecast" />,
+    );
+    await tree.rerender(
+      <LocationDetailScreen slug="harare" sub="atmosphere" />,
+    );
+    await tree.rerender(
+      <LocationDetailScreen slug="bulawayo" sub="atmosphere" />,
+    );
+    expect(tree.getByText("Bulawayo Atmosphere")).toBeTruthy();
+    expect(tree.queryByText("Harare Atmosphere")).toBeNull();
+  });
+
+  it("does not remember a seasonal estimate for the next page", async () => {
+    fetchMock.mockResolvedValue({
+      ...harareWeather(),
+      source: "fallback",
+    });
+    const tree = await render(
+      <LocationDetailScreen slug="harare" sub="forecast" />,
+    );
+    await settle();
+    expect(tree.getByText("Harare Forecast")).toBeTruthy();
+    expect(recallWeather("harare")).toBeUndefined();
   });
 
   it("pull to refresh asks again and keeps the page", async () => {
