@@ -1,7 +1,7 @@
 /**
  * The on-device event queue: events wait here, on the phone, until the weather
  * API has a route to take them (`POST /v1/events`, proposed in
- * mukoko-dev/mukoko-weather; see `./index.ts`). No analytics SDK, no third
+ * mukoko-dev/mukoko-weather#438; see `./index.ts`). No analytics SDK, no third
  * party: when the route exists, the queue is sent to our own API in batches.
  *
  * Rules it keeps:
@@ -76,6 +76,11 @@ export type QueueState = {
   events: AppEvent[];
   /** Ids the API has seen and must be asked to delete. */
   forget: string[];
+  /**
+   * The forecast_shown keys recorded today (`day|surface|place`), kept apart
+   * from `events` so the once-a-day rule survives an upload.
+   */
+  shown: string[];
 };
 
 /** Most events kept on the phone. About 100 bytes each. */
@@ -84,6 +89,8 @@ export const DEFAULT_QUEUE_CAP = 500;
 export const MAX_BATCH = 100;
 /** Most ids waiting to be forgotten (a person resetting over and over). */
 const MAX_FORGET = 10;
+/** Most forecast_shown keys remembered for one day. */
+const MAX_SHOWN = 50;
 
 function emptyState(installId: string | null): QueueState {
   return {
@@ -95,6 +102,7 @@ function emptyState(installId: string | null): QueueState {
     uploaded: false,
     events: [],
     forget: [],
+    shown: [],
   };
 }
 
@@ -133,6 +141,9 @@ function parseState(raw: string | null): QueueState | null {
       props: checked.props as EventProps[EventName],
     });
   }
+  const shown = (Array.isArray(s.shown) ? s.shown : [])
+    .filter((k): k is string => typeof k === "string" && k.length <= 80)
+    .slice(-MAX_SHOWN);
   const forget = (Array.isArray(s.forget) ? s.forget : [])
     .map(id)
     .filter((v): v is string => v !== null)
@@ -147,12 +158,31 @@ function parseState(raw: string | null): QueueState | null {
     uploaded: s.uploaded === true,
     events,
     forget,
+    shown,
   };
 }
 
-/** Two coarse places are the same place. */
-function samePlace(a: unknown, b: unknown): boolean {
-  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+/**
+ * The state to start from when a stored document exists but cannot be used.
+ * If it says the person opted out, that holds: a damaged file must never turn
+ * measurement back on.
+ */
+function recoverState(raw: string, newId: () => string): QueueState {
+  return /"optOut"\s*:\s*true/.test(raw)
+    ? { ...emptyState(null), optOut: true }
+    : emptyState(newId());
+}
+
+/** The once-a-day key of a forecast_shown event. */
+function shownKey(event: AppEvent): string {
+  const props = event.props as EventProps["forecast_shown"];
+  const place = props.place ?? {};
+  return [
+    event.at.slice(0, 10),
+    props.surface,
+    place.country ?? "",
+    place.cell ?? "",
+  ].join("|");
 }
 
 export type EventQueueOptions = {
@@ -169,7 +199,11 @@ export type EventQueueOptions = {
 export class EventQueue {
   private state: QueueState = emptyState(null);
   private loading: Promise<void> | null = null;
+  /** Set when storage could not be read: nothing is recorded or written. */
+  private readOnly = false;
   private writing: Promise<void> = Promise.resolve();
+  /** The newest state not yet on disk; writes coalesce to it. */
+  private pending: string | null = null;
   private flushing: Promise<{ sent: number }> | null = null;
   private readonly storage: QueueStorage;
   private readonly newId: () => string;
@@ -191,18 +225,22 @@ export class EventQueue {
   load(): Promise<void> {
     if (!this.loading) {
       this.loading = (async () => {
-        let stored: QueueState | null = null;
+        let raw: string | null;
         try {
-          stored = parseState(await this.storage.read());
+          raw = await this.storage.read();
         } catch {
-          // Unreadable storage: start fresh, as on a new install.
+          // Unreadable this time (locked, busy): record nothing and write
+          // nothing for this session, so a stored opt-out is never overwritten.
+          this.state = { ...emptyState(null), optOut: true };
+          this.readOnly = true;
+          return;
         }
-        if (stored) {
-          this.state = stored;
-        } else {
-          this.state = emptyState(this.newId());
-          this.persist();
-        }
+        const stored = parseState(raw);
+        this.state =
+          stored ??
+          (raw ? recoverState(raw, this.newId) : null) ??
+          emptyState(this.newId());
+        if (!stored) void this.persist().catch(() => {});
       })();
     }
     return this.loading;
@@ -235,16 +273,22 @@ export class EventQueue {
       at: minuteStamp(this.now()),
       props: checked.props as EventProps[EventName],
     };
-    if (event.name === "forecast_shown" && this.isRepeatToday(event)) {
-      return false;
+    let shown = this.state.shown;
+    if (event.name === "forecast_shown") {
+      const key = shownKey(event);
+      if (shown.includes(key)) return false;
+      const today = key.slice(0, 10);
+      shown = [...shown.filter((k) => k.startsWith(today)), key].slice(
+        -MAX_SHOWN,
+      );
     }
     const events = [...this.state.events, event];
     while (events.length > this.cap) {
       const oldest = events.findIndex((e) => e.name !== "first_open");
       events.splice(oldest === -1 ? 0 : oldest, 1);
     }
-    this.state = { ...this.state, events };
-    this.persist();
+    this.state = { ...this.state, events, shown };
+    void this.persist().catch(() => {});
     return true;
   }
 
@@ -257,23 +301,29 @@ export class EventQueue {
     this.state = { ...this.state, firstOpenFor: installId };
     const kept = await this.track("first_open", { origin: idOrigin });
     if (!kept) this.state = { ...this.state, firstOpenFor };
-    this.persist();
+    void this.persist().catch(() => {});
   }
 
   /**
    * Turn analytics off (drop the queue, forget the id) or back on (a new id:
-   * nothing links the person before and after).
+   * nothing links the person before and after). Resolves once the choice is
+   * on disk; rejects if it could not be written, so the screen can say so.
    */
   async setOptOut(optOut: boolean): Promise<void> {
     await this.load();
-    if (this.state.optOut === optOut) return;
+    if (this.readOnly) throw new Error("Analytics storage is unavailable.");
+    if (this.state.optOut === optOut) {
+      // Asked again after a failed write: try to write the choice again.
+      if (this.pending !== null) await this.persist();
+      return;
+    }
     if (optOut) {
       this.state = {
         ...emptyState(null),
         optOut: true,
         forget: this.withForgotten(),
       };
-      this.persist();
+      await this.persist();
       return;
     }
     this.state = {
@@ -281,7 +331,7 @@ export class EventQueue {
       idOrigin: "reset",
       forget: this.state.forget,
     };
-    this.persist();
+    await this.persist();
     await this.recordAppOpen();
   }
 
@@ -294,7 +344,7 @@ export class EventQueue {
       idOrigin: "reset",
       forget: this.withForgotten(),
     };
-    this.persist();
+    await this.persist();
     await this.recordAppOpen();
   }
 
@@ -313,7 +363,7 @@ export class EventQueue {
 
   /** Wait for the last write (tests, and before the app is backgrounded). */
   settled(): Promise<void> {
-    return this.writing;
+    return this.writing.catch(() => {});
   }
 
   private async doFlush(): Promise<{ sent: number }> {
@@ -328,12 +378,14 @@ export class EventQueue {
       } catch {
         // Offline: try again on the next flush.
       }
-      if (result !== "ok") return { sent: 0 };
+      // A failing forget request is retried next time; it never holds up the
+      // current id's events, which are a different id.
+      if (result !== "ok") break;
       this.state = {
         ...this.state,
         forget: this.state.forget.filter((f) => f !== id),
       };
-      this.persist();
+      void this.persist().catch(() => {});
     }
 
     let sent = 0;
@@ -344,7 +396,7 @@ export class EventQueue {
         schema: 1,
         installId: this.state.installId,
         batchId: this.newId(),
-        sentAt: new Date(this.now().getTime()).toISOString(),
+        sentAt: this.now().toISOString(),
         client: this.client,
         events: chunk,
       };
@@ -366,7 +418,7 @@ export class EventQueue {
             ? [...this.state.forget, batch.installId].slice(-MAX_FORGET)
             : this.state.forget,
       };
-      this.persist();
+      void this.persist().catch(() => {});
       if (result === "ok") sent += chunk.length;
     }
     return { sent };
@@ -379,25 +431,29 @@ export class EventQueue {
       : forget;
   }
 
-  private isRepeatToday(event: AppEvent): boolean {
-    const day = event.at.slice(0, 10);
-    const props = event.props as EventProps["forecast_shown"];
-    return this.state.events.some((e) => {
-      if (e.name !== "forecast_shown" || e.at.slice(0, 10) !== day) {
-        return false;
-      }
-      const p = e.props as EventProps["forecast_shown"];
-      return p.surface === props.surface && samePlace(p.place, props.place);
-    });
-  }
-
-  /** Write the state; writes run one after another, newest wins. */
-  private persist(): void {
-    const value = JSON.stringify(this.state);
-    this.writing = this.writing
-      .then(() => this.storage.write(value))
-      .catch(() => {
-        // Best effort: a full or locked disk must never break the app.
+  /**
+   * Write the newest state. Writes run one after another and coalesce: a
+   * write that finds a newer state waiting writes that one instead. Resolves
+   * when this state (or a newer one) is on disk; rejects if the write failed.
+   */
+  private persist(): Promise<void> {
+    if (this.readOnly) return Promise.resolve();
+    this.pending = JSON.stringify(this.state);
+    const run = this.writing
+      .catch(() => {})
+      .then(async () => {
+        const value = this.pending;
+        if (value === null) return;
+        this.pending = null;
+        try {
+          await this.storage.write(value);
+        } catch (err) {
+          // Keep it for the next write, unless a newer state is waiting.
+          if (this.pending === null) this.pending = value;
+          throw err;
+        }
       });
+    this.writing = run.catch(() => {});
+    return run;
   }
 }

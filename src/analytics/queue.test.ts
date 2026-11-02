@@ -143,6 +143,17 @@ describe("EventQueue", () => {
     ).toBe(true);
   });
 
+  it("keeps the once-a-day rule after the queue is uploaded", async () => {
+    const uploader = fakeUploader(["ok"]);
+    const q = makeQueue(memoryStorage().storage, { uploader });
+    await q.track("forecast_shown", { surface: "home", place: HARARE });
+    await q.flush();
+    expect(q.snapshot().events).toEqual([]);
+    expect(
+      await q.track("forecast_shown", { surface: "home", place: HARARE }),
+    ).toBe(false);
+  });
+
   describe("opt-out", () => {
     it("drops what is queued and records nothing more, across restarts", async () => {
       const { box, storage } = memoryStorage();
@@ -209,20 +220,66 @@ describe("EventQueue", () => {
     expect(state.events.map((e) => e.name)).toEqual(["first_open"]);
   });
 
-  it("starts fresh from a corrupt or failing store, and never throws", async () => {
+  it("starts fresh from a corrupt store, and never throws", async () => {
     const corrupt = makeQueue(memoryStorage("{not json").storage);
     expect(await corrupt.track("share", { surface: "app" })).toBe(true);
 
-    const failing = makeQueue({
-      read: async () => {
-        throw new Error("disk");
-      },
+    const full = makeQueue({
+      read: async () => null,
       write: async () => {
         throw new Error("disk full");
       },
     });
-    expect(await failing.track("share", { surface: "app" })).toBe(true);
-    await expect(failing.settled()).resolves.toBeUndefined();
+    expect(await full.track("share", { surface: "app" })).toBe(true);
+    await expect(full.settled()).resolves.toBeUndefined();
+  });
+
+  it("never turns measurement back on from a damaged or unreadable store", async () => {
+    // A damaged file that still says "opted out".
+    const damaged = memoryStorage('{"v":1,"optOut":true,"events":[');
+    const a = makeQueue(damaged.storage);
+    expect(await a.track("share", { surface: "app" })).toBe(false);
+    await a.settled();
+    expect(damaged.box.value).toMatch(/"optOut":true/);
+
+    // A store that cannot be read this time: record nothing, write nothing.
+    const writes: string[] = [];
+    const b = makeQueue({
+      read: async () => {
+        throw new Error("locked");
+      },
+      write: async (value) => {
+        writes.push(value);
+      },
+    });
+    await b.recordAppOpen();
+    expect(await b.track("share", { surface: "app" })).toBe(false);
+    await b.settled();
+    expect(writes).toEqual([]);
+    await expect(b.setOptOut(true)).rejects.toThrow();
+  });
+
+  it("reports an opt-out as done only once it is on disk", async () => {
+    let fail = true;
+    let stored: string | null = null;
+    const q = makeQueue({
+      read: async () => null,
+      write: async (value) => {
+        if (fail) throw new Error("disk full");
+        stored = value;
+      },
+    });
+    await q.load();
+    await expect(q.setOptOut(true)).rejects.toThrow("disk full");
+    // Nothing is recorded meanwhile, and the next write carries the opt-out.
+    expect(await q.track("share", { surface: "app" })).toBe(false);
+    await q.recordAppOpen();
+    expect(stored).toBeNull();
+    // Asking again writes it.
+    fail = false;
+    await q.setOptOut(true);
+    expect(stored).toMatch(/"optOut":true/);
+    expect(q.snapshot()).toMatchObject({ optOut: true, events: [] });
   });
 
   it("drops stored events that no longer validate", async () => {
@@ -250,6 +307,19 @@ describe("EventQueue", () => {
   });
 
   describe("flush", () => {
+    it("sends the current id's events even when a forget request fails", async () => {
+      const uploader = fakeUploader(["ok", "ok"]);
+      const q = makeQueue(memoryStorage().storage, { uploader });
+      await q.track("share", { surface: "app" });
+      await q.flush();
+      await q.resetInstallId();
+      uploader.forgetResult = "retry";
+      await q.track("share", { surface: "place" });
+      await q.flush();
+      expect(uploader.batches).toHaveLength(2);
+      expect(q.snapshot().forget).toHaveLength(1);
+    });
+
     it("sends nothing without an uploader", async () => {
       const q = makeQueue(memoryStorage().storage);
       await q.track("share", { surface: "app" });
@@ -325,16 +395,21 @@ function fakeUploader(results: SendResult[]) {
   const queue = [...results];
   const batches: EventBatch[] = [];
   const forgotten: string[] = [];
-  const uploader: Uploader & { batches: EventBatch[]; forgotten: string[] } = {
+  const uploader: Uploader & {
+    batches: EventBatch[];
+    forgotten: string[];
+    forgetResult: "ok" | "retry";
+  } = {
     batches,
     forgotten,
+    forgetResult: "ok",
     async send(batch) {
       batches.push(batch);
       return queue.shift() ?? "retry";
     },
     async forget(id) {
       forgotten.push(id);
-      return "ok";
+      return uploader.forgetResult;
     },
   };
   return uploader;

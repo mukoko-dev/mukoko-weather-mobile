@@ -5,7 +5,7 @@
  *
  * Events are validated (`./events`) and queued on the phone (`./queue`). They
  * are not sent anywhere yet: `EVENTS_UPLOAD_ENABLED` stays false until the
- * weather API serves `POST /v1/events` (proposed in mukoko-dev/mukoko-weather)
+ * weather API serves `POST /v1/events` (proposed in mukoko-dev/mukoko-weather#438)
  * AND the app shows the person the opt-out switch. The upload then goes to the
  * same Cloudflare host as every other call (`src/api/client.ts`), without the
  * sign-in token, so events never link to an account.
@@ -47,7 +47,7 @@ export const EVENTS_FORGET_ROUTE = "/v1/events/forget";
 export const EVENTS_UPLOAD_ENABLED: boolean = false;
 
 /** Statuses that mean "this batch will never be accepted": drop it. */
-const REFUSED = new Set([400, 413, 422]);
+const REFUSED = new Set([400, 410, 413, 422]);
 
 /** The uploader for the weather API. Never sends the sign-in token. */
 export function createApiUploader(): Uploader {
@@ -86,7 +86,13 @@ export function createApiUploader(): Uploader {
 const FILE_NAME = "mukoko-events.json";
 const WEB_KEY = "mukoko.events";
 
-/** The app's document directory (localStorage on web). */
+/**
+ * The app's document directory (localStorage on web). SecureStore holds the
+ * app's other small values, but a value there is limited to about 2 KB and
+ * the queue is larger, so it is a file. The file is deleted on uninstall; a
+ * whole-device restore brings it back with the rest of the person's data,
+ * which is the same person. The id is reset from the app, not by reinstalling.
+ */
 export function createDefaultStorage(): QueueStorage {
   if (Platform.OS === "web") {
     return {

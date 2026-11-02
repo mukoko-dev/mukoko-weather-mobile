@@ -13,7 +13,7 @@
 
 import { router } from "expo-router";
 import * as Location from "expo-location";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -87,7 +87,12 @@ export function SavedLocationsSection() {
     };
   }, [query]);
 
-  const savedCount = savedLocations.length;
+  // Read at pin time, not captured: the GPS path awaits for seconds, and a
+  // search pin may land meanwhile.
+  const savedCount = useRef(savedLocations.length);
+  useEffect(() => {
+    savedCount.current = savedLocations.length;
+  }, [savedLocations.length]);
 
   /**
    * Pin a place. `coords` and `method` only feed the place_saved event, which
@@ -111,12 +116,12 @@ export function SavedLocationsSection() {
       setNotice(null);
       track("place_saved", {
         method,
-        savedCount: Math.min(savedCount + 1, MAX_SAVED_LOCATIONS),
+        savedCount: Math.min(++savedCount.current, MAX_SAVED_LOCATIONS),
         place: coarsePlace({ ...coords, country: loc.country }),
       });
       return true;
     },
-    [savedCount],
+    [],
   );
 
   const onAddResult = useCallback(
