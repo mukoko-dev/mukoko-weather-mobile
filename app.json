@@ -16,7 +16,10 @@
     "ios": {
       "icon": "./assets/icon.png",
       "bundleIdentifier": "africa.nyuchi.mukoko.weather",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "africa.nyuchi.mukoko.weather",
@@ -29,6 +32,10 @@
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -55,8 +62,11 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Mukoko Weather to use your location to show the weather where you are.",
-          "locationAlwaysAndWhenInUsePermission": "Allow Mukoko Weather to use your location to show local weather conditions."
+          "locationWhenInUsePermission": "mukoko weather uses your location to show the forecast for exactly where you are, whether that is a farm, a school or a lodge. It is used only while the app is open.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "locationFullAccuracyPermission": false,
+          "motionUsagePermission": false
         }
       ]
     ],
