@@ -19,7 +19,7 @@
  * of the network address on the server; the app sends no account or device id.
  */
 
-import { ApiError, apiFetch, ROUTES } from "@/api/client";
+import { ApiError, NetworkError, apiFetch, ROUTES } from "@/api/client";
 import {
   LIST_HOURS,
   type CommunityReport,
@@ -62,6 +62,9 @@ export function reportFailureMessage(err: unknown): string {
       return err.message;
     }
     return "The report could not be sent. Try again.";
+  }
+  if (err instanceof NetworkError && err.kind === "timeout") {
+    return "The report could not be sent: the weather service took too long to answer. Try again.";
   }
   return "The report could not be sent. Check your connection and try again.";
 }

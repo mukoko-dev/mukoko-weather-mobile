@@ -200,6 +200,44 @@ describe("WeatherPage", () => {
   });
 });
 
+describe("the forecast kept on the phone (issue #69)", () => {
+  it("says it could not refresh, how old the copy is and why, and offers Try again", async () => {
+    const onRetry = jest.fn();
+    const tree = await render(
+      <WeatherPage
+        weather={harareWeather()}
+        name="Harare"
+        inTabs
+        saved={{
+          fetchedAt: Date.now() - 3 * 3_600_000,
+          forecastOnly: true,
+          reason:
+            "Mukoko could not be reached. Check your connection, then try again.",
+          onRetry,
+        }}
+      />,
+    );
+    expect(tree.getByTestId("saved-forecast-banner")).toBeTruthy();
+    expect(
+      tree.getByText("Couldn't refresh the weather for Harare"),
+    ).toBeTruthy();
+    expect(
+      tree.getByText(
+        "Showing what is saved on this device. Updated 3 h ago. Conditions are the forecast for this hour.",
+      ),
+    ).toBeTruthy();
+    await fireEvent.press(tree.getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows no such notice on a live page", async () => {
+    const tree = await render(
+      <WeatherPage weather={harareWeather()} name="Harare" inTabs />,
+    );
+    expect(tree.queryByTestId("saved-forecast-banner")).toBeNull();
+  });
+});
+
 describe("Back control", () => {
   it("goes back when there is somewhere to go, else home", async () => {
     const tree = await render(<BackControl />);
@@ -224,9 +262,11 @@ describe("WeatherError", () => {
     );
     expect(tree.getByText("Weather unavailable")).toBeTruthy();
     expect(tree.getByText("The weather service did not answer.")).toBeTruthy();
-    expect(
-      tree.getByText("Check your connection, then try again."),
-    ).toBeTruthy();
+    // The cause is the message's to say: no fixed "check your connection"
+    // under a failure that may not be the connection's (issue #74).
+    expect(tree.queryByText(/Check your connection/)).toBeNull();
+    // Nothing to share on an error face.
+    expect(tree.queryByRole("button", { name: /Share weather/ })).toBeNull();
     await fireEvent.press(tree.getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
     // A person can still go back or open Settings.

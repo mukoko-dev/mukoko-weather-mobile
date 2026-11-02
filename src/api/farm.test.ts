@@ -222,7 +222,8 @@ describe("GET /v1/locations/profile", () => {
   it("never ties the shared request to one caller's abort signal", async () => {
     const calls = mockFetch({ body: profileHarare });
     await fetchPlaceProfile(HARARE);
-    expect(calls[0].signal ?? undefined).toBeUndefined();
+    // Its only signal is the request's own timeout, never a caller's.
+    expect(calls[0].signal?.aborted).toBe(false);
   });
 
   it("expires after 30 minutes", async () => {

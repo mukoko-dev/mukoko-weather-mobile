@@ -6,8 +6,12 @@
  *   2. If granted, take a fine GPS fix and name the exact place with
  *      GET /v1/geo (the API answers a `{name}--{geohash}` place; nothing is
  *      stored).
- *   3. Fetch /v1/weather?lat=&lon= and show it.
+ *   3. Fetch /v1/weather?lat=&lon= and show it, and keep it on the phone.
  *   4. Pull to refresh re-runs the weather fetch (it does not re-locate).
+ *
+ * When the Worker cannot be reached (offline, timed out, the source down) the
+ * forecast kept from the last good load is shown with its age and the cause
+ * (`saved`); with nothing kept, the error face says the cause in plain words.
  *
  * Without permission, or without a fix, it falls back to Harare, so the screen
  * always has weather to show; then the eyebrow does not say MY LOCATION.
@@ -15,14 +19,20 @@
  * The page itself is `WeatherPage`, the same one a place's page uses, so the
  * two screens match each other and the web location page. This screen only
  * finds the place and loads the weather, and designs each state: loading
- * (`WeatherSkeleton`), failure (`WeatherError`) and ready.
+ * (`WeatherSkeleton`, which says it is still trying after a few seconds),
+ * saved, failure (`WeatherError`) and ready.
  */
 
 import * as Location from "expo-location";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { failureMessage } from "@/api/failure";
 import { geoLookup, type LocationSummary } from "@/api/locations";
-import { fetchWeather, type WeatherResponse } from "@/api/weather";
+import {
+  fetchWeatherRecord,
+  type WeatherRecord,
+  type WeatherResponse,
+} from "@/api/weather";
 import {
   HARARE_DEFAULT,
   PLACE_LOOKUP_TIMEOUT_MS,
@@ -32,6 +42,12 @@ import {
 import { MukokoLogo } from "@/components/MukokoLogo";
 import { WeatherError, WeatherPage } from "@/components/weather/WeatherPage";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
+import {
+  HOME_KEY,
+  type SavedView,
+  loadForecast,
+  saveForecast,
+} from "@/state/forecast-store";
 
 /** Harare, Mukoko's editorial default, used when there is no location fix. */
 const FALLBACK = HARARE_DEFAULT;
@@ -53,6 +69,8 @@ type Coords = {
 type LoadState =
   | { kind: "loading" }
   | { kind: "ready"; weather: WeatherResponse }
+  /** The Worker could not be reached; the copy kept on the phone is shown. */
+  | { kind: "saved"; view: SavedView; reason: string }
   | { kind: "error"; message: string };
 
 export default function WeatherHome() {
@@ -101,16 +119,48 @@ export default function WeatherHome() {
     [],
   );
 
+  // One load at a time: a retry or a refresh aborts the last one, and only
+  // the latest may set the screen.
+  const inFlight = useRef<AbortController | null>(null);
+  // The last good answer, kept again under the place's name once it is known.
+  const lastRecord = useRef<WeatherRecord | null>(null);
+  // The place the fix was named as, whichever of the two answers came first.
+  const named = useRef<LocationSummary | null>(null);
+
   const load = useCallback(async (loc: Coords) => {
+    inFlight.current?.abort();
+    const controller = new AbortController();
+    inFlight.current = controller;
+    const { signal } = controller;
     try {
-      const weather = await fetchWeather({ lat: loc.lat, lon: loc.lon });
+      const { weather, record } = await fetchWeatherRecord(
+        { lat: loc.lat, lon: loc.lon },
+        signal,
+      );
+      if (signal.aborted) return;
       setState({ kind: "ready", weather });
+      lastRecord.current = record;
+      void saveForecast(HOME_KEY, record, {
+        name: named.current?.name ?? loc.label ?? record.place?.name,
+        slug: named.current?.slug ?? loc.slug,
+      });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "We could not load the weather.";
-      setState({ kind: "error", message });
+      if (signal.aborted) return;
+      // The Worker could not be reached: the forecast this phone kept from
+      // the last good load, with its age, beats an error.
+      const view = await loadForecast(HOME_KEY);
+      if (signal.aborted) return;
+      setState(
+        view
+          ? { kind: "saved", view, reason: failureMessage(err) }
+          : { kind: "error", message: failureMessage(err) },
+      );
+    } finally {
+      if (inFlight.current === controller) inFlight.current = null;
     }
   }, []);
+
+  useEffect(() => () => inFlight.current?.abort(), []);
 
   useEffect(() => {
     void (async () => {
@@ -136,6 +186,14 @@ export default function WeatherHome() {
           settled: true,
         };
       });
+      // The kept copy carries the place's name and links once it has them.
+      if (found && !loc.fallback) named.current = found;
+      if (found && !loc.fallback && lastRecord.current) {
+        void saveForecast(HOME_KEY, lastRecord.current, {
+          name: found.name,
+          slug: found.slug,
+        });
+      }
     })();
   }, [load, resolveLocation, resolvePlace]);
 
@@ -166,7 +224,8 @@ export default function WeatherHome() {
 
   const onRetry = useCallback(() => {
     if (!coords) return;
-    setState({ kind: "loading" });
+    // The saved copy stays on screen while it tries again.
+    setState((prev) => (prev.kind === "saved" ? prev : { kind: "loading" }));
     void load(coords);
   }, [coords, load]);
 
@@ -175,7 +234,27 @@ export default function WeatherHome() {
   // row, and the full wordmark would wrap it onto three lines on a phone.
   const brand = <MukokoLogo onSky showWordmark={false} testID="home-brand" />;
   if (state.kind === "loading") {
-    return <WeatherSkeleton leading={brand} inTabs />;
+    return <WeatherSkeleton leading={brand} inTabs onRetry={onRetry} />;
+  }
+  if (state.kind === "saved") {
+    const { view } = state;
+    return (
+      <WeatherPage
+        weather={view.weather}
+        name={view.name ?? view.weather.location?.name ?? "Your last place"}
+        slug={view.slug}
+        leading={brand}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+        inTabs
+        saved={{
+          fetchedAt: view.fetchedAt,
+          forecastOnly: view.freshness === "forecast",
+          reason: state.reason,
+          onRetry,
+        }}
+      />
+    );
   }
   if (state.kind === "error") {
     return (

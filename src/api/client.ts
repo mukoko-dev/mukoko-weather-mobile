@@ -140,7 +140,16 @@ export type FetchOptions = Omit<RequestInit, "body"> & {
   token?: string | null;
   /** AbortController signal. */
   signal?: AbortSignal;
+  /**
+   * Longest wait for the whole answer (headers and body), in ms. A stalled
+   * connection (2G, a captive portal) otherwise waits as long as the OS lets
+   * it, which on iOS is a minute or more. Default `REQUEST_TIMEOUT_MS`.
+   */
+  timeoutMs?: number;
 };
+
+/** How long any one request may take before it is given up as a timeout. */
+export const REQUEST_TIMEOUT_MS = 15_000;
 
 /** What a failed answer says, whichever error format the API used. */
 export type ApiProblem = {
@@ -187,6 +196,30 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * The request never got an answer: the network is down or refused it
+ * (`offline`), or nothing came back within the timeout (`timeout`). Its
+ * message is for logs, never for a screen; `src/api/failure.ts` turns the kind
+ * into words.
+ */
+export class NetworkError extends Error {
+  constructor(
+    readonly kind: "offline" | "timeout",
+    readonly url: string,
+    /** What `fetch` threw, when it threw (its message is kept for logs). */
+    readonly cause?: unknown,
+  ) {
+    super(
+      cause instanceof Error && cause.message
+        ? cause.message
+        : kind === "timeout"
+          ? "The request timed out."
+          : "The request could not reach the server.",
+    );
+    this.name = "NetworkError";
+  }
+}
+
 let cachedTokenResolver: (() => Promise<string | null>) | null = null;
 
 /**
@@ -223,7 +256,15 @@ export async function apiRequest<T = unknown>(
   path: string,
   opts: FetchOptions = {},
 ): Promise<ApiResult<T>> {
-  const { json, query, headers, token, ...rest } = opts;
+  const {
+    json,
+    query,
+    headers,
+    token,
+    signal: outer,
+    timeoutMs = REQUEST_TIMEOUT_MS,
+    ...rest
+  } = opts;
   const url = buildUrl(path, query);
 
   const finalHeaders: Record<string, string> = {
@@ -244,16 +285,45 @@ export async function apiRequest<T = unknown>(
     body = JSON.stringify(json);
   }
 
-  const response = await fetch(url, {
-    ...rest,
-    headers: finalHeaders,
-    body,
-  });
+  // One controller per request: the caller's signal (leaving the screen, a
+  // newer load) and the timeout both abort it. The timer runs until the body
+  // is read, since a stall can come after the headers too.
+  const controller = new AbortController();
+  const onOuterAbort = () => controller.abort();
+  if (outer?.aborted) controller.abort();
+  else outer?.addEventListener("abort", onOuterAbort);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
 
-  const contentType = response.headers.get("content-type") ?? "";
-  const parsed: unknown = contentType.includes("json")
-    ? await response.json().catch(() => undefined)
-    : await response.text().catch(() => undefined);
+  let response: Response;
+  let parsed: unknown;
+  try {
+    response = await fetch(url, {
+      ...rest,
+      headers: finalHeaders,
+      body,
+      signal: controller.signal,
+    });
+    const contentType = response.headers.get("content-type") ?? "";
+    parsed = contentType.includes("json")
+      ? await response.json().catch(() => undefined)
+      : await response.text().catch(() => undefined);
+  } catch (err) {
+    if (timedOut) throw new NetworkError("timeout", url);
+    // The caller gave up (their own abort, as before): not a failure.
+    if (outer?.aborted || (err as Error | null)?.name === "AbortError") {
+      throw err;
+    }
+    throw new NetworkError("offline", url, err);
+  } finally {
+    clearTimeout(timer);
+    outer?.removeEventListener("abort", onOuterAbort);
+  }
+  // A body cut off by the timeout reads as nothing; that is not an answer.
+  if (timedOut) throw new NetworkError("timeout", url);
 
   if (!response.ok) {
     // The server's own sentence when it sent one; never the URL.

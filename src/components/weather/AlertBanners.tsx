@@ -7,6 +7,8 @@
  *   only signal. Announced assertively, as a safety notice.
  * - Weather unavailable: shown when every provider failed and the page shows a
  *   seasonal estimate. Polite, informational, with "Refresh now".
+ * - Saved forecast: the Worker could not be reached and the page shows the
+ *   copy kept on this phone, with its age and "Try again".
  *
  * Both sit on an opaque card colour with the tint over it, so the text holds
  * 4.5:1 whatever sky is behind the banner.
@@ -151,6 +153,77 @@ export function WeatherUnavailableBanner({
         >
           <WxText type="body" weight={600} color={colors.textPrimary}>
             Refresh now
+          </WxText>
+        </Pressable>
+      ) : null}
+    </Banner>
+  );
+}
+
+/**
+ * The page is drawing the forecast kept on this phone because the Worker could
+ * not be reached (issue #69): the web's "Couldn't refresh the weather for X.
+ * Showing what is saved on this device", with its age and "Try again". When
+ * the copy is over an hour old its "now" is the forecast for this hour, and it
+ * says so.
+ */
+export function SavedForecastBanner({
+  placeName,
+  updated,
+  forecastOnly,
+  reason,
+  onRetry,
+}: {
+  placeName: string;
+  /** "Updated 3 h ago". */
+  updated: string;
+  /** The conditions are the forecast for this hour, not a reading. */
+  forecastOnly: boolean;
+  /** Why it could not refresh, by cause (src/api/failure.ts). */
+  reason: string;
+  onRetry?: () => void;
+}) {
+  const { colors, scheme } = usePageColors();
+  const edge = MINERAL_EDGE.gold[scheme === "dark" ? "dark" : "light"];
+  return (
+    <Banner
+      testID="saved-forecast-banner"
+      edge={edge}
+      tint={BANNER_TINT.warning}
+      live="polite"
+      icon={<TriangleAlertIcon size={SIZE.iconMd} color={colors.textPrimary} />}
+    >
+      <WxText
+        type="body"
+        weight={600}
+        color={colors.textPrimary}
+        accessibilityRole="header"
+      >
+        {`Couldn't refresh the weather for ${placeName}`}
+      </WxText>
+      <WxText type="body" color={colors.textSecondary}>
+        {`Showing what is saved on this device. ${updated}.${
+          forecastOnly ? " Conditions are the forecast for this hour." : ""
+        }`}
+      </WxText>
+      <WxText type="body" color={colors.textSecondary}>
+        {reason}
+      </WxText>
+      {onRetry ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Try again"
+          onPress={onRetry}
+          style={({ pressed }) => [
+            styles.refresh,
+            {
+              borderColor: edge,
+              borderWidth: pressed ? BORDER.active : BORDER.rest,
+            },
+          ]}
+        >
+          <WxText type="body" weight={600} color={colors.textPrimary}>
+            Try again
           </WxText>
         </Pressable>
       ) : null}

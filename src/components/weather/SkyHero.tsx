@@ -60,7 +60,8 @@ export type SkyHeroProps = {
   onHome?: () => void;
   /** A control at the left of the top row (Back on a place's page). */
   leading?: ReactNode;
-  onShare: () => void;
+  /** Absent where there is nothing to share (the error face). */
+  onShare?: () => void;
   onSettings: () => void;
   /**
    * The quiet "for your activities" line under High and Low: the first picked
@@ -132,9 +133,11 @@ export function HeroTopRow({
         ) : null}
       </View>
       <View style={styles.controls}>
-        <RoundControl label={`Share weather for ${name}`} onPress={onShare}>
-          <ShareIcon size={SIZE.iconMd} color={SKY_FG} />
-        </RoundControl>
+        {onShare ? (
+          <RoundControl label={`Share weather for ${name}`} onPress={onShare}>
+            <ShareIcon size={SIZE.iconMd} color={SKY_FG} />
+          </RoundControl>
+        ) : null}
         <RoundControl label="Settings and sign in" onPress={onSettings}>
           <UserIcon size={SIZE.iconMd} color={SKY_FG} />
         </RoundControl>

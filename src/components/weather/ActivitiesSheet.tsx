@@ -117,7 +117,7 @@ export function ActivitiesSheet({
             <View style={styles.block} accessibilityRole="alert">
               <WxText type="body" color={colors.textSecondary}>
                 Could not load the rules the ratings come from, so no rating is
-                shown. Check your connection and try again.
+                shown. Try again in a moment.
               </WxText>
               <PillButton label="Try again" onPress={retry} />
             </View>
