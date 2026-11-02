@@ -84,6 +84,7 @@ export function LocationWeatherCard({
         style={({ pressed }) => [
           styles.card,
           stacked && styles.stacked,
+          stacked && onMore ? styles.stackedClearMore : null,
           { transform: pressed && !reduceMotion ? [{ scale: 0.98 }] : [] },
         ]}
       >
@@ -91,7 +92,7 @@ export function LocationWeatherCard({
           colors={[stops.top, stops.mid, stops.bottom]}
           style={StyleSheet.absoluteFill}
         />
-        <View style={styles.left}>
+        <View style={[styles.left, stacked && styles.leftStacked]}>
           {eyebrow ? (
             <View style={styles.eyebrow}>
               {isCurrent ? (
@@ -188,8 +189,12 @@ const styles = StyleSheet.create({
   left: { flex: 1, minWidth: 0, gap: SPACE.hair },
   eyebrow: { flexDirection: "row", alignItems: "center", gap: SPACE.tight },
   right: { alignItems: "flex-end" },
+  // Stacked: each column is its content's height (no flex basis 0), and the
+  // card leaves the ⋯ control its corner.
   stacked: { flexDirection: "column", alignItems: "stretch" },
+  stackedClearMore: { paddingRight: TOUCH.min + SPACE.hair },
   rightStacked: { alignItems: "flex-start" },
+  leftStacked: { flex: 0, flexGrow: 0 },
   // Leave room for the ⋯ control at the card's top-right corner.
   clearMore: { paddingTop: TOUCH.min - SPACE.card },
   more: {

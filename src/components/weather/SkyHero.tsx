@@ -255,7 +255,8 @@ export function SkyHero({
             code={weatherCode}
             isDay={isDay}
             size={Math.round(
-              SIZE.iconHero * Math.min(fontScale, TEXT_SCALE_MAX.h5),
+              SIZE.iconHero *
+                Math.max(1, Math.min(fontScale, TEXT_SCALE_MAX.h5)),
             )}
             color={SKY_FG}
           />

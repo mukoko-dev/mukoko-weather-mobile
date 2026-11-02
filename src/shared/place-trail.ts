@@ -29,6 +29,21 @@ function clean(value: string | undefined): string | undefined {
   return v ? v : undefined;
 }
 
+/**
+ * A place's sub-page trail (Forecast, Atmosphere, Agriculture): the place's
+ * own trail with the place as a step on the way, then the page as the current
+ * one, so every sub-page reads Home / Country / Province / Place / Page
+ * (issue #79).
+ */
+export function subPageTrail(place: TrailInput, page: string): TrailItem[] {
+  return [
+    ...placeTrail(place).map((item) =>
+      item.kind === "current" ? { ...item, kind: "plain" as const } : item,
+    ),
+    { label: page, kind: "current" },
+  ];
+}
+
 export function placeTrail({
   name,
   countryName,

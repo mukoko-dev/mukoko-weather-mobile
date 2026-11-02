@@ -10,23 +10,20 @@
  */
 
 import { type ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StyleSheet, View } from "react-native";
 
 import { ChevronLeftIcon } from "@/components/icons/Icon";
-import { usePageColors } from "@/hooks/usePageColors";
 import { type SkyFamily } from "@/shared/hero";
 import { type TrailItem } from "@/shared/place-trail";
-import { BORDER, RADIUS, SIZE, SPACE, TOUCH } from "@/theme/mzizi";
+import { RADIUS, SIZE, SPACE, withAlpha } from "@/theme/mzizi";
 import { NEUTRAL_SKY, SKY_FG, SKY_FG_DIM } from "@/theme/sky";
 
 import { PillButton } from "./PillButton";
-import { CardBody, CardHeading } from "./PlaceCard";
 import { Bar, ShimmerProvider } from "./Shimmer";
 import { RoundControl } from "./RoundControl";
 import { HeroTopRow } from "./SkyHero";
-import { openSettings } from "./WeatherPage";
-import { WeatherScroll, pagePadding } from "./WeatherScroll";
+import { openSettings } from "./navigation";
+import { WeatherScroll } from "./WeatherScroll";
 import { WxText } from "./WxText";
 
 export type SubPageProps = {
@@ -61,11 +58,7 @@ export function SubPage({
         name={title}
         trail={trail}
         onHome={onHome}
-        leading={
-          <RoundControl label="Back" onPress={onBack} testID="back-control">
-            <ChevronLeftIcon size={SIZE.iconMd} color={SKY_FG} />
-          </RoundControl>
-        }
+        leading={<SkyBack onBack={onBack} />}
         onSettings={openSettings}
       />
       <View style={styles.title}>
@@ -90,57 +83,58 @@ export function SubPage({
   );
 }
 
-/** Bars in the shape of a sub-page: a title, a subtitle, three cards. */
-export function SubPageLoading({ onBack }: { onBack: () => void }) {
-  const insets = useSafeAreaInsets();
-  const { colors } = usePageColors();
-  const tint = colors.border;
+/** The sky's Back, for every face of a sub-page. */
+function SkyBack({ onBack }: { onBack: () => void }) {
   return (
-    <ShimmerProvider>
-      <View
-        style={[styles.root, { backgroundColor: colors.background }]}
-        accessible
-        accessibilityLabel="Loading"
-        accessibilityState={{ busy: true }}
-        testID="subpage-loading"
-      >
-        <View style={pagePadding(insets, false)}>
-          <View style={styles.column}>
-            <View style={styles.topRow}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Back"
-                onPress={onBack}
-                style={[styles.back, { borderColor: colors.border }]}
-              >
-                <ChevronLeftIcon
-                  size={SIZE.iconMd}
-                  color={colors.textPrimary}
-                />
-              </Pressable>
-            </View>
-            <Bar color={tint} width="60%" height={SIZE.iconMd * 2} />
-            <Bar color={tint} width="40%" height={SIZE.iconMd} />
-            <Bar
-              color={tint}
-              width="100%"
-              height={SIZE.insightMin}
-              radius={RADIUS.card}
-            />
-            <Bar
-              color={tint}
-              width="100%"
-              height={SIZE.insightMin}
-              radius={RADIUS.card}
-            />
-          </View>
-        </View>
-      </View>
-    </ShimmerProvider>
+    <RoundControl label="Back" onPress={onBack} testID="back-control">
+      <ChevronLeftIcon size={SIZE.iconMd} color={SKY_FG} />
+    </RoundControl>
   );
 }
 
-/** What happened and what to do, with Back still there. */
+/**
+ * Bars in the shape of a sub-page (a title, a subtitle, three cards), on the
+ * same sky and top row as the loaded page, so nothing jumps when it arrives.
+ */
+export function SubPageLoading({ onBack }: { onBack: () => void }) {
+  const tint = withAlpha(SKY_FG, 0.18);
+  return (
+    <WeatherScroll family={NEUTRAL_SKY}>
+      <HeroTopRow
+        name="this page"
+        leading={<SkyBack onBack={onBack} />}
+        onSettings={openSettings}
+      />
+      <ShimmerProvider>
+        <View
+          style={styles.title}
+          accessible
+          accessibilityLabel="Loading"
+          accessibilityState={{ busy: true }}
+          testID="subpage-loading"
+        >
+          <Bar color={tint} width="60%" height={SIZE.iconMd * 2} />
+          <Bar color={tint} width="40%" height={SIZE.iconMd} />
+          {[0, 1, 2].map((i) => (
+            <Bar
+              key={i}
+              color={tint}
+              width="100%"
+              height={SIZE.insightMin}
+              radius={RADIUS.card}
+            />
+          ))}
+        </View>
+      </ShimmerProvider>
+    </WeatherScroll>
+  );
+}
+
+/**
+ * What happened and "Try again", with Back still reachable, on the sky. It
+ * scrolls, as the page does: at the largest text size on a small phone the
+ * message can be taller than the screen.
+ */
 export function SubPageError({
   title,
   message,
@@ -152,67 +146,32 @@ export function SubPageError({
   onRetry: () => void;
   onBack: () => void;
 }) {
-  const insets = useSafeAreaInsets();
-  const { colors } = usePageColors();
   return (
-    <View
-      style={[styles.root, { backgroundColor: colors.background }]}
-      testID="subpage-error"
-    >
-      {/* Scrolls, as the page does: at the largest text size on a small phone
-          the message can be taller than the screen, and "Try again" is the
-          only way out of a failed load. */}
-      <ScrollView
-        contentInsetAdjustmentBehavior="never"
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={pagePadding(insets, false)}>
-          <View style={styles.column}>
-            <View style={styles.topRow}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Back"
-                onPress={onBack}
-                style={[styles.back, { borderColor: colors.border }]}
-              >
-                <ChevronLeftIcon
-                  size={SIZE.iconMd}
-                  color={colors.textPrimary}
-                />
-              </Pressable>
-            </View>
-            <CardHeading>{title}</CardHeading>
-            <CardBody>{message}</CardBody>
-            <PillButton label="Try again" onPress={onRetry} />
-          </View>
-        </View>
-      </ScrollView>
-    </View>
+    <WeatherScroll family={NEUTRAL_SKY}>
+      <HeroTopRow
+        name="this page"
+        leading={<SkyBack onBack={onBack} />}
+        onSettings={openSettings}
+      />
+      <View style={styles.title} testID="subpage-error">
+        <WxText
+          type="h4"
+          weight={600}
+          family="serif"
+          color={SKY_FG}
+          accessibilityRole="header"
+        >
+          {title}
+        </WxText>
+        <WxText type="body" color={SKY_FG_DIM}>
+          {message}
+        </WxText>
+        <PillButton label="Try again" onPress={onRetry} />
+      </View>
+    </WeatherScroll>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  column: {
-    width: "100%",
-    maxWidth: SIZE.contentMax,
-    alignSelf: "center",
-    gap: SPACE.section,
-  },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACE.snug,
-    paddingTop: SPACE.hair,
-  },
-  back: {
-    width: TOUCH.min,
-    height: TOUCH.min,
-    borderRadius: RADIUS.pill,
-    borderWidth: BORDER.rest,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  trail: { flex: 1, minWidth: 0 },
   title: { gap: SPACE.snug },
 });

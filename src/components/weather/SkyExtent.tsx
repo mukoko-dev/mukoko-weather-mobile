@@ -13,6 +13,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useRef,
 } from "react";
 import { View } from "react-native";
@@ -20,7 +21,13 @@ import { View } from "react-native";
 export type SkyExtentValue = {
   /** The scroll content, to measure against. */
   content: { current: ComponentRef<typeof View> | null };
-  /** The sky must reach at least this far down the content, in dp. */
+  /**
+   * Bumped whenever the content's layout changes (a card above loaded or
+   * went away), so a heading measures again even when its own box did not
+   * move inside its parent.
+   */
+  version: number;
+  /** The sky must reach this far down the content (dp); 0 releases it. */
   extendTo: (bottom: number) => void;
 };
 
@@ -29,7 +36,7 @@ export const SkyExtentContext = createContext<SkyExtentValue | null>(null);
 export function OnSky({ children }: { children: ReactNode }) {
   const sky = useContext(SkyExtentContext);
   const ref = useRef<ComponentRef<typeof View>>(null);
-  const onLayout = useCallback(() => {
+  const measure = useCallback(() => {
     const node = ref.current;
     const content = sky?.content.current;
     if (!node || !content) return;
@@ -39,8 +46,16 @@ export function OnSky({ children }: { children: ReactNode }) {
       () => undefined,
     );
   }, [sky]);
+  const version = sky?.version;
+  // Again after every content change; released when the heading goes away,
+  // so the sky shrinks back to its own reach.
+  useEffect(() => {
+    measure();
+  }, [measure, version]);
+  const release = sky?.extendTo;
+  useEffect(() => () => release?.(0), [release]);
   return (
-    <View ref={ref} onLayout={onLayout} testID="on-sky">
+    <View ref={ref} onLayout={measure} testID="on-sky">
       {children}
     </View>
   );

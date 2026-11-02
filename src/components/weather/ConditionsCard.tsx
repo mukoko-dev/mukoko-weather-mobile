@@ -61,9 +61,12 @@ export function hourTiles(forecast: WeatherData, now: Date): HourTile[] {
   // "Now" is the reading the hero shows, not the hour's forecast, so the two
   // never disagree on one screen (issue #62).
   const now0 = forecast.current;
+  // With a reading, "Now" takes the hero's values and the hero's fallbacks
+  // (clear, by day) for a field it lacks, so the two always agree.
   const nowTemp = finiteOr(now0?.temperature_2m);
-  const nowCode = finiteOr(now0?.weather_code);
-  const nowIsDay = finiteOr(now0?.is_day);
+  const hasNow = nowTemp !== null;
+  const nowCode = hasNow ? (finiteOr(now0?.weather_code) ?? 0) : null;
+  const nowIsDay = hasNow ? (finiteOr(now0?.is_day) ?? 1) : null;
   return hourly.time.slice(start, start + STRIP_HOURS).map((time, i) => {
     const idx = start + i;
     const isNow = i === 0;

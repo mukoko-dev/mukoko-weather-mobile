@@ -97,14 +97,27 @@ export function WeatherScroll({
   // How far the sky must reach for the headings drawn on it (SkyExtent).
   const content = useRef<ComponentRef<typeof View>>(null);
   const [minReach, setMinReach] = useState(0);
+  const [version, setVersion] = useState(0);
+  const extendTo = useCallback((bottom: number) => {
+    // The latest measurement wins, so the sky also shrinks back when the
+    // heading moves up or goes away.
+    const reach = bottom > 0 ? Math.ceil(bottom + SKY_REACH.fade) : 0;
+    setMinReach((prev) => (prev === reach ? prev : reach));
+  }, []);
   const sky = useMemo(
-    () => ({
-      content,
-      extendTo: (bottom: number) => {
-        const reach = Math.ceil(bottom + SKY_REACH.fade);
-        setMinReach((prev) => (reach > prev ? reach : prev));
-      },
-    }),
+    () => ({ content, version, extendTo }),
+    [version, extendTo],
+  );
+  // Any change in the content's height (a card above loaded, a banner went
+  // away) asks the headings on the sky to measure again.
+  const lastHeight = useRef(0);
+  const onContentLayout = useCallback(
+    (e: { nativeEvent: { layout: { height: number } } }) => {
+      const h = Math.round(e.nativeEvent.layout.height);
+      if (h === lastHeight.current) return;
+      lastHeight.current = h;
+      setVersion((v) => v + 1);
+    },
     [],
   );
 
@@ -157,7 +170,11 @@ export function WeatherScroll({
         pointerEvents="none"
       />
       <WeatherSky family={family} minReach={minReach} />
-      <View ref={content} style={pagePadding(insets, inTabs, clearance)}>
+      <View
+        ref={content}
+        onLayout={onContentLayout}
+        style={pagePadding(insets, inTabs, clearance)}
+      >
         <SkyExtentContext.Provider value={sky}>
           <View style={styles.column}>{children}</View>
         </SkyExtentContext.Provider>
