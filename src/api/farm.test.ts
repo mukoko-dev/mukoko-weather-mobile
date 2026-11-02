@@ -45,6 +45,12 @@ describe("GET /v1/agriculture", () => {
     expect(calls[0].method).toBe("GET");
   });
 
+  it("never sends a finer point than about 110 m (a raw GPS fix reaches this request)", async () => {
+    const calls = mockFetch({ body: agricultureHarare });
+    await fetchAgriculture({ lat: -17.825234567, lon: 31.033512345 }, []);
+    expect(calls[0].url).toBe(`${BASE}/v1/agriculture?lat=-17.825&lon=31.034`);
+  });
+
   it("reads a recorded Harare answer as a full picture", async () => {
     mockFetch({ body: agricultureHarare });
     const result = await fetchAgriculture(HARARE, []);
@@ -154,12 +160,12 @@ describe("GET /v1/enso", () => {
 describe("GET /v1/locations/profile", () => {
   beforeEach(() => resetPlaceProfileCache());
 
-  it("builds the query: slug first, rounded point, a two-letter country only", () => {
+  it("builds the query: slug first, point rounded to about 110 m, a two-letter country only", () => {
     expect(profileQuery({ slug: "harare" })).toEqual({ slug: "harare" });
     expect(profileQuery({ slug: "a b", lat: -17.83123, lon: 31.05 })).toEqual({
       slug: "a b",
-      lat: "-17.8312",
-      lon: "31.0500",
+      lat: "-17.831",
+      lon: "31.05",
     });
     expect(
       profileQuery({
@@ -170,8 +176,8 @@ describe("GET /v1/locations/profile", () => {
       }),
     ).toEqual({
       slug: "nairobi-ke",
-      lat: "-1.2800",
-      lon: "36.8100",
+      lat: "-1.28",
+      lon: "36.81",
       country: "KE",
     });
     expect(
@@ -181,8 +187,8 @@ describe("GET /v1/locations/profile", () => {
 
   it("asks by point alone for a place with no slug, and keys it to about a kilometre", () => {
     expect(profileQuery({ lat: -17.76, lon: 31.06 })).toEqual({
-      lat: "-17.7600",
-      lon: "31.0600",
+      lat: "-17.76",
+      lon: "31.06",
     });
     expect(profileKey({ slug: "harare" })).toBe("harare");
     expect(profileKey({ lat: -17.7601, lon: 31.0599 })).toBe("@-17.76,31.06");
@@ -201,7 +207,7 @@ describe("GET /v1/locations/profile", () => {
     expect(calls).toHaveLength(1);
     expect(peekPlaceProfile("harare")).toBe(a);
     expect(calls[0].url).toBe(
-      `${BASE}/v1/locations/profile?slug=harare&lat=-17.8300&lon=31.0500&country=ZW`,
+      `${BASE}/v1/locations/profile?slug=harare&lat=-17.83&lon=31.05&country=ZW`,
     );
   });
 
@@ -250,6 +256,49 @@ describe("GET /v1/history and /v1/normals for the 30-day card", () => {
     const answer = await fetchHistory30("harare");
     expect(calls).toHaveLength(2);
     expect(answer.data).toHaveLength(8);
+  });
+
+  it("tries once more after a 5xx, but never after a 429 or another 4xx, or a timeout", async () => {
+    const retried = mockFetch(
+      { status: 503, body: { error: "unavailable" } },
+      { body: historyHarare },
+    );
+    await expect(fetchHistory30("harare")).resolves.toMatchObject({
+      degraded: false,
+    });
+    expect(retried).toHaveLength(2);
+
+    // Rate limited: asking again would only spend more of the budget.
+    const limited = mockFetch(
+      { status: 429, body: { error: "rate_limited" } },
+      { body: historyHarare },
+    );
+    await expect(fetchHistory30("harare")).rejects.toMatchObject({
+      status: 429,
+    });
+    expect(limited).toHaveLength(1);
+
+    const missing = mockFetch(
+      { status: 404, body: { error: "not_found" } },
+      { body: historyHarare },
+    );
+    await expect(fetchHistory30("harare")).rejects.toMatchObject({
+      status: 404,
+    });
+    expect(missing).toHaveLength(1);
+
+    // The 20 s timeout (or the caller leaving) surfaces as an AbortError: a
+    // second 20 s wait would double the worst case of a first view.
+    const timedOut = mockFetch(
+      {
+        networkError: Object.assign(new Error("aborted"), {
+          name: "AbortError",
+        }),
+      },
+      { body: historyHarare },
+    );
+    await expect(fetchHistory30("harare")).rejects.toThrow("aborted");
+    expect(timedOut).toHaveLength(1);
   });
 
   it("gives up after the second failure", async () => {

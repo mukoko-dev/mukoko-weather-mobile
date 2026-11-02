@@ -6,11 +6,12 @@
  *
  * A history can take a while the first time (days not stored yet are fetched
  * from the climate archives), so it waits up to 20 seconds and a short range is
- * tried once more after a network error, as the web does. The point for the
- * normals is rounded to about 110 m.
+ * tried once more after a network failure or a 5xx, as the web does (never after
+ * a 4xx such as the 429 rate limit, and never after a timeout). The point for
+ * the normals is rounded to about 110 m.
  */
 
-import { apiFetch, ROUTES } from "@/api/client";
+import { ApiError, apiFetch, ROUTES } from "@/api/client";
 import {
   type HistoryAnswer,
   type Normals,
@@ -47,13 +48,27 @@ function withTimeout(
   };
 }
 
+/**
+ * Whether a failed history request is worth asking again: the request never
+ * got an answer (the network failed) or the Worker failed (5xx). Never a 4xx
+ * (a 429 is the rate limit, and asking again spends more of the budget), and
+ * never a timeout or a caller that left (`AbortError`: a second wait of 20 s
+ * would double the first view's worst case to 40 s).
+ */
+export function worthRetrying(err: unknown): boolean {
+  if (err instanceof ApiError) return err.status >= 500;
+  if (err instanceof Error && err.name === "AbortError") return false;
+  return true;
+}
+
 /** The last 30 days recorded for a place, with the Worker's own flags. */
 export async function fetchHistory30(
   slug: string,
   signal?: AbortSignal,
 ): Promise<HistoryAnswer> {
   let lastError: unknown;
-  // One retry: a 30-day range is short enough to be worth asking twice.
+  // One retry for a network failure or a 5xx: a 30-day range is short enough
+  // to be worth asking twice.
   for (let attempt = 0; attempt < 2; attempt++) {
     if (signal?.aborted) break;
     const timed = withTimeout(signal, HISTORY_TIMEOUT_MS);
@@ -66,6 +81,7 @@ export async function fetchHistory30(
       );
     } catch (err) {
       lastError = err;
+      if (!worthRetrying(err)) break;
     } finally {
       timed.done();
     }

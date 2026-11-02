@@ -225,6 +225,16 @@ export interface AgriLocationRef {
 }
 
 /**
+ * A coordinate as a request carries it: rounded to 3 decimals, about 110 m, as
+ * `fetchWeather` rounds its point. The Worker's farm and profile answers are
+ * built per 0.05 to 0.25 degree cell, so a finer value adds nothing but where
+ * the person is (a GPS fix reaches these requests through `withPlace`).
+ */
+export function queryDegrees(n: number): string {
+  return String(Math.round(n * 1000) / 1000);
+}
+
+/**
  * Query parameters of `GET /v1/agriculture` for a place and the user's
  * farming crops. `country` and `crops` are left out when empty.
  */
@@ -233,8 +243,8 @@ export function agricultureQuery(
   crops: readonly string[] = [],
 ): Record<string, string> {
   const query: Record<string, string> = {
-    lat: String(location.lat),
-    lon: String(location.lon),
+    lat: queryDegrees(location.lat),
+    lon: queryDegrees(location.lon),
   };
   if (location.slug) query.location = location.slug;
   if (location.country) query.country = location.country;

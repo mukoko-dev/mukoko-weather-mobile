@@ -86,6 +86,16 @@ describe("agricultureQuery", () => {
     });
   });
 
+  it("rounds the point to about 110 m, as the forecast request does", () => {
+    expect(agricultureQuery({ lat: -17.825234567, lon: 31.033512345 })).toEqual(
+      { lat: "-17.825", lon: "31.034" },
+    );
+    expect(agricultureQuery({ lat: 0.0004, lon: -0.0006 })).toEqual({
+      lat: "0",
+      lon: "-0.001",
+    });
+  });
+
   it("omits empty country and crops", () => {
     expect(agricultureQuery({ slug: "x", lat: 1, lon: 2 })).toEqual({
       lat: "1",

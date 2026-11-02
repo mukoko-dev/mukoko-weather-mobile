@@ -11,6 +11,7 @@
  */
 
 import { ApiError, apiFetch, ROUTES } from "@/api/client";
+import { queryDegrees } from "@/shared/agriculture";
 import { type PlaceProfile } from "@/shared/place-knowledge";
 
 export const PLACE_PROFILE_TTL_MS = 30 * 60 * 1000;
@@ -30,8 +31,8 @@ export function profileQuery(ref: ProfileRef): Record<string, string> {
   const query: Record<string, string> = {};
   if (ref.slug) query.slug = ref.slug;
   if (typeof ref.lat === "number" && typeof ref.lon === "number") {
-    query.lat = ref.lat.toFixed(4);
-    query.lon = ref.lon.toFixed(4);
+    query.lat = queryDegrees(ref.lat);
+    query.lon = queryDegrees(ref.lon);
   }
   if (ref.country && /^[A-Za-z]{2}$/.test(ref.country)) {
     query.country = ref.country;
