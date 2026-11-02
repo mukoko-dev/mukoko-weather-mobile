@@ -89,3 +89,38 @@ describe("frost", () => {
     expect(frostColor("moderate", "dark")).toBe("#9ecae1");
   });
 });
+
+describe("rings and tints on the new cards", () => {
+  const blend = (over: string, under: string, alpha: number) => {
+    const o = parseInt(over.slice(1), 16);
+    const u = parseInt(under.slice(1), 16);
+    const ch = (sh: number) =>
+      Math.round(((u >> sh) & 255) * (1 - alpha) + ((o >> sh) & 255) * alpha)
+        .toString(16)
+        .padStart(2, "0");
+    return `#${ch(16)}${ch(8)}${ch(0)}`;
+  };
+
+  it.each([
+    ["light", LIGHT],
+    ["dark", DARK],
+  ] as const)(
+    "the data-colour ring (AQI swatches, haze bar, moon disc) is 3:1 against the %s card",
+    (_scheme, page) => {
+      expect(contrastRatio(page.outline, page.card)).toBeGreaterThanOrEqual(3);
+    },
+  );
+
+  it.each([
+    ["light", LIGHT],
+    ["dark", DARK],
+  ] as const)(
+    "text holds 4.5:1 on the selected Averages tab (the primary at 12%) and on the Main pollutant chip in %s",
+    (_scheme, page) => {
+      const tab = blend(page.primary, page.card, 0.12);
+      expect(contrastRatio(page.textPrimary, tab)).toBeGreaterThanOrEqual(4.5);
+      const chip = blend(page.textTertiary, page.background, 0.16);
+      expect(contrastRatio(page.textPrimary, chip)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+});
