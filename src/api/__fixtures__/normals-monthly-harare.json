@@ -1,0 +1,107 @@
+{
+  "available": true,
+  "computedAt": "2026-10-31T23:41:24Z",
+  "lat": -17.829,
+  "lon": 31.052,
+  "months": [
+    {
+      "meanHighC": 24.8,
+      "meanLowC": 16.4,
+      "meanTempC": 20.2,
+      "month": 1,
+      "precipMm": 212.9,
+      "rainyDays": 20.6
+    },
+    {
+      "meanHighC": 24.7,
+      "meanLowC": 16.3,
+      "meanTempC": 20.1,
+      "month": 2,
+      "precipMm": 142.9,
+      "rainyDays": 16.2
+    },
+    {
+      "meanHighC": 24.5,
+      "meanLowC": 15.5,
+      "meanTempC": 19.7,
+      "month": 3,
+      "precipMm": 93.1,
+      "rainyDays": 13
+    },
+    {
+      "meanHighC": 23.7,
+      "meanLowC": 13.2,
+      "meanTempC": 18.3,
+      "month": 4,
+      "precipMm": 27.7,
+      "rainyDays": 4.8
+    },
+    {
+      "meanHighC": 22.4,
+      "meanLowC": 10.7,
+      "meanTempC": 16.4,
+      "month": 5,
+      "precipMm": 6.3,
+      "rainyDays": 1.5
+    },
+    {
+      "meanHighC": 20.5,
+      "meanLowC": 8.4,
+      "meanTempC": 14.3,
+      "month": 6,
+      "precipMm": 1.6,
+      "rainyDays": 0.3
+    },
+    {
+      "meanHighC": 20.3,
+      "meanLowC": 7.9,
+      "meanTempC": 13.9,
+      "month": 7,
+      "precipMm": 1.3,
+      "rainyDays": 0.3
+    },
+    {
+      "meanHighC": 23.4,
+      "meanLowC": 9.8,
+      "meanTempC": 16.5,
+      "month": 8,
+      "precipMm": 0.7,
+      "rainyDays": 0.2
+    },
+    {
+      "meanHighC": 26.8,
+      "meanLowC": 12.9,
+      "meanTempC": 19.8,
+      "month": 9,
+      "precipMm": 3.2,
+      "rainyDays": 0.9
+    },
+    {
+      "meanHighC": 28.3,
+      "meanLowC": 15.3,
+      "meanTempC": 21.7,
+      "month": 10,
+      "precipMm": 21,
+      "rainyDays": 4.1
+    },
+    {
+      "meanHighC": 27.4,
+      "meanLowC": 16.5,
+      "meanTempC": 21.7,
+      "month": 11,
+      "precipMm": 77.2,
+      "rainyDays": 12.2
+    },
+    {
+      "meanHighC": 25.3,
+      "meanLowC": 16.5,
+      "meanTempC": 20.5,
+      "month": 12,
+      "precipMm": 177.8,
+      "rainyDays": 20.2
+    }
+  ],
+  "period": "1991–2020",
+  "reason": null,
+  "source": "ERA5 via Open-Meteo, 1991–2020"
+}

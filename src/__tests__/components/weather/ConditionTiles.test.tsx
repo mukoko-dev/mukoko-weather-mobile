@@ -45,6 +45,7 @@ describe("ConditionTiles", () => {
       "Humidity",
       "Pressure",
       "Sun",
+      "Moon",
     ]);
   });
 

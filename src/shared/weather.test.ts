@@ -5,6 +5,7 @@
 
 import {
   checkFrostRisk,
+  checkFrostRiskAhead,
   createFallbackWeather,
   getDefaultSeason,
   uvLevel,
@@ -73,6 +74,38 @@ describe("checkFrostRisk", () => {
     expect(checkFrostRisk(hourly)).toBeNull();
   });
 
+  it("never reads a missing overnight reading as a frost hour", () => {
+    // `toForecast` keeps a null inside a column; `null <= 3` is true in JS.
+    const hourly = {
+      time: [
+        "2026-06-01T22:00:00Z",
+        "2026-06-02T05:00:00Z",
+        "2026-06-02T06:00",
+      ],
+      temperature_2m: [null, Number.NaN, 18],
+      apparent_temperature: [10, 8, 18],
+      relative_humidity_2m: [50, 50, 50],
+      precipitation_probability: [0, 0, 0],
+      precipitation: [0, 0, 0],
+      weather_code: [0, 0, 0],
+      visibility: [10000, 10000, 10000],
+      cloud_cover: [10, 10, 10],
+      surface_pressure: [1015, 1015, 1015],
+      wind_speed_10m: [5, 5, 5],
+      wind_direction_10m: [0, 0, 0],
+      wind_gusts_10m: [8, 8, 8],
+      uv_index: [0, 0, 0],
+      is_day: [0, 0, 1],
+    } as unknown as Parameters<typeof checkFrostRisk>[0];
+    expect(checkFrostRisk(hourly)).toBeNull();
+    // A real cold hour beside a missing one still alerts, on the real one.
+    const mixed = {
+      ...hourly,
+      temperature_2m: [null, 1.5, 18],
+    } as unknown as Parameters<typeof checkFrostRisk>[0];
+    expect(checkFrostRisk(mixed)?.lowestTemp).toBe(1.5);
+  });
+
   it("flags severe frost when overnight temps go below 0°C", () => {
     const hourly = {
       time: ["2026-06-01T22:00:00Z", "2026-06-02T05:00:00Z"],
@@ -133,5 +166,44 @@ describe("createFallbackWeather", () => {
       checkFrostRisk({ ...base, time: ["2026-06-01T23:00"] }),
     ).not.toBeNull();
     expect(checkFrostRisk({ ...base, time: ["2026-06-01T13:00"] })).toBeNull();
+  });
+});
+
+describe("checkFrostRiskAhead (the banner's coming night)", () => {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  /** Five days of naive Harare hours from local midnight, 2026-10-08, all 15°C. */
+  const series = (cold: number[]) => {
+    const time = Array.from(
+      { length: 120 },
+      (_, i) => `2026-10-${pad(8 + Math.floor(i / 24))}T${pad(i % 24)}:00`,
+    );
+    const temperature_2m = time.map((_, i) => (cold.includes(i) ? 2 : 15));
+    return { time, temperature_2m } as unknown as Parameters<
+      typeof checkFrostRiskAhead
+    >[0];
+  };
+  const HARARE = 7200;
+  // 13:00 UTC is 15:00 in Harare on 2026-10-08.
+  const AFTERNOON = new Date(Date.UTC(2026, 9, 8, 13, 0));
+
+  it("ignores this morning's cold hour, already past", () => {
+    expect(checkFrostRiskAhead(series([5]), HARARE, AFTERNOON)).toBeNull();
+  });
+
+  it("warns of the coming night", () => {
+    const alert = checkFrostRiskAhead(series([24 + 3]), HARARE, AFTERNOON);
+    expect(alert?.lowestTemp).toBe(2);
+    expect(alert?.startTime).toBe("2026-10-09T03:00");
+  });
+
+  it("does not call a night four days away 'tonight'", () => {
+    expect(
+      checkFrostRiskAhead(series([4 * 24 + 3]), HARARE, AFTERNOON),
+    ).toBeNull();
+  });
+
+  it("says nothing from a stale series", () => {
+    const later = new Date(Date.UTC(2026, 9, 20, 13, 0));
+    expect(checkFrostRiskAhead(series([24 + 3]), HARARE, later)).toBeNull();
   });
 });

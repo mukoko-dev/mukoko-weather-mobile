@@ -1,5 +1,12 @@
 /* Weather types and pure helpers. No network: the app reads weather only through src/api. */
 
+import {
+  currentHourIndex,
+  currentWallHourMs,
+  resolveOffsetSeconds,
+  wallClockMs,
+} from "./location-time";
+
 export interface CurrentWeather {
   temperature_2m: number;
   relative_humidity_2m: number;
@@ -31,6 +38,8 @@ export interface HourlyWeather {
   wind_gusts_10m: number[];
   uv_index: number[];
   is_day: number[];
+  /** Present when the model supplies it (the web's type has it). */
+  dew_point_2m?: (number | null)[];
 }
 
 export interface DailyWeather {
@@ -179,7 +188,15 @@ export function checkFrostRisk(
     .map((temp, i) => ({ temp, time: hourly.time[i] }))
     .filter((h) => {
       const hour = placeHourOf(h.time, offsetSeconds);
-      return hour !== null && (hour >= 22 || hour <= 8) && h.temp <= 3;
+      // A missing reading is not a frost hour: in JS `null <= 3` is true, so
+      // an hour the model left blank would raise "0°C expected" in a warm place.
+      return (
+        hour !== null &&
+        (hour >= 22 || hour <= 8) &&
+        typeof h.temp === "number" &&
+        Number.isFinite(h.temp) &&
+        h.temp <= 3
+      );
     });
 
   if (frostHours.length > 0) {
@@ -196,6 +213,35 @@ export function checkFrostRisk(
     };
   }
   return null;
+}
+
+/**
+ * The frost banner's question: frost in the coming night, not anywhere in the
+ * series. The Worker's hourly series starts at the place's midnight and runs
+ * for days, so this morning's or Friday night's cold hour would otherwise
+ * raise "Frost risk tonight". Only the next `hours` from the place's current
+ * hour are read.
+ */
+export function checkFrostRiskAhead(
+  hourly: HourlyWeather,
+  offsetSeconds: number | null | undefined,
+  now: Date = new Date(),
+  hours = 24,
+): FrostAlert | null {
+  const offset = resolveOffsetSeconds(offsetSeconds, now);
+  const start = currentHourIndex(hourly.time, offset, now);
+  // A stale series (every hour already past) has no coming night to warn of.
+  const first = wallClockMs(hourly.time[start], offset);
+  if (first === null || first < currentWallHourMs(offset, now)) return null;
+  const end = start + hours;
+  return checkFrostRisk(
+    {
+      ...hourly,
+      time: hourly.time.slice(start, end),
+      temperature_2m: hourly.temperature_2m.slice(start, end),
+    },
+    offsetSeconds,
+  );
 }
 
 /** WMO Weather interpretation codes → label & icon */
