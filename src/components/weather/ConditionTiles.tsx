@@ -57,6 +57,7 @@ import { HazeCard } from "./HazeCard";
 import { InsightCard, InsightGrid, InsightRow } from "./InsightCard";
 import { MetricDetailSheet } from "./MetricDetailSheet";
 import { MetricValue } from "./MetricValue";
+import { SectionHeader } from "./SectionHeader";
 import { SectionBoundary } from "./SectionBoundary";
 import {
   CompassDial,
@@ -82,6 +83,8 @@ export type ConditionTilesProps = {
    * until the new answer lands.
    */
   refreshKey?: unknown;
+  /** Opens the place's /atmosphere page; no link without it. */
+  onOpenTrends?: () => void;
 };
 
 /** Moonrise is a few hundred altitude evaluations: recompute every 10 minutes. */
@@ -93,6 +96,7 @@ export function ConditionTiles({
   point,
   slug,
   refreshKey,
+  onOpenTrends,
 }: ConditionTilesProps) {
   const { colors } = usePageColors();
   const [open, setOpen] = useState<MetricKind | null>(null);
@@ -178,15 +182,21 @@ export function ConditionTiles({
   return (
     <>
       <InsightGrid>
-        <WxText
-          type="h6"
-          weight={600}
-          family="serif"
-          color={colors.textPrimary}
-          accessibilityRole="header"
-        >
-          Conditions
-        </WxText>
+        <SectionHeader
+          title="Conditions"
+          titleColor={colors.textPrimary}
+          actionColor={colors.primary}
+          action={
+            onOpenTrends
+              ? {
+                  label: "24h trends",
+                  spoken: "24-hour trends",
+                  onPress: onOpenTrends,
+                  testID: "trends-link",
+                }
+              : undefined
+          }
+        />
         {point ? (
           <>
             <SectionBoundary name="air quality">

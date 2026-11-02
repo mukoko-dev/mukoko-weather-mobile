@@ -128,6 +128,8 @@ mukoko-weather-mobile/
         shamwari.tsx             # AI chat placeholder
         my.tsx                   # Account, device id, sign-in
       location/[slug].tsx        # /location/harare etc. — the same WeatherPage, with Back
+      location/[slug]/forecast.tsx    # the 24-hour chart, the week chart and rows, sun times
+      location/[slug]/atmosphere.tsx  # the tiles, then humidity, wind, pressure and UV over 24 hours
       sign-in.tsx                # WorkOS AuthKit launcher
       sign-in-callback.tsx       # OAuth redirect target (mukoko://sign-in-callback)
     brand/
@@ -135,12 +137,12 @@ mukoko-weather-mobile/
       fonts.ts                   # @expo-google-fonts/* loader map
     theme/
       mzizi.ts                   # Weather screens' tokens, mirrored from the web: space, type scale, radius, touch, page colours
-      weather-scales.ts          # Weather DATA colours: AQI bands, frost blues, chart series, model lines (never brand minerals)
-      chart.ts                   # Chart sizes
+      weather-scales.ts          # Weather DATA colours: AQI bands, frost blues, model lines (never brand minerals)
+      wx-series.ts               # Chart series colours (weather convention, light and dark), mirrored from the web
       sky.ts                     # The eight page skies (light + dark), stars, rain streaks
       colors.ts                  # Light + dark palette for the other tabs (mineral-derived)
       typography.ts              # Type scale for the other tabs: hero/display/title/body/mono
-    shared/                      # Pure logic ported from the web (hero, hourly outlook, place-time, tile insights, air quality, haze, moon, averages, tile details, nowcast, model comparison), with the web's tests; chart-geometry.ts is the phone's own
+    shared/                      # Pure logic ported from the web (hero, hourly outlook, place-time, tile insights, chart data, sun times, air quality, haze, moon, averages, tile details, nowcast, model comparison), with the web's tests
     api/
       client.ts                  # base URL, ROUTES table, fetch wrapper, error parsing
       weather.ts                 # GET /v1/weather (+ /v1/locations for a slug), converted to the screens' model (nowcast and model series included)
@@ -172,17 +174,32 @@ mukoko-weather-mobile/
         DetailSheet.tsx          #   the one sheet (page sheet on iOS) + SheetSection, StatGrid
         ForecastExtras.tsx       #   Next hour nowcast + Model comparison
         AlertBanners.tsx         #   frost and weather-unavailable notices
-        SectionBoundary.tsx      #   a section that crashes shows a compact fallback, not a dead page
         CardSkeleton.tsx         #   a card's loading state
-        charts/SeriesChart.tsx   #   small line, area and bar charts (react-native-svg) + chart-specs.ts
-        DailyCard.tsx            #   the week
+        DailyCard.tsx            #   the week: chart and rows (on /forecast, as on the web)
         WeatherSkeleton.tsx      #   structural loading state
         WeatherPage.tsx          #   one page for both screens; error state
+        LocationDetail.tsx       #   /forecast and /atmosphere: the sky, top row with Back, title, cards, every state
+        DetailSkeleton.tsx       #   the detail pages' structural loading state
+        PageCard.tsx             #   the ordinary card on a page (title, border, padding)
+        SectionHeader.tsx        #   a section title with one action ("Full forecast", "24h trends")
+        HourlyForecastCard.tsx   #   24-Hour Forecast card (HourlyChart)
+        SunTimesCard.tsx         #   sunrise, sunset, daylight in the place's time
+        AtmosphericDetailsCard.tsx #  the four 24-hour atmospheric charts
+        ChartErrorBoundary.tsx   #   one section's crash stays in that section
+        charts/                  #   the reusable time-series chart and the web's six chart configs
+          TimeSeriesChart.tsx    #     react-native-svg chart: touch readout, VoiceOver text alternative, Reduce Motion
+          chart-layout.ts        #     axes, ticks, smooth paths, bars, nearest point (pure)
+          chart-model.ts         #     what to draw for a chart (pure)
+          chart-text.ts          #     the words a chart says (pure)
+          HourlyChart.tsx, DailyChart.tsx, HumidityCloudChart.tsx, WindSpeedChart.tsx, PressureChart.tsx, UVIndexChart.tsx
     hooks/
       usePalette.ts              # Reads OS color scheme -> palette (other tabs)
       usePageColors.ts           # The web's page colours for the weather screens
       useNow.ts                  # The current instant, refreshed each minute
       useReduceMotion.ts         # OS Reduce Motion, live
+      useLocationWeather.ts      # a detail page's load: loading, ready, error, refresh
+      useLocationLinks.ts        # opens a place's forecast and atmosphere pages
+      weather-cache.ts           # the last answer per place, in memory for 5 minutes
     test-utils/                  # Mocks and recorded-answer fixtures for the tests
   assets/
     images/                      # Icons, splash, tab glyphs
@@ -190,19 +207,21 @@ mukoko-weather-mobile/
 
 ## What's wired vs. switched off
 
-| Surface                                                    | Status           | Notes                                                                                                                                                                                                                                                                                                  |
-| ---------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Weather home (sky, hero, Conditions, tiles, 7-day)         | Live             | `GET /v1/weather?lat&lon`; the answer is converted to the screens' model in `src/api/weather.ts`                                                                                                                                                                                                       |
+| Surface                                               | Status           | Notes                                                                                                                                                                                                                                                                                                  |
+| ----------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Weather home (sky, hero, Conditions, tiles)           | Live             | `GET /v1/weather?lat&lon`; the answer is converted to the screens' model in `src/api/weather.ts`                                                                                                                                                                                                       |
 | Air quality, haze, moon, averages, tile details            | Live             | `GET /v1/air-quality`, `/v1/haze`, `/v1/normals`, `/v1/normals/monthly`, `/v1/history`; moon and tile details are computed on the phone                                                                                                                                                                |
 | Next hour, model comparison, frost and unavailable notices | Live             | From `GET /v1/weather` (`minutely`, `models`, the hourly series, `X-Weather-Provider`)                                                                                                                                                                                                                 |
-| Location detail (`/location/[slug]`)                       | Live             | `GET /v1/locations?slug=` for the coordinate, then `GET /v1/weather`                                                                                                                                                                                                                                   |
-| Explore / search                                           | Live             | `GET /v1/search?q=`                                                                                                                                                                                                                                                                                    |
-| Use my location                                            | Live             | `GET /v1/geo?lat&lon&autoCreate=true` names the exact place under the fix. Nothing is stored; the app has no route that creates a place                                                                                                                                                                |
-| Shamwari AI tab                                            | Live             | Full-viewport chat screen (`src/app/(tabs)/shamwari.tsx`) against `POST /v1/ai/chat`; mirrors the Worker's message-length, history and rate limits                                                                                                                                                     |
-| Brand fonts (Noto Serif + Noto Sans + JetBrains Mono)      | Live             | Bundled via `@expo-google-fonts/*`                                                                                                                                                                                                                                                                     |
-| Device identity (SecureStore UUID)                         | Live             | Generated on first launch                                                                                                                                                                                                                                                                              |
-| Device registration                                        | **Switched off** | `POST /v1/devices` with the install id and nothing else, behind `DEVICE_REGISTRATION_ENABLED` in `src/device/register.ts` (off: a person's preferences are to live in their own synced database, so the server-side device profile is being retired). Even when on, development builds log and skip it |
-| WorkOS AuthKit sign-in                                     | **Switched off** | The API has no route to exchange the code for a session, so the screen says "Sign-in isn't available yet" and keeps no session. Flip `SIGN_IN_AVAILABLE` in `src/api/auth.ts` once it exists (design: issue #41)                                                                                       |
+| Location detail (`/location/[slug]`)                  | Live             | `GET /v1/locations?slug=` for the coordinate, then `GET /v1/weather`                                                                                                                                                                                                                                   |
+| Forecast (`/location/[slug]/forecast`)                | Live             | The same two routes; opens from the page's answer when it was just shown (in-memory, 5 minutes), else fetches. 24-hour and 7-day charts and sun times                                                                                                                                                  |
+| Atmosphere (`/location/[slug]/atmosphere`)            | Live             | The same two routes. The tiles, then humidity and cloud, wind and gusts, pressure and UV over 24 hours. Air quality on this page comes with the air-quality card                                                                                                                                       |
+| Explore / search                                      | Live             | `GET /v1/search?q=`                                                                                                                                                                                                                                                                                    |
+| Use my location                                       | Live             | `GET /v1/geo?lat&lon&autoCreate=true` names the exact place under the fix. Nothing is stored; the app has no route that creates a place                                                                                                                                                                |
+| Shamwari AI tab                                       | Live             | Full-viewport chat screen (`src/app/(tabs)/shamwari.tsx`) against `POST /v1/ai/chat`; mirrors the Worker's message-length, history and rate limits                                                                                                                                                     |
+| Brand fonts (Noto Serif + Noto Sans + JetBrains Mono) | Live             | Bundled via `@expo-google-fonts/*`                                                                                                                                                                                                                                                                     |
+| Device identity (SecureStore UUID)                    | Live             | Generated on first launch                                                                                                                                                                                                                                                                              |
+| Device registration                                   | **Switched off** | `POST /v1/devices` with the install id and nothing else, behind `DEVICE_REGISTRATION_ENABLED` in `src/device/register.ts` (off: a person's preferences are to live in their own synced database, so the server-side device profile is being retired). Even when on, development builds log and skip it |
+| WorkOS AuthKit sign-in                                | **Switched off** | The API has no route to exchange the code for a session, so the screen says "Sign-in isn't available yet" and keeps no session. Flip `SIGN_IN_AVAILABLE` in `src/api/auth.ts` once it exists (design: issue #41)                                                                                       |
 
 ### Needs a Cloudflare route first
 
@@ -267,10 +286,12 @@ families are not used here.
 npm test
 ```
 
-33 test files, covering the API client (URL building, base-URL rules, all three
+53 test files, covering the API client (URL building, base-URL rules, all three
 error formats), each route against answers recorded from the weather Worker, the
 chat, device and sign-in behaviour, the one-backend guard, device identity, the
-shared weather/i18n/locations/ICAO helpers, brand tokens, and component render
+shared weather/i18n/locations/ICAO helpers, the web's chart data and sun times
+with the web's own vectors (and the viewer's clock made hostile), the chart's
+geometry, text alternative, touch and VoiceOver steps, brand tokens, and component render
 tests via `@testing-library/react-native` (`src/__tests__/` plus colocated
 `*.test.ts(x)` files). The recorded answers are in `src/api/__fixtures__/`
 (GET reads of `weather-api.mukoko.com` on 2026-11-01); no test touches the

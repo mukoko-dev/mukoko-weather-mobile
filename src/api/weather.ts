@@ -57,6 +57,8 @@ export type WeatherResponse = {
     country?: string;
     lat: number;
     lon: number;
+    /** Metres above sea level, when the API knows it. */
+    elevation?: number;
   };
   current: CurrentConditions;
   daily: DailyForecast[];
@@ -331,6 +333,7 @@ export function toWeatherResponse(
       country: place.country,
       lat: place.lat,
       lon: place.lon,
+      elevation: place.elevation,
     },
     current,
     daily: toDaily(raw.daily),
