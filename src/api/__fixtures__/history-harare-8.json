@@ -543,15 +543,5 @@
 "location": "harare",
 "missing": 0,
 "records": 8,
-"sources": [
-{
-"attribution": "Weather data by Open-Meteo.com, from ERA5 (Copernicus Climate Change Service / ECMWF)",
-"id": "open-meteo-archive",
-"licence": "CC BY 4.0",
-"licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
-"name": "Open-Meteo (ERA5)",
-"url": "https://open-meteo.com"
-}
-],
 "start": "2026-10-25"
 }

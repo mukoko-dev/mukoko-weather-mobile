@@ -21,8 +21,9 @@
 import * as Location from "expo-location";
 import { useCallback, useEffect, useState } from "react";
 
-import { geoLookup } from "@/api/locations";
+import { geoLookup, type LocationSummary } from "@/api/locations";
 import { fetchWeather, type WeatherResponse } from "@/api/weather";
+import { withPlace } from "@/api/place";
 import { WeatherError, WeatherPage } from "@/components/weather/WeatherPage";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
 
@@ -33,6 +34,8 @@ type Coords = {
   lat: number;
   lon: number;
   label?: string;
+  /** The place the fix was named as, once the geo lookup has answered. */
+  place?: LocationSummary;
   /** True for the Harare default: not the person's own location. */
   fallback?: boolean;
 };
@@ -62,12 +65,15 @@ export default function WeatherHome() {
     }
   }, []);
 
-  /** Name the exact place under a GPS fix (nothing is stored). */
-  const resolveName = useCallback(
-    async (loc: Coords): Promise<string | null> => {
+  /**
+   * Name the exact place under a GPS fix (nothing is stored). The Harare
+   * default is only looked up, never named afresh.
+   */
+  const resolvePlace = useCallback(
+    async (loc: Coords): Promise<LocationSummary | null> => {
       try {
-        const { location } = await geoLookup(loc.lat, loc.lon, true);
-        return location?.name ?? null;
+        const { location } = await geoLookup(loc.lat, loc.lon, !loc.fallback);
+        return location;
       } catch {
         return null;
       }
@@ -93,11 +99,16 @@ export default function WeatherHome() {
       // Start the weather at once; name the place alongside, so a slow
       // geocode never holds the first paint.
       void load(loc);
-      if (loc.label) return;
-      const name = await resolveName(loc);
-      if (name) setCoords((prev) => ({ ...(prev ?? loc), label: name }));
+      const place = await resolvePlace(loc);
+      if (place) {
+        setCoords((prev) => ({
+          ...(prev ?? loc),
+          label: place.name,
+          place,
+        }));
+      }
     })();
-  }, [load, resolveLocation, resolveName]);
+  }, [load, resolveLocation, resolvePlace]);
 
   const onRefresh = useCallback(async () => {
     if (!coords) return;
@@ -121,7 +132,9 @@ export default function WeatherHome() {
     coords?.label ?? state.weather.location?.name ?? "Current location";
   return (
     <WeatherPage
-      weather={state.weather}
+      weather={
+        coords ? withPlace(state.weather, coords, coords.place) : state.weather
+      }
       name={name}
       isCurrentLocation={Boolean(coords && !coords.fallback)}
       onRefresh={onRefresh}

@@ -2,7 +2,7 @@
  * The open-sky hero: no card, no decorative shapes. A centred stack straight on
  * the page sky, on the Mzizi type scale only:
  *
- *   top row   back / breadcrumb at the left, round Share and Settings at the right
+ *   top row   back / the trail at the left, round Share and Settings at the right
  *   eyebrow   MY LOCATION or HOME, else the place's own clock (caption, mono)
  *   name      Noto Serif, h2, weight 600
  *   numeral   Noto Sans, display, weight 400, tight tracking
@@ -32,10 +32,12 @@ import {
   heroLocalTime,
   type HeroBadge,
 } from "@/shared/hero";
+import { type TrailItem } from "@/shared/place-trail";
 import { weatherCodeToInfo } from "@/shared/weather";
 import { SIZE, SPACE, lineHeightOf } from "@/theme/mzizi";
 import { SKY_FG, SKY_FG_DIM } from "@/theme/sky";
 
+import { PlaceTrail } from "./PlaceTrail";
 import { RoundControl } from "./RoundControl";
 import { WxText } from "./WxText";
 
@@ -51,13 +53,17 @@ export type SkyHeroProps = {
   now: Date;
   isCurrentLocation?: boolean;
   isHome?: boolean;
-  /** The trail above the name, for example "Zimbabwe / Mashonaland East". */
-  breadcrumb?: string;
+  /** The trail above the name: Home / Country / Province / Place. */
+  trail?: TrailItem[];
+  /** Home, the first crumb: the Weather tab. */
+  onHome?: () => void;
   /** A control at the left of the top row (Back on a place's page). */
   leading?: ReactNode;
   onShare: () => void;
   onSettings: () => void;
 };
+
+const noop = () => undefined;
 
 function EyebrowBadge({ badge }: { badge: HeroBadge }) {
   return (
@@ -88,23 +94,22 @@ function EyebrowBadge({ badge }: { badge: HeroBadge }) {
  */
 export function HeroTopRow({
   name,
-  breadcrumb,
+  trail,
+  onHome,
   leading,
   onShare,
   onSettings,
 }: Pick<
   SkyHeroProps,
-  "name" | "breadcrumb" | "leading" | "onShare" | "onSettings"
+  "name" | "trail" | "onHome" | "leading" | "onShare" | "onSettings"
 >) {
   return (
     <View style={styles.topRow}>
       <View style={styles.leading}>
         {leading}
-        {breadcrumb ? (
+        {trail && trail.length > 0 ? (
           <View style={styles.trail}>
-            <WxText type="bodySm" color={SKY_FG_DIM}>
-              {breadcrumb}
-            </WxText>
+            <PlaceTrail items={trail} onHome={onHome ?? noop} color={SKY_FG_DIM} />
           </View>
         ) : null}
       </View>
@@ -131,7 +136,8 @@ export function SkyHero({
   now,
   isCurrentLocation = false,
   isHome = false,
-  breadcrumb,
+  trail,
+  onHome,
   leading,
   onShare,
   onSettings,
@@ -148,7 +154,8 @@ export function SkyHero({
     <View testID="sky-hero">
       <HeroTopRow
         name={name}
-        breadcrumb={breadcrumb}
+        trail={trail}
+        onHome={onHome}
         leading={leading}
         onShare={onShare}
         onSettings={onSettings}

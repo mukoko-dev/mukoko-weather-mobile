@@ -11,6 +11,7 @@
  * VoiceOver item ("Now: 28 degrees, Overcast").
  */
 
+import { type ReactNode } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { WeatherIcon } from "@/components/icons/Icon";
@@ -68,9 +69,11 @@ export function hourTiles(forecast: WeatherData, now: Date): HourTile[] {
 export type ConditionsCardProps = {
   forecast: WeatherData;
   now: Date;
+  /** A quiet line at the foot of the card (the season), under a hairline. */
+  footer?: ReactNode;
 };
 
-export function ConditionsCard({ forecast, now }: ConditionsCardProps) {
+export function ConditionsCard({ forecast, now, footer }: ConditionsCardProps) {
   const hours = hourTiles(forecast, now);
   if (hours.length === 0) return null;
   const outlook = heroOutlook(
@@ -140,6 +143,11 @@ export function ConditionsCard({ forecast, now }: ConditionsCardProps) {
           </View>
         ))}
       </ScrollView>
+      {footer ? (
+        <View style={[styles.footer, { borderTopColor: hairline }]}>
+          {footer}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -157,6 +165,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: BORDER.rest,
   },
   strip: { marginTop: SPACE.stack },
+  footer: {
+    marginTop: SPACE.stack,
+    paddingTop: SPACE.stack,
+    borderTopWidth: BORDER.rest,
+    alignItems: "center",
+  },
   hours: { gap: SPACE.cozy, paddingBottom: SPACE.snug },
   hour: {
     minWidth: SIZE.hourTileMin,

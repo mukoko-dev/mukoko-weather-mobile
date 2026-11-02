@@ -10,22 +10,34 @@
  */
 
 import { router } from "expo-router";
-import { type ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { Pressable, Share, StyleSheet, View } from "react-native";
 
+import { placeOf } from "@/api/place";
 import { type WeatherResponse } from "@/api/weather";
 import { ChevronLeftIcon } from "@/components/icons/Icon";
 import { useNow } from "@/hooks/useNow";
 import { usePageColors } from "@/hooks/usePageColors";
+import { cropsFromPreferences } from "@/shared/agriculture";
 import { skyFamily } from "@/shared/hero";
+import { countryLabel } from "@/shared/place-info";
+import { type TrailItem, placeTrail } from "@/shared/place-trail";
 import { weatherCodeToInfo } from "@/shared/weather";
+import { usePreferences } from "@/state/preferences";
 import { RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
 import { NEUTRAL_SKY, SKY_FG, SKY_FG_DIM, skyStops } from "@/theme/sky";
 
+import { AboutPlaceCard } from "./AboutPlaceCard";
+import { AgricultureSnapshot } from "./AgricultureSnapshot";
 import { ConditionTiles } from "./ConditionTiles";
 import { ConditionsCard } from "./ConditionsCard";
 import { DailyCard } from "./DailyCard";
+import { EnsoCard } from "./EnsoCard";
+import { MapPreviewCard } from "./MapPreviewCard";
+import { goHome, openAgriculture } from "./navigation";
+
 import { RoundControl } from "./RoundControl";
+import { SeasonFooter } from "./SeasonBadge";
 import { HeroTopRow, SkyHero } from "./SkyHero";
 import { WeatherScroll } from "./WeatherScroll";
 import { WxText } from "./WxText";
@@ -51,32 +63,19 @@ export function BackControl() {
 }
 
 /**
- * A country's English name from its ISO 3166-1 alpha-2 code ("ZW" is
- * "Zimbabwe"), as the web's breadcrumb says it. Where the runtime has no region
- * names the code itself is shown, never nothing.
+ * The trail under the top row, the web's rules: Home / Country / Province /
+ * Place, the province left out when it is the place's own name, the country by
+ * name and never its ISO code.
  */
-export function countryLabel(code: string | undefined): string | undefined {
-  if (!code) return undefined;
-  if (!/^[A-Za-z]{2}$/.test(code)) return code;
-  try {
-    return (
-      new Intl.DisplayNames(["en"], { type: "region" }).of(
-        code.toUpperCase(),
-      ) ?? code
-    );
-  } catch {
-    return code;
-  }
-}
-
-/** The trail under the top row: country, then province. */
-export function breadcrumbOf(
+export function trailOf(
   location: WeatherResponse["location"],
-): string | undefined {
-  const parts = [countryLabel(location?.country), location?.province].filter(
-    (p): p is string => typeof p === "string" && p.length > 0,
-  );
-  return parts.length > 0 ? parts.join(" / ") : undefined;
+  name: string,
+): TrailItem[] {
+  return placeTrail({
+    name,
+    countryName: countryLabel(location?.country),
+    province: location?.province,
+  });
 }
 
 /** What a share says. No link: the app talks to one backend and names no site. */
@@ -114,6 +113,9 @@ export function WeatherPage({
   inTabs,
 }: WeatherPageProps) {
   const now = useNow();
+  const { activities } = usePreferences();
+  const crops = useMemo(() => cropsFromPreferences(activities), [activities]);
+  const place = placeOf(weather, name);
   const { current, daily, forecast } = weather;
   const code = current.weatherCode ?? 0;
   const isDay = current.isDay ?? true;
@@ -146,16 +148,54 @@ export function WeatherPage({
         now={now}
         isCurrentLocation={isCurrentLocation}
         isHome={isHome}
-        breadcrumb={breadcrumbOf(weather.location)}
+        trail={trailOf(weather.location, name)}
+        onHome={goHome}
         leading={leading}
         onShare={onShare}
         onSettings={openSettings}
       />
       {forecast ? (
         <>
-          <ConditionsCard forecast={forecast} now={now} />
+          <ConditionsCard
+            forecast={forecast}
+            now={now}
+            footer={
+              place ? (
+                <SeasonFooter
+                  place={place}
+                  now={now}
+                  utcOffsetSeconds={weather.utcOffsetSeconds}
+                />
+              ) : undefined
+            }
+          />
           <ConditionTiles forecast={forecast} now={now} />
           <DailyCard forecast={forecast} />
+        </>
+      ) : null}
+      {place ? (
+        <>
+          <AgricultureSnapshot
+            place={place}
+            crops={crops}
+            onOpenInsights={
+              place.slug
+                ? () => openAgriculture(place.slug as string)
+                : undefined
+            }
+          />
+          <EnsoCard
+            lat={place.lat}
+            lon={place.lon}
+            countryCode={place.country}
+          />
+          <MapPreviewCard placeName={place.name} />
+          <AboutPlaceCard
+            place={place}
+            forecastElevation={weather.forecastElevation}
+            now={now}
+            utcOffsetSeconds={weather.utcOffsetSeconds}
+          />
         </>
       ) : null}
     </WeatherScroll>
