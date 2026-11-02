@@ -13,7 +13,7 @@
  */
 
 import { router } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 
 import {
@@ -45,6 +45,9 @@ export type AiFollowupProps = {
   signInAvailable?: boolean;
 };
 
+/** A turn on screen; `failed` marks the canned line shown for a failed answer. */
+type Turn = FollowupTurn & { failed?: boolean };
+
 export function AiFollowup({
   name,
   slug,
@@ -56,21 +59,30 @@ export function AiFollowup({
   const { signedIn } = useSignedIn(signInAvailable);
   const tanzanite = mineralColor("tanzanite", colors, scheme);
   const [open, setOpen] = useState(false);
-  const [turns, setTurns] = useState<FollowupTurn[]>([]);
+  const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const abort = useRef<AbortController | null>(null);
+  // Leaving the page stops a question still on its way.
+  useEffect(() => () => abort.current?.abort(), []);
 
   if (!signedIn || !insight) return null;
 
-  const asked = turns.filter((t) => t.role === "user").length;
+  // A question whose answer failed (the canned "trouble" or "limit" line) does
+  // not use up one of the five, and neither it nor the line goes back to the
+  // model as history: Shamwari never reads its own error as its reply.
+  const asked = turns.filter(
+    (t, i) => t.role === "user" && !turns[i + 1]?.failed,
+  ).length;
   const atLimit = asked >= MAX_FOLLOWUP_MESSAGES;
 
   const send = async () => {
     const text = input.trim();
     if (!text || sending || atLimit) return;
-    const history = turns;
-    setTurns([...history, { role: "user", content: text }]);
+    const history: FollowupTurn[] = turns
+      .filter((t, i) => !t.failed && !turns[i + 1]?.failed)
+      .map(({ role, content }) => ({ role, content }));
+    setTurns([...turns, { role: "user", content: text }]);
     setInput("");
     setSending(true);
     abort.current?.abort();
@@ -88,14 +100,15 @@ export function AiFollowup({
         },
         controller.signal,
       );
+      if (controller.signal.aborted) return;
       setTurns((prev) => [
         ...prev,
-        { role: "assistant", content: reply.response },
+        { role: "assistant", content: reply.response, failed: reply.failed },
       ]);
     } catch {
       /* cancelled: nothing to show */
     } finally {
-      setSending(false);
+      if (!controller.signal.aborted) setSending(false);
     }
   };
 

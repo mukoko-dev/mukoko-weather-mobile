@@ -246,6 +246,27 @@ describe("the follow-up, signed in", () => {
     expect(await tree.findByText(/reached its limit for now/)).toBeTruthy();
   });
 
+  it("a failed answer uses up no question and never goes back as history", async () => {
+    let n = 0;
+    const calls = routedFetch({
+      "POST /v1/ai/followup": () =>
+        (n += 1) === 1
+          ? { status: 429, body: { error: "rate_limited" } }
+          : { body: { response: "Dry all week." } },
+    });
+    const tree = await open();
+    for (const q of ["First try", "Second try"]) {
+      await fireEvent.changeText(tree.getByLabelText("Follow-up question"), q);
+      await fireEvent.press(tree.getByLabelText("Send"));
+      await waitFor(() =>
+        expect(calls).toHaveLength(q === "First try" ? 1 : 2),
+      );
+    }
+    expect(await tree.findByText("Dry all week.")).toBeTruthy();
+    // The second question's history holds neither the failed turn nor its line.
+    expect((calls[1].body as { history: unknown[] }).history).toEqual([]);
+  });
+
   it("stops at five questions and points to the Shamwari tab", async () => {
     routedFetch({ "POST /v1/ai/followup": { body: { response: "OK." } } });
     const tree = await open();

@@ -10,6 +10,7 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { COMMUNITY_REPORTS_ENABLED } from "@/api/reports";
 import { RecentReports } from "@/components/weather/RecentReports";
+import { clearReportsStore } from "@/hooks/useReports";
 import { ReportWizardSheet } from "@/components/weather/ReportWizardSheet";
 import { REPORT_TYPES } from "@/shared/report-types";
 import { IPHONE_INSETS, setInsets, setWindow } from "@/test-utils/mocks";
@@ -33,6 +34,8 @@ const REPORT = {
 };
 
 beforeEach(() => {
+  // One shared copy per place: each test starts with none.
+  clearReportsStore();
   setInsets(IPHONE_INSETS);
   setWindow(393, 852);
 });

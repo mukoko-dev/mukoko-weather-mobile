@@ -42,17 +42,19 @@ export const SEVERITY: Record<
   "light" | "dark",
   Record<SeverityName, string>
 > = {
+  // Low and moderate are the malachite and gold edges, as on the web
+  // (`--color-severity-low: var(--mineral-malachite)`): one source.
   light: {
-    low: "#004d40",
-    moderate: "#5d4037",
+    low: MINERAL_EDGE.malachite.light,
+    moderate: MINERAL_EDGE.gold.light,
     high: "#bf5700",
     severe: "#b3261e",
     extreme: "#7f0000",
     cold: "#0047ab",
   },
   dark: {
-    low: "#64ffda",
-    moderate: "#ffd740",
+    low: MINERAL_EDGE.malachite.dark,
+    moderate: MINERAL_EDGE.gold.dark,
     high: "#ff9800",
     severe: "#ff5252",
     extreme: "#ff1744",

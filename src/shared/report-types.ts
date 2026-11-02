@@ -160,7 +160,9 @@ export type ReportDraft = {
  * first, then the type), or `null` when it can go. The Worker checks again.
  */
 export function checkReportDraft(draft: ReportDraft): string | null {
-  if ([...draft.description].length > MAX_DESCRIPTION) {
+  // Counted as it is sent (`submitBody` trims), so trailing spaces or a
+  // newline never block a description the Worker would take.
+  if ([...draft.description.trim()].length > MAX_DESCRIPTION) {
     return `Description too long (max ${MAX_DESCRIPTION} characters)`;
   }
   if (!draft.reportType || !own(BY_ID, draft.reportType)) {

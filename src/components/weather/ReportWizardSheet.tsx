@@ -58,6 +58,8 @@ type Step = "select" | "clarify" | "sent";
 export type ReportWizardSheetProps = {
   visible: boolean;
   onClose: () => void;
+  /** Called once the report was sent, so the lists can show it. */
+  onSent?: () => void;
   locationSlug: string | undefined;
   locationName: string;
   /** Test seam: the switch. Defaults to `COMMUNITY_REPORTS_ENABLED`. */
@@ -67,6 +69,7 @@ export type ReportWizardSheetProps = {
 export function ReportWizardSheet({
   visible,
   onClose,
+  onSent,
   locationSlug,
   locationName,
   enabled = COMMUNITY_REPORTS_ENABLED,
@@ -120,6 +123,7 @@ export function ReportWizardSheet({
         enabled,
       });
       setStep("sent");
+      onSent?.();
     } catch (err) {
       if (!controller.signal.aborted) setError(reportFailureMessage(err));
     } finally {

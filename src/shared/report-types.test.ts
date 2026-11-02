@@ -153,6 +153,15 @@ describe("checkReportDraft", () => {
     ).toBeNull();
   });
 
+  it("counts the description as it is sent, trimmed", () => {
+    expect(
+      checkReportDraft({
+        ...ok,
+        description: `${"a".repeat(MAX_DESCRIPTION)}  \n`,
+      }),
+    ).toBeNull();
+  });
+
   it("checks the description before the type, as the Worker does", () => {
     expect(
       checkReportDraft({

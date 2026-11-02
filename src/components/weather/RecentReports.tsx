@@ -70,10 +70,19 @@ export function RecentReports({
   const { status, reports, reload, upvote } = useReports(slug, live);
   const [wizard, setWizard] = useState(false);
   const [voted, setVoted] = useState<ReadonlySet<string>>(new Set());
+  // A vote on its way: a second tap cannot send a second one.
+  const [voting, setVoting] = useState<ReadonlySet<string>>(new Set());
   const copper = mineralColor("copper", colors, scheme);
 
   const onUpvote = async (id: string) => {
+    if (voting.has(id) || voted.has(id)) return;
+    setVoting((prev) => new Set(prev).add(id));
     const counted = await upvote(id);
+    setVoting((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
     if (counted) {
       setVoted((prev) => new Set(prev).add(id));
     } else {
@@ -154,6 +163,7 @@ export function RecentReports({
               const tone = severityColor(sev, scheme);
               const ink = ratingInk(sev, scheme, colors);
               const hasVoted = voted.has(r.id);
+              const sending = voting.has(r.id);
               return (
                 <View
                   key={r.id}
@@ -234,9 +244,9 @@ export function RecentReports({
                     accessibilityLabel={`Upvote report, ${r.upvotes} ${r.upvotes === 1 ? "vote" : "votes"}`}
                     accessibilityState={{
                       selected: hasVoted,
-                      disabled: hasVoted,
+                      disabled: hasVoted || sending,
                     }}
-                    disabled={hasVoted}
+                    disabled={hasVoted || sending}
                     onPress={() => void onUpvote(r.id)}
                     style={styles.vote}
                   >
@@ -275,6 +285,7 @@ export function RecentReports({
       <ReportWizardSheet
         visible={wizard}
         onClose={() => setWizard(false)}
+        onSent={reload}
         locationSlug={slug}
         locationName={name}
         enabled={enabled}

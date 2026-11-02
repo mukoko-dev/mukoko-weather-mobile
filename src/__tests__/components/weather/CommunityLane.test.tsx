@@ -85,6 +85,25 @@ describe("CommunityLane with nothing picked", () => {
   });
 });
 
+describe("CommunityLane with a pick the list does not hold", () => {
+  it("never asks a person who has picked to pick, while loading or offline", async () => {
+    // A pick only the live Worker list has; the Worker cannot be reached.
+    toggleActivity("only-on-the-worker");
+    routedFetch({});
+    const tree = await render(<Lane />);
+    expect(tree.queryByText(/Choose the activities you care about/)).toBeNull();
+    expect(tree.getByTestId("community-lane-unknown")).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        tree.getByText(
+          "The activities you picked are not in the list available right now.",
+        ),
+      ).toBeTruthy(),
+    );
+    expect(tree.getByLabelText("Edit activities")).toBeTruthy();
+  });
+});
+
 describe("CommunityLane for an activity with no rule", () => {
   it("says 'No rating yet', not 'No good window', when nothing could be rated", async () => {
     // Only the farming rule is served: football (sports) has no rule at all.

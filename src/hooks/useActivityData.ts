@@ -78,6 +78,13 @@ export type RulesState = {
  * not be read: the screens say so and offer `retry`; they never show a rating
  * made without them.
  */
+/**
+ * Every mounted rules hook hears a list any of them loads: a part whose own
+ * request failed (the hero line) fills when another part's "Try again" (the
+ * lane's) succeeds, with no button of its own.
+ */
+const rulesListeners = new Set<(list: SuitabilityRuleDoc[]) => void>();
+
 export function useSuitabilityRules(enabled: boolean): RulesState {
   const [status, setStatus] = useState<RulesStatus>("idle");
   const [rules, setRules] = useState<Map<string, SuitabilityRuleDoc> | null>(
@@ -87,14 +94,25 @@ export function useSuitabilityRules(enabled: boolean): RulesState {
 
   useEffect(() => {
     if (!enabled) return;
+    const hear = (list: SuitabilityRuleDoc[]) => {
+      setRules(rulesByKey(list));
+      setStatus("ready");
+    };
+    rulesListeners.add(hear);
+    return () => {
+      rulesListeners.delete(hear);
+    };
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
     let alive = true;
     setStatus("loading");
     loadSuitabilityRules(controller.signal)
       .then((list) => {
         if (!alive) return;
-        setRules(rulesByKey(list));
-        setStatus("ready");
+        for (const hear of rulesListeners) hear(list);
       })
       .catch(() => {
         if (!alive) return;

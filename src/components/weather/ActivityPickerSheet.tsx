@@ -75,7 +75,11 @@ export function ActivityPickerSheet({
     return out;
   }, [items, columns]);
 
-  const count = selected.length;
+  // Count the picks this list can show as selected, so "1 selected" never
+  // sits over a grid with nothing marked.
+  const count = selected.filter((id) =>
+    activities.some((a) => a.id === id),
+  ).length;
 
   return (
     <DetailSheet

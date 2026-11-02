@@ -99,7 +99,9 @@ export function CommunityLane({ slug, forecast, now }: CommunityLaneProps) {
   const { colors, scheme } = usePageColors();
   const { openPicker, openAdvice } = useActivitySheets();
   const { activities: picked } = usePreferences();
-  const { activities: catalogue } = useActivityCatalogue(picked.length > 0);
+  const { activities: catalogue, source } = useActivityCatalogue(
+    picked.length > 0,
+  );
   const items = useMemo(
     () => selectedActivities(picked, catalogue).slice(0, LANE_MAX_ACTIVITIES),
     [picked, catalogue],
@@ -139,6 +141,24 @@ export function CommunityLane({ slug, forecast, now }: CommunityLaneProps) {
   const tierCount = pinTiers.size ? Math.max(...pinTiers.values()) + 1 : 0;
   const openGroup: PinGroup | undefined =
     openHour !== null ? pinGroups.get(openHour) : undefined;
+
+  // Picks the list showing does not hold (the seed while the Worker answers,
+  // or the built-in list offline): never "pick activities" to a person who
+  // already has.
+  if (items.length === 0 && picked.length > 0) {
+    return (
+      <PageCard title="Community lane" testID="community-lane-unknown">
+        <WxText type="body" color={colors.textSecondary}>
+          {source === "loading"
+            ? "Loading your activities."
+            : "The activities you picked are not in the list available right now."}
+        </WxText>
+        {source === "loading" ? null : (
+          <PillButton label="Edit activities" onPress={openPicker} />
+        )}
+      </PageCard>
+    );
+  }
 
   if (items.length === 0) {
     return (
