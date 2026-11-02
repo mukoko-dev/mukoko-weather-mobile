@@ -17,6 +17,7 @@ const PLACE = {
   country: "Zimbabwe",
   lat: -17.8252,
   lon: 31.0335,
+  elevation: 1490,
 };
 
 export function harareWeather(): WeatherResponse {

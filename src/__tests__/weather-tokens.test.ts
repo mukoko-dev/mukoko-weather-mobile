@@ -19,11 +19,18 @@ function weatherFiles(): string[] {
   const components = readdirSync(dir)
     .filter((f) => /\.tsx?$/.test(f))
     .map((f) => join(dir, f));
+  const chartsDir = join(dir, "charts");
+  const charts = readdirSync(chartsDir)
+    .filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f))
+    .map((f) => join(chartsDir, f));
   return [
     ...components,
+    ...charts,
     join(root, "app", "(tabs)", "index.tsx"),
     join(root, "app", "location", "[slug].tsx"),
     join(root, "app", "location", "[slug]", "agriculture.tsx"),
+    join(root, "app", "location", "[slug]", "forecast.tsx"),
+    join(root, "app", "location", "[slug]", "atmosphere.tsx"),
   ];
 }
 
@@ -96,6 +103,10 @@ describe("the weather screens and components use tokens, not numbers", () => {
         "src/components/weather/EnsoCard.tsx",
         "src/components/weather/MapPreviewCard.tsx",
         "src/components/weather/SubPage.tsx",
+        "src/app/location/[slug]/forecast.tsx",
+        "src/app/location/[slug]/atmosphere.tsx",
+        "src/components/weather/charts/TimeSeriesChart.tsx",
+        "src/components/weather/charts/chart-model.ts",
       ]),
     );
   });
@@ -114,6 +125,8 @@ describe("the weather screens and components use tokens, not numbers", () => {
     for (const screen of [
       join(root, "app", "(tabs)", "index.tsx"),
       join(root, "app", "location", "[slug].tsx"),
+      join(root, "app", "location", "[slug]", "forecast.tsx"),
+      join(root, "app", "location", "[slug]", "atmosphere.tsx"),
     ]) {
       const text = readFileSync(screen, "utf8");
       expect(text).not.toMatch(/\bSafeAreaView\b/);

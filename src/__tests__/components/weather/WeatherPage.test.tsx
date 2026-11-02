@@ -47,7 +47,7 @@ beforeEach(() => {
 });
 
 describe("WeatherPage", () => {
-  it("renders the whole page: sky, hero, Conditions card, tiles and the week", async () => {
+  it("renders the whole page: sky, hero, Conditions card and tiles (the week is on /forecast, as on the web)", async () => {
     const tree = await render(
       <WeatherPage
         weather={harareWeather()}
@@ -66,8 +66,8 @@ describe("WeatherPage", () => {
     // The Conditions card on the sky and the Conditions section of tiles.
     expect(tree.getAllByText("Conditions")).toHaveLength(2);
     expect(tree.getByText("Wind")).toBeTruthy();
-    expect(tree.getByText("7-Day Forecast")).toBeTruthy();
-    // The cards under the week: farm weather and the El Niño outlook (loading
+    expect(tree.queryByText("7-Day Forecast")).toBeNull();
+    // The cards under the tiles: farm weather and the El Niño outlook (loading
     // here), the map's honest placeholder, and the About card.
     expect(tree.getByTestId("agriculture-snapshot")).toBeTruthy();
     expect(tree.getByTestId("enso-card")).toBeTruthy();

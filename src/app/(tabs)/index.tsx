@@ -28,7 +28,12 @@ import { WeatherError, WeatherPage } from "@/components/weather/WeatherPage";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
 
 /** Harare, Mukoko's editorial default, used when there is no location fix. */
-const FALLBACK = { lat: -17.8252, lon: 31.0335, label: "Harare" };
+const FALLBACK = {
+  lat: -17.8252,
+  lon: 31.0335,
+  label: "Harare",
+  slug: "harare",
+};
 
 type Coords = {
   lat: number;
@@ -38,6 +43,8 @@ type Coords = {
   place?: LocationSummary;
   /** True once the geo lookup has answered or failed (see `weatherForPage`). */
   settled?: boolean;
+  /** The place's slug, for the links to its forecast and atmosphere pages. */
+  slug?: string;
   /** True for the Harare default: not the person's own location. */
   fallback?: boolean;
 };
@@ -106,7 +113,7 @@ export default function WeatherHome() {
       // they ask the Worker once, for the place, not first for the bare point.
       setCoords((prev) => ({
         ...(prev ?? loc),
-        ...(place ? { label: place.name, place } : {}),
+        ...(place ? { label: place.name, slug: place.slug, place } : {}),
         settled: true,
       }));
     })();
@@ -136,6 +143,7 @@ export default function WeatherHome() {
     <WeatherPage
       weather={weatherForPage(state.weather, coords)}
       name={name}
+      slug={coords?.slug}
       isCurrentLocation={Boolean(coords && !coords.fallback)}
       onRefresh={onRefresh}
       refreshing={refreshing}
