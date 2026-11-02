@@ -351,7 +351,7 @@ export function SeriesChart({
 const styles = StyleSheet.create({
   root: { width: "100%", gap: SPACE.snug },
   row: { flexDirection: "row", alignItems: "flex-start", gap: SPACE.snug },
-  plot: { flex: 1, minWidth: 0 },
+  plot: { flex: 1, minWidth: 0, overflow: "hidden" },
   sizer: { opacity: 0 },
   tick: { position: "absolute" },
   xRow: { flexDirection: "row", justifyContent: "space-between" },
