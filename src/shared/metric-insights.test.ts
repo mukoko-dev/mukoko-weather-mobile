@@ -274,6 +274,19 @@ describe("windInsight", () => {
 // ---------------------------------------------------------------------------
 
 describe("uvInsight", () => {
+  it("shows the index as a whole number, as the WHO scale and the web do (issue #73)", () => {
+    const w = makeWeather({
+      current: { uv_index: 0.4 },
+      hourly: {
+        uv_index: fill(HOURS, 0.4).map((v, i) => (i === 12 ? 7.6 : v)),
+      },
+    });
+    const r = uvInsight(w, NOW);
+    expect(r.value).toBe(0);
+    expect(r.peakToday).toBe(8);
+    expect(Number.isInteger(r.value)).toBe(true);
+  });
+
   it("says low for the rest of the day when UV stays under 3", () => {
     const w = makeWeather({
       current: { uv_index: 1 },

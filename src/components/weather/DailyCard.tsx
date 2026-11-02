@@ -89,8 +89,9 @@ export function dayRows(forecast: WeatherData): DayRow[] {
       gust: Math.round(d.wind_gusts_10m_max[i]),
       feelsHigh: Math.round(d.apparent_temperature_max[i]),
       feelsLow: Math.round(d.apparent_temperature_min[i]),
-      uv: uv ?? 0,
-      uvLabel: uvLevel(uv ?? 0).label,
+      // A whole number, as the index is (issue #73).
+      uv: Math.round(uv ?? 0),
+      uvLabel: uvLevel(Math.round(uv ?? 0)).label,
     };
   });
 }

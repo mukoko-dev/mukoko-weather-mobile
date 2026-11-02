@@ -418,7 +418,10 @@ export function uvInsight(w: WeatherData, now: Date): UvInsight {
     if (endKey !== null) protectUntil = hhmmFromKey(endKey + HOUR_MS);
   }
 
-  const roundedPeak = round1(peakToday);
+  // The UV index is a whole number (WHO), so the tile, its sheet and the
+  // sentence never say "0.4" (issue #73); the blended models average to
+  // fractions.
+  const roundedPeak = Math.round(peakToday);
   let sentence: string;
   if (finite(c?.uv_index) === null && !hasHourlyUv) {
     sentence = "UV data unavailable.";
@@ -433,8 +436,8 @@ export function uvInsight(w: WeatherData, now: Date): UvInsight {
   }
 
   return {
-    value: round1(value),
-    label: uvLabel(value),
+    value: Math.round(value),
+    label: uvLabel(Math.round(value)),
     peakToday: roundedPeak,
     peakTime,
     protectFrom,
