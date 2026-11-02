@@ -279,6 +279,8 @@ describe("fetchWeather", () => {
       country: "ZW",
       lat: -17.83,
       lon: 31.05,
+      // The place's height, for the detail pages' subtitle ("Harare · 1490m").
+      elevation: 1490,
     });
   });
 

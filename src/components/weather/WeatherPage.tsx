@@ -1,6 +1,8 @@
 /**
  * One weather page, for the Weather tab and for a place's page alike: the sky,
- * the hero, the Conditions card, the tile grid and the week. Both screens only
+ * the hero, the Conditions card and the tile grid. The hourly and 7-day charts
+ * and the atmospheric trends are the place's two detail pages, as on the web
+ * ("Full forecast", "24h trends"). Both screens only
  * load the data and say what the eyebrow is; everything on the page is here, so
  * the two cannot drift apart (and neither can drift from the web).
  *
@@ -9,14 +11,16 @@
  * forecast has no hourly series, the hero alone from what is known.
  */
 
-import { router } from "expo-router";
-import { type ReactNode, useState } from "react";
+import { type Href, router } from "expo-router";
+import { type ReactNode, useEffect, useState } from "react";
 import { Pressable, Share, StyleSheet, View } from "react-native";
 
 import { type WeatherResponse } from "@/api/weather";
 import { ChevronLeftIcon } from "@/components/icons/Icon";
 import { useHeroActivityLine } from "@/hooks/useHeroActivityLine";
+import { useLocationLinks } from "@/hooks/useLocationLinks";
 import { useNow } from "@/hooks/useNow";
+import { rememberWeather } from "@/hooks/weather-cache";
 import { usePageColors } from "@/hooks/usePageColors";
 import { skyFamily } from "@/shared/hero";
 import { weatherCodeToInfo } from "@/shared/weather";
@@ -30,7 +34,6 @@ import { AiSummary } from "./AiSummary";
 import { CommunityLane } from "./CommunityLane";
 import { ConditionTiles } from "./ConditionTiles";
 import { ConditionsCard } from "./ConditionsCard";
-import { DailyCard } from "./DailyCard";
 import { RoundControl } from "./RoundControl";
 import { RecentReports } from "./RecentReports";
 import { HeroTopRow, SkyHero } from "./SkyHero";
@@ -42,16 +45,32 @@ export function openSettings() {
   router.navigate("/my");
 }
 
-/** Go back, or home when this page is the first screen. */
-export function goBack() {
+/**
+ * Go back, or to `fallback` (home by default) when this page is the first
+ * screen, as after opening a link that points straight at it.
+ */
+export function goBack(fallback: Href = "/") {
   if (router.canGoBack()) router.back();
-  else router.replace("/");
+  else router.replace(fallback);
 }
 
-/** Back, for the left of the top row on a place's page. */
-export function BackControl() {
+/**
+ * Back, for the left of the top row on a place's page. A detail page names
+ * where it goes ("Back to Harare") and falls back to that place's page.
+ */
+export function BackControl({
+  label = "Back",
+  fallback,
+}: {
+  label?: string;
+  fallback?: Href;
+}) {
   return (
-    <RoundControl label="Back" onPress={goBack} testID="back-control">
+    <RoundControl
+      label={label}
+      onPress={() => goBack(fallback)}
+      testID="back-control"
+    >
       <ChevronLeftIcon size={SIZE.iconMd} color={SKY_FG} />
     </RoundControl>
   );
@@ -98,9 +117,28 @@ export function shareMessage(
   return `${name}${parts ? `: ${parts}` : ""}. Shared from mukoko weather.`;
 }
 
+/** Share a place's weather as a plain sentence (no link). */
+export function shareWeather(
+  name: string,
+  temperature: number | null | undefined,
+  condition: string | undefined,
+): void {
+  void Share.share({
+    message: shareMessage(name, temperature, condition),
+  }).catch(() => {
+    /* a cancelled or failed share needs no message */
+  });
+}
+
 export type WeatherPageProps = {
   weather: WeatherResponse;
   name: string;
+  /**
+   * The place's slug, for the links to its forecast and atmosphere pages.
+   * Defaults to the slug the weather was loaded with; a place the API has not
+   * named has none, and its cards then show no links.
+   */
+  slug?: string;
   /** The place under a GPS fix: the eyebrow says MY LOCATION. */
   isCurrentLocation?: boolean;
   isHome?: boolean;
@@ -113,6 +151,7 @@ export type WeatherPageProps = {
 export function WeatherPage({
   weather,
   name,
+  slug: slugProp,
   isCurrentLocation,
   isHome,
   leading,
@@ -138,14 +177,16 @@ export function WeatherPage({
     text: string;
   } | null>(null);
   const insight = insightFor?.placeKey === placeKey ? insightFor.text : null;
+  const slug = slugProp ?? weather.location?.slug;
+  const links = useLocationLinks(slug);
 
-  const onShare = () => {
-    void Share.share({
-      message: shareMessage(name, current.temperature, info.label),
-    }).catch(() => {
-      /* a cancelled or failed share needs no message */
-    });
-  };
+  // The detail pages open from this answer without asking again.
+  // The name goes with it: a GPS place's answer has no `location` to name it.
+  useEffect(() => {
+    if (slug) rememberWeather(slug, weather, Date.now(), name);
+  }, [slug, weather, name]);
+
+  const onShare = () => shareWeather(name, current.temperature, info.label);
 
   return (
     <ActivitySheetsProvider forecast={forecast} now={now}>
@@ -174,10 +215,17 @@ export function WeatherPage({
         />
         {forecast ? (
           <>
-            <ConditionsCard forecast={forecast} now={now} />
+            <ConditionsCard
+              forecast={forecast}
+              now={now}
+              onOpenForecast={links?.openForecast}
+            />
             <CommunityLane slug={place?.slug} forecast={forecast} now={now} />
-            <ConditionTiles forecast={forecast} now={now} />
-            <DailyCard forecast={forecast} />
+            <ConditionTiles
+              forecast={forecast}
+              now={now}
+              onOpenTrends={links?.openAtmosphere}
+            />
             <RecentReports slug={place?.slug} name={name} now={now} />
             <ActivityInvite />
             {place ? (
