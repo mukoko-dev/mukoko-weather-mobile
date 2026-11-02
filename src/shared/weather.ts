@@ -107,29 +107,11 @@ export function synthesizeOpenMeteoInsights(
   const currentUv = data.current.uv_index;
   const weatherCode = data.current.weather_code;
 
-  // WMO weather codes 95–99 indicate thunderstorm activity.
-  // Graduate probability by severity: 95 = moderate, 96/97 = with hail, 99 = heavy hail.
-  let thunderstormProbability = 0;
-  if (weatherCode >= 99) thunderstormProbability = 95;
-  else if (weatherCode >= 96) thunderstormProbability = 85;
-  else if (weatherCode >= 95) thunderstormProbability = 70;
-
-  // Derive precipitationType from WMO weather codes:
-  //   0=none, 1=rain, 2=snow, 3=freezing rain, 4=ice pellets
-  let precipitationType = 0;
-  if (
-    (weatherCode >= 71 && weatherCode <= 77) ||
-    (weatherCode >= 85 && weatherCode <= 86)
-  )
-    precipitationType = 2; // Snow + snow showers
-  else if (
-    weatherCode === 66 ||
-    weatherCode === 67 ||
-    weatherCode === 56 ||
-    weatherCode === 57
-  )
-    precipitationType = 3; // Freezing rain + freezing drizzle
-  else if (weatherCode >= 51) precipitationType = 1; // Rain/drizzle/thunderstorm
+  // The thunderstorm probability and precipitation type come from the weather
+  // code through ONE mapping (`wmoToInsightHazards`), shared with the per-hour
+  // insights of the activity lane, so the hero and the lane cannot disagree.
+  const { thunderstormProbability, precipitationType } =
+    wmoToInsightHazards(weatherCode);
 
   return {
     windSpeed: data.current.wind_speed_10m,
