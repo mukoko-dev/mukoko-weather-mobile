@@ -82,9 +82,8 @@ agri-dealers, radio and news sites, insurers, NGOs. Billed per organisation,
 monthly or yearly, on the web app.
 
 **Store rules.** API keys and embeds are used on the buyer's own website or
-server, not inside the mobile app, so the stores' billing rules do not apply
-(Apple 3.1.3(c) also covers services sold to organisations for their people).
-Two conditions keep it that way:
+server, not inside the mobile app. The stores' billing rules govern what is
+unlocked or used in the app, so they do not reach these, on two conditions:
 
 - The mobile app sells nothing and links to no purchase page (outside the
   storefronts where links are now allowed, and only if we choose to).

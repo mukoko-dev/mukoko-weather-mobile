@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Mukoko Weather",
+    "name": "mukoko weather",
     "slug": "mukoko-weather",
     "version": "1.0.0",
     "runtimeVersion": {
@@ -35,7 +35,9 @@
       ],
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.VIBRATE"
       ]
     },
     "web": {

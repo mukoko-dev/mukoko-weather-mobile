@@ -34,7 +34,7 @@ Shamwari AI chat, a preferences tab, and a per-location detail route.
 
 | Fact              | Value                                                                                    |
 | ----------------- | ---------------------------------------------------------------------------------------- |
-| Display name      | Mukoko Weather                                                                           |
+| Display name      | mukoko weather (the brand's lower-case form; `expo.name`)                                |
 | npm package name  | `mukoko-mobile` (the repo and app are `mukoko-weather-mobile` / Mukoko Weather)          |
 | Bundle ID (iOS)   | `africa.nyuchi.mukoko.weather`                                                           |
 | Package (Android) | `africa.nyuchi.mukoko.weather`                                                           |

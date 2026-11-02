@@ -98,10 +98,10 @@ The first release of mukoko weather: the forecast for your own place, the next h
 
 ## Notes for the owner
 
-- **The name.** The brand writes the product as "mukoko weather" (lower case),
-  but `app.json` `expo.name` is still "Mukoko Weather", which is the name under
-  the icon on the home screen. The store name and the on-device name may
-  differ, but readers notice. Decide one and change `app.json` if needed.
+- **The name.** `app.json` `expo.name` is now "mukoko weather" (this pull
+  request), so the name under the icon matches the listings. The sign-in
+  notice in `src/api/auth.ts` still says "Mukoko Weather"; align it when that
+  screen is next touched.
 - **Places named in the text** (Marondera, Gweru, Hwange) are examples of seed
   places the app ships with. Swap them for places your first testers know.
 - **Shamwari** sends what a person types to our weather API, which answers it

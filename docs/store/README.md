@@ -69,9 +69,10 @@ a store build; `npx expo install --check` catches a mismatched
 ## EAS configuration (this pull request)
 
 - **`build.production`** is the store and TestFlight profile on both
-  platforms. It now says so explicitly: `distribution: "store"` and
-  `ios.simulator: false`, so an iOS production build is a signed device build
-  that App Store Connect accepts. `preview` and `development` are unchanged
+  platforms. Those are EAS's defaults, so it already was one; the simulator
+  build that cannot go to TestFlight came from `preview`. The profile now
+  states it (`distribution: "store"`, `ios.simulator: false`) so that nobody
+  copies the preview's simulator flag into it. `preview` and `development` are unchanged
   (the iOS preview stays a simulator build for quick checks).
 - **`submit.production.ios`** exists, with two owner-fill fields:
   - `ascAppId`: the numeric Apple ID of the app record in App Store Connect
@@ -91,7 +92,10 @@ a store build; `npx expo install --check` catches a mismatched
   EAS Submit finds it for the bundle id without any path in the repository.
 - **Android submit** is unchanged: Play Console internal track, `draft`.
 
-Commands, for the owner, once the checklist below is done:
+Commands, for the owner, once the checklist below is done. **Do not use
+`--auto-submit` for iOS (or `--platform all`) until step 4 has replaced the
+placeholders:** the build would run in full, spend its build minutes, and only
+then fail at submission. Before that, build without `--auto-submit`.
 
 ```bash
 # iOS: build a signed store build and send it to TestFlight in one go
@@ -113,7 +117,12 @@ submit profile fails only on the two placeholders, as intended.
 - `ios.config.usesNonExemptEncryption: false` (HTTPS only; skips the
   export-compliance stop on every TestFlight build).
 - `android.blockedPermissions`: `READ_EXTERNAL_STORAGE`,
-  `WRITE_EXTERNAL_STORAGE` (added by `expo-file-system`, unused).
+  `WRITE_EXTERNAL_STORAGE`, `SYSTEM_ALERT_WINDOW`, `VIBRATE` (from the default
+  Android template and `expo-file-system`; none is used). The merged manifest
+  keeps only internet and the two location permissions.
+- `expo.name` is now "mukoko weather", the brand's form, so the name under the
+  icon matches the store listings and the location prompt (Apple 2.3.8 asks
+  for them to be similar).
 
 ## Brand assets: what is right and what is missing
 

@@ -40,7 +40,8 @@ Saved places, the theme and the picked activities stay on the phone
 What the backend does with it (from `mukoko-dev/mukoko-weather`
 `workers/README.md`): the Workers log no payloads, coordinates or keys; query
 strings are redacted in traces; `geo?autoCreate=true` names the point and
-stores nothing; the `shamwari` AI Gateway runs with logging off. Weather
+writes no place, though the geocoder's answer for the ~1 km cell is cached in
+KV (a day for a hit, ten minutes for a miss); the `shamwari` AI Gateway runs with logging off. Weather
 answers are cached by place or coordinate, not by person. To answer a coordinate,
 the backend asks a weather provider and a reverse geocoder for that point, with
 no identifier attached.
@@ -59,12 +60,13 @@ advertising, does not share it with data brokers, and has no IDFA access
 | Location: Coarse Location                                                                                       | Yes        | No                  | No                 | App Functionality            | When a person allows only approximate location on iOS, that is what is sent. Declare both.                                                         |
 | User Content: Other User Content                                                                                | Yes        | No                  | No                 | App Functionality            | Shamwari messages leave the phone. If you can confirm they are processed in real time and never retained, Apple allows "not collected"; see below. |
 | Identifiers: Device ID                                                                                          | Yes        | No                  | No                 | App Functionality, Analytics | The `EAS-Client-ID` on EAS Update checks; Expo aggregates them into usage counts we can see.                                                       |
-| Search History                                                                                                  | No         |                     |                    |                              | Search text is sent to answer the search and is not kept.                                                                                          |
+| Search History                                                                                                  | Yes        | No                  | No                 | App Functionality            | Search text is sent to find places; the backend caches answers per query (up to a day) and passes the text to a geocoder. Declared to be safe.     |
 | Contact Info, Health, Financial, Contacts, Browsing History, Purchases, Diagnostics, Sensitive Info, Usage Data | No         |                     |                    |                              | Nothing in the app reads or sends these.                                                                                                           |
 
 Apple's rule on real-time processing: data "processed only in real time to
-service the request and not retained" is not "collected". That covers search
-text, and may cover Shamwari messages because gateway logging is off. Declare
+service the request and not retained" is not "collected". Search text does
+not qualify (answers are cached per query), and Shamwari messages may, because
+gateway logging is off. Declare
 Shamwari messages as collected unless the backend owner confirms in writing
 that no message is stored anywhere (gateway, Worker, model provider). Over-
 declaring is safe; under-declaring is a rejection or a removal.
@@ -131,30 +133,35 @@ outcome, not something to work around.
 account exists, and nothing is stored against a person. Answer "No" while
 sign-in is off. When #41 ships, this becomes "Yes" with a deletion URL.
 
-| Data type (Play's name)             | Collected | Shared | Ephemeral?                   | Required or optional                        | Purposes                              |
-| ----------------------------------- | --------- | ------ | ---------------------------- | ------------------------------------------- | ------------------------------------- |
-| Location: Approximate location      | Yes       | No     | No                           | Optional (search works without it)          | App functionality                     |
-| Location: Precise location          | Yes       | No     | No                           | Optional                                    | App functionality                     |
-| Messages: Other in-app messages     | Yes       | No     | Yes, if the backend confirms | Optional (only if the person uses Shamwari) | App functionality                     |
-| Device or other IDs                 | Yes       | No     | No                           | Required (EAS Update check)                 | App functionality, Analytics          |
-| App activity: In-app search history | No        |        |                              |                                             | Sent to answer the search, not stored |
+| Data type (Play's name)             | Collected | Shared | Ephemeral?                   | Required or optional                        | Purposes                     |
+| ----------------------------------- | --------- | ------ | ---------------------------- | ------------------------------------------- | ---------------------------- |
+| Location: Approximate location      | Yes       | Yes    | No                           | Optional (search works without it)          | App functionality            |
+| Location: Precise location          | Yes       | Yes    | No                           | Optional                                    | App functionality            |
+| App activity: In-app search history | Yes       | Yes    | No                           | Optional (only if the person searches)      | App functionality            |
+| Messages: Other in-app messages     | Yes       | No     | Yes, if the backend confirms | Optional (only if the person uses Shamwari) | App functionality            |
+| Device or other IDs                 | Yes       | No     | No                           | Required (EAS Update check)                 | App functionality, Analytics |
 
-Why "Shared: No". Google does not count as sharing a transfer to a service
-provider that processes the data on our behalf, nor a transfer the user
-initiates. The backend sends a coordinate, with no identifier, to a weather
-provider and a reverse geocoder to answer the person's own request; Expo
-receives the update check as our update service. Have the owner (or counsel)
-confirm that reading before submitting. If any of those parties is not a
-service provider under contract, the answer for Location becomes "Shared:
-Yes, App functionality".
+Why "Shared: Yes" for location and search. Google does not count a transfer
+to a service provider that processes data on our behalf under contract as
+sharing. To answer a coordinate or a search, the backend passes it, with no
+identifier, to a weather provider and to a public geocoder (Nominatim, run by
+the OpenStreetMap Foundation under a usage policy, not a processing contract).
+That makes the honest default "Shared: Yes, App functionality". Switch to "No"
+only if counsel confirms every recipient is a contracted service provider.
+Shamwari messages go only to our AI Worker and Cloudflare's model service,
+which is our processor; Expo receives the update check as our update service.
 
-Why "Ephemeral: No" for location. Weather answers are cached per place or
-coordinate in the backend. The cache holds no person, but it is not "in memory only,
-for the request" as Play defines ephemeral, so do not tick it.
+Why "Ephemeral: No" for location and search. Answers are cached per place,
+coordinate or query in the backend (KV, up to a day). The cache holds no
+person, but it is not "in memory only, for the request" as Play defines
+ephemeral, so do not tick it.
 
-**Android permissions** in the build (`npx expo config --type introspect`):
-`ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, `INTERNET`. `app.json` now
-blocks `READ_EXTERNAL_STORAGE` and `WRITE_EXTERNAL_STORAGE`, which the
-`expo-file-system` plugin (a dependency of `expo`) adds by default and the app
-never uses; without the block the Play listing would show "modify or delete
-the contents of your shared storage".
+**Android permissions** in the merged manifest
+(`npx expo config --type introspect`): `INTERNET`, `ACCESS_COARSE_LOCATION`,
+`ACCESS_FINE_LOCATION`. `app.json` blocks four that the default Android
+template (and, for storage, the `expo-file-system` plugin) add and the app
+never uses: `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`,
+`SYSTEM_ALERT_WINDOW` ("display over other apps", only the development menu
+needs it) and `VIBRATE`. Without the block the Play listing would show storage
+and draw-over-other-apps permissions. Check the permission list Play Console
+shows for the first AAB against this paragraph.
