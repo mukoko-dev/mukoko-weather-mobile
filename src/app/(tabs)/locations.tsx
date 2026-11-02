@@ -29,6 +29,7 @@ import { LocationWeatherCard } from "@/components/shell/LocationWeatherCard";
 import { WxText } from "@/components/weather/WxText";
 import { useNow } from "@/hooks/useNow";
 import { usePageColors } from "@/hooks/usePageColors";
+import { isLocationSlug } from "@/shared/current-slug";
 import { MY_LOCATION_NAME } from "@/shared/location-pager";
 import {
   CARD_FETCH_CONCURRENCY,
@@ -62,7 +63,8 @@ export default function LocationsScreen() {
   const entries = useMemo(
     () =>
       buildLocationList(
-        savedLocations.map((l) => l.slug),
+        // The same places, in the same order, as the bar's lane and the swipe.
+        savedLocations.map((l) => l.slug).filter(isLocationSlug),
         MAX_SAVED_LOCATIONS,
       ),
     [savedLocations],

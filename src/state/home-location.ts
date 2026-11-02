@@ -50,7 +50,7 @@ export function hydrateHomeLocation(): Promise<void> {
   hydrating = (async () => {
     try {
       const raw = await readRaw();
-      home = isLocationSlug(raw) ? raw : null;
+      if (!hydrated) home = isLocationSlug(raw) ? raw : null;
     } catch {
       home = null;
     } finally {
@@ -81,6 +81,8 @@ export function useHomeLocation(): string | null {
 /** Set (a slug) or clear (null) the Home location. */
 export function setHomeLocation(slug: string | null): void {
   const next = isLocationSlug(slug) ? slug : null;
+  // A choice made before the stored value loads wins over it.
+  hydrated = true;
   if (next === home) return;
   home = next;
   emit();

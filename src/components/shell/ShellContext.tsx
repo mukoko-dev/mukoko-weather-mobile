@@ -6,16 +6,25 @@
  */
 
 import { createContext, useContext } from "react";
-import { type GestureResponderHandlers } from "react-native";
+
+import { type SwipeConfig } from "./useLocationSwipe";
 
 export type ShellValue = {
   /** Bottom space the page leaves for the bar, in dp (0 when hidden). */
   clearance: number;
-  /** Swipe left / right between places; undefined when there is no pager. */
-  swipeHandlers?: GestureResponderHandlers;
+  /** Swipe left / right between places; undefined where it cannot page. */
+  swipe?: SwipeConfig;
+  /**
+   * The page under any sheet or modal (the ⋯ menu, sign-in, the map): what
+   * the bar and the menu act on.
+   */
+  basePath: string;
 };
 
-export const ShellContext = createContext<ShellValue>({ clearance: 0 });
+export const ShellContext = createContext<ShellValue>({
+  clearance: 0,
+  basePath: "/",
+});
 
 export function useShell(): ShellValue {
   return useContext(ShellContext);

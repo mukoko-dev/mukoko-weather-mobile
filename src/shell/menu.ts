@@ -1,6 +1,6 @@
 /**
  * The ⋯ menu's rows, as data (the web's `PhoneMenu` + `header-nav.ts`):
- * Use my location, the weather map, then the destinations the app has.
+ * My Location, the weather map, then the destinations the app has.
  * History and Aviation have no mobile screens yet, so they are left out
  * rather than shown as dead links; Shamwari only while its flag is on.
  */
@@ -27,7 +27,7 @@ export type MenuRow = {
 export const MENU_ROWS: readonly MenuRow[] = [
   {
     id: "my-location",
-    label: "Use my location",
+    label: "My Location",
     description: "Weather where you are right now",
     route: "/",
     icon: "location",

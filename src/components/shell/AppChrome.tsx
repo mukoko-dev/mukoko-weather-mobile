@@ -11,7 +11,7 @@
  */
 
 import { router, usePathname } from "expo-router";
-import { type ReactNode, useCallback, useMemo } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -43,8 +43,25 @@ export function placeSlugOf(pathname: string): string | null {
   return pathname.startsWith("/location/") ? page.slice(1) : null;
 }
 
+/** Routes that open over a page (sheet, modal): the page under them stays the base. */
+const OVERLAY_ROUTES: ReadonlySet<string> = new Set([
+  "/menu",
+  "/map",
+  "/sign-in",
+  "/sign-in-callback",
+]);
+
+export function isOverlayRoute(pathname: string): boolean {
+  return OVERLAY_ROUTES.has(pathname);
+}
+
 export function AppChrome({ children }: { children: ReactNode }) {
-  const pathname = usePathname() ?? "/";
+  const route = usePathname() ?? "/";
+  // The page under a sheet or modal: opening the ⋯ menu must not hide the bar
+  // or re-lay out the page still visible above the sheet. Derived state,
+  // updated during render (React's pattern for "remember the last value").
+  const [pathname, setPathname] = useState(route);
+  if (!isOverlayRoute(route) && route !== pathname) setPathname(route);
   const insets = useSafeAreaInsets();
   const { savedLocations } = usePreferences();
   const visible = showsBottomBar(pathname);
@@ -71,7 +88,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
     (page: string) => applyMove(router, pageMove(pathname, page)),
     [pathname],
   );
-  const swipeHandlers = useLocationSwipe(pathname, sequence, goTo, visible);
+  const swipe = useLocationSwipe(pathname, sequence, goTo, visible);
 
   const onChipPress = useCallback((chip: LaneChip) => goTo(chip.href), [goTo]);
   const slug = placeSlugOf(pathname);
@@ -87,9 +104,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       clearance: visible ? barClearance(insets.bottom) : 0,
-      swipeHandlers,
+      swipe,
+      basePath: pathname,
     }),
-    [visible, insets.bottom, swipeHandlers],
+    [visible, insets.bottom, swipe, pathname],
   );
 
   return (
@@ -101,7 +119,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
             chips={chips}
             activeIndex={activeIndex}
             activeId={barActiveId(pathname)}
-            hasMapLocation={slug !== null || pathname === "/"}
+            hasMapLocation={slug !== null}
             onChipPress={onChipPress}
             onMap={onMap}
             onLocations={onLocations}

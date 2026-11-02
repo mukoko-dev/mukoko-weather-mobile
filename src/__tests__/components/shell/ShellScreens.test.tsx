@@ -87,7 +87,7 @@ describe("MenuSheet", () => {
   it("lists the app's destinations without the paused Shamwari", async () => {
     const tree = await render(<MenuSheet />);
     for (const label of [
-      "Use my location",
+      "My Location",
       "Weather map",
       "Saved locations",
       "Explore",
@@ -105,6 +105,7 @@ describe("MenuSheet", () => {
     expect(router.dismissTo).toHaveBeenCalledWith("/explore");
     await fireEvent.press(tree.getByRole("button", { name: "Weather map" }));
     expect(router.replace).toHaveBeenCalledWith("/map");
+    // (rendered outside the shell, so there is no place under the menu)
     await fireEvent.press(tree.getByRole("button", { name: "Close menu" }));
     expect(router.back).toHaveBeenCalled();
   });

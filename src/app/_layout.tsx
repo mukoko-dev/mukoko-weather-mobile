@@ -25,6 +25,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { useColorScheme, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { initAuth } from "@/api/auth";
@@ -61,47 +62,54 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <View style={{ flex: 1, flexDirection: "row" }}>
-          <BrandStripe width={3} />
-          <View style={{ flex: 1 }}>
-            <AppChrome>
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="location/[slug]"
-                  options={{ headerShown: false, presentation: "card" }}
-                />
-                <Stack.Screen
-                  name="menu"
-                  options={{
-                    headerShown: false,
-                    presentation: "formSheet",
-                    sheetAllowedDetents: "fitToContents",
-                    sheetGrabberVisible: true,
-                  }}
-                />
-                <Stack.Screen
-                  name="map"
-                  options={{
-                    headerShown: false,
-                    presentation: "fullScreenModal",
-                  }}
-                />
-                <Stack.Screen
-                  name="sign-in"
-                  options={{ title: "Sign in", presentation: "modal" }}
-                />
-                <Stack.Screen
-                  name="sign-in-callback"
-                  options={{ title: "Signing in...", presentation: "modal" }}
-                />
-              </Stack>
-            </AppChrome>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider
+          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+        >
+          <View style={{ flex: 1, flexDirection: "row" }}>
+            <BrandStripe width={3} />
+            <View style={{ flex: 1 }}>
+              <AppChrome>
+                <Stack>
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="location/[slug]"
+                    options={{ headerShown: false, presentation: "card" }}
+                  />
+                  <Stack.Screen
+                    name="menu"
+                    options={{
+                      headerShown: false,
+                      presentation: "formSheet",
+                      sheetAllowedDetents: "fitToContents",
+                      sheetGrabberVisible: true,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="map"
+                    options={{
+                      headerShown: false,
+                      presentation: "fullScreenModal",
+                    }}
+                  />
+                  <Stack.Screen
+                    name="sign-in"
+                    options={{ title: "Sign in", presentation: "modal" }}
+                  />
+                  <Stack.Screen
+                    name="sign-in-callback"
+                    options={{ title: "Signing in...", presentation: "modal" }}
+                  />
+                </Stack>
+              </AppChrome>
+            </View>
           </View>
-        </View>
-      </ThemeProvider>
-    </SafeAreaProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

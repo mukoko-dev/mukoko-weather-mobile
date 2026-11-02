@@ -1,7 +1,7 @@
 /**
  * The ⋯ menu, as a native sheet (the web's phone menu, PhoneMenu): opened
  * from the hero's account control on every weather page. The brand at the
- * top, then Use my location, the weather map, Saved locations, Explore and
+ * top, then My Location, the weather map, Saved locations, Explore and
  * My Weather (sign in, theme, activities). Rows come from src/shell/menu.ts.
  */
 
@@ -21,7 +21,10 @@ import {
 import { WxText } from "@/components/weather/WxText";
 import { usePageColors } from "@/hooks/usePageColors";
 import { isFeatureEnabled } from "@/shared/feature-flags";
+import { placeSlugOf } from "@/components/shell/AppChrome";
+import { useShell } from "@/components/shell/ShellContext";
 import { type MenuIcon, visibleMenuRows } from "@/shell/menu";
+import { mapRoute } from "@/shell/routes";
 import { BORDER, RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
 
 function RowIcon({ icon, color }: { icon: MenuIcon; color: string }) {
@@ -42,10 +45,13 @@ function RowIcon({ icon, color }: { icon: MenuIcon; color: string }) {
   }
 }
 
-/** Close the sheet, then show `route` (the map opens over the page instead). */
-export function openFromMenu(route: string) {
+/**
+ * Close the sheet, then show `route`. The map opens over the page instead,
+ * for the place under the menu (`slug`).
+ */
+export function openFromMenu(route: string, slug: string | null) {
   if (route === "/map") {
-    router.replace(route as never);
+    router.replace(mapRoute(slug) as never);
     return;
   }
   router.dismissTo(route as never);
@@ -55,6 +61,7 @@ export default function MenuSheet() {
   const { colors } = usePageColors();
   const insets = useSafeAreaInsets();
   const rows = visibleMenuRows(isFeatureEnabled);
+  const slug = placeSlugOf(useShell().basePath);
 
   return (
     <ScrollView
@@ -87,7 +94,7 @@ export default function MenuSheet() {
             accessibilityRole="button"
             accessibilityLabel={row.label}
             accessibilityHint={row.description}
-            onPress={() => openFromMenu(row.route)}
+            onPress={() => openFromMenu(row.route, slug)}
             testID={`menu-${row.id}`}
             style={({ pressed }) => [
               styles.row,

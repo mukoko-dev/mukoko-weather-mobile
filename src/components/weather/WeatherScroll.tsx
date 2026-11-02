@@ -29,6 +29,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { SwipeFrame } from "@/components/shell/SwipeFrame";
 import { useShell } from "@/components/shell/ShellContext";
 import { usePageColors } from "@/hooks/usePageColors";
 import { type SkyFamily } from "@/shared/hero";
@@ -80,7 +81,7 @@ export function WeatherScroll({
   inTabs = false,
 }: WeatherScrollProps) {
   const insets = useSafeAreaInsets();
-  const { clearance, swipeHandlers } = useShell();
+  const { clearance, swipe } = useShell();
   const { colors, dark } = usePageColors();
   const [scrollY] = useState(() => new Animated.Value(0));
   const [onSky, setOnSky] = useState(true);
@@ -112,48 +113,59 @@ export function WeatherScroll({
     extrapolate: "clamp",
   });
 
-  return (
-    <View
-      style={[styles.root, { backgroundColor: colors.background }]}
-      {...swipeHandlers}
+  const scroll = (
+    <Animated.ScrollView
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+      contentInsetAdjustmentBehavior="never"
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={SKY_FG}
+            colors={[colors.primary]}
+            progressViewOffset={insets.top}
+          />
+        ) : undefined
+      }
     >
-      <Animated.ScrollView
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        contentInsetAdjustmentBehavior="never"
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          onRefresh ? (
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={SKY_FG}
-              colors={[colors.primary]}
-              progressViewOffset={insets.top}
-            />
-          ) : undefined
-        }
-      >
-        <View
-          style={[styles.cap, { backgroundColor: stops.top }]}
-          pointerEvents="none"
-        />
-        <WeatherSky family={family} />
-        <View style={pagePadding(insets, inTabs, clearance)}>
-          <View style={styles.column}>{children}</View>
-        </View>
-      </Animated.ScrollView>
-      <Animated.View
+      <View
+        style={[styles.cap, { backgroundColor: stops.top }]}
         pointerEvents="none"
-        style={[
-          styles.scrim,
-          {
-            height: insets.top,
-            backgroundColor: colors.background,
-            opacity: scrimOpacity,
-          },
-        ]}
       />
+      <WeatherSky family={family} />
+      <View style={pagePadding(insets, inTabs, clearance)}>
+        <View style={styles.column}>{children}</View>
+      </View>
+    </Animated.ScrollView>
+  );
+  const scrim = (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.scrim,
+        {
+          height: insets.top,
+          backgroundColor: colors.background,
+          opacity: scrimOpacity,
+        },
+      ]}
+    />
+  );
+  const rootStyle = [styles.root, { backgroundColor: colors.background }];
+
+  // Inside the shell, where there are places to page to, the page swipes
+  // between them (SwipeFrame); otherwise it is the plain page.
+  return swipe ? (
+    <SwipeFrame swipe={swipe} style={rootStyle} scroll={scroll}>
+      {scrim}
+    </SwipeFrame>
+  ) : (
+    <View style={rootStyle}>
+      {scroll}
+      {scrim}
     </View>
   );
 }

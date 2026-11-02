@@ -13,7 +13,8 @@ import { AppChrome, placeSlugOf } from "@/components/shell/AppChrome";
 import { BottomBar } from "@/components/shell/BottomBar";
 import { useShell } from "@/components/shell/ShellContext";
 import {
-  shouldClaimSwipe,
+  SWIPE_ACTIVATE_DP,
+  swipeActiveOffsetX,
   swipeTarget,
 } from "@/components/shell/useLocationSwipe";
 import { laneChips, pagerSequence } from "@/shared/location-pager";
@@ -120,10 +121,13 @@ describe("BottomBar", () => {
 describe("swipe", () => {
   const seq = pagerSequence(["harare", "nairobi-ke"]);
 
-  it("claims only a clearly sideways move", () => {
-    expect(shouldClaimSwipe(30, 5)).toBe(true);
-    expect(shouldClaimSwipe(8, 0)).toBe(false);
-    expect(shouldClaimSwipe(30, 40)).toBe(false);
+  it("activates only towards a page that exists", () => {
+    const d = SWIPE_ACTIVATE_DP;
+    expect(swipeActiveOffsetX("/", seq)).toBe(-d); // left only
+    expect(swipeActiveOffsetX("/location/harare", seq)).toEqual([-d, d]);
+    expect(swipeActiveOffsetX("/location/nairobi-ke", seq)).toBe(d); // right only
+    expect(swipeActiveOffsetX("/location/gweru", seq)).toBeNull();
+    expect(swipeActiveOffsetX("/", pagerSequence([]))).toBeNull();
   });
 
   it("left is the next page, right the previous, stopping at the ends", () => {
@@ -138,6 +142,22 @@ describe("swipe", () => {
 });
 
 describe("AppChrome", () => {
+  it("keeps the bar for the page under a sheet", async () => {
+    const tree = await render(
+      <AppChrome>
+        <Text>page</Text>
+      </AppChrome>,
+    );
+    expect(tree.getByTestId("bottom-bar")).toBeTruthy();
+    mockPathname = "/menu";
+    await tree.rerender(
+      <AppChrome>
+        <Text>page</Text>
+      </AppChrome>,
+    );
+    expect(tree.getByTestId("bottom-bar")).toBeTruthy();
+  });
+
   function Probe() {
     const { clearance } = useShell();
     return <Text testID="clearance">{String(clearance)}</Text>;
@@ -156,8 +176,8 @@ describe("AppChrome", () => {
     expect(barClearance(0)).toBe(BAR.lift + BAR.height + BAR.breath);
   });
 
-  it("draws no bar on a sheet or sub-page", async () => {
-    mockPathname = "/menu";
+  it("draws no bar on a sub-page", async () => {
+    mockPathname = "/location/harare/forecast";
     const tree = await render(
       <AppChrome>
         <Probe />
