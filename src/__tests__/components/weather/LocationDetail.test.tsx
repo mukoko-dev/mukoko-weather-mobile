@@ -450,6 +450,21 @@ describe("the screen: every state", () => {
           `Could not refresh: ${FAILURE_COPY.offline} Showing what is saved on this device, updated 30 min ago.`,
         ),
       ).toBeTruthy();
+      // Still offline on pull to refresh: the copy stays marked as saved.
+      fetchMock.mockRejectedValueOnce(
+        new NetworkError("timeout", "https://weather-api.mukoko.com"),
+      );
+      const control = findProp(tree.toJSON(), "refreshControl") as {
+        props: { onRefresh: () => Promise<void> };
+      };
+      await act(async () => {
+        await control.props.onRefresh();
+      });
+      expect(
+        tree.getByText(
+          `Could not refresh: ${FAILURE_COPY.timeout} Showing what is saved on this device, updated 30 min ago.`,
+        ),
+      ).toBeTruthy();
     } finally {
       now.mockRestore();
       setForecastStorage(null);

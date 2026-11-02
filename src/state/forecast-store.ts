@@ -29,6 +29,7 @@ import {
   rebaseBody,
   slimBody,
 } from "@/shared/device-weather";
+import { haversineKm } from "@/shared/icao-codes";
 
 /** The Weather tab's own place (wherever the person is). */
 export const HOME_KEY = "home";
@@ -133,11 +134,27 @@ async function readIndex(): Promise<Record<string, number>> {
  * Keep a real forecast for a place. The seasonal estimate is never kept: it
  * is a stand-in, and drawing it later as "saved weather" would be wrong.
  */
-export async function saveForecast(
+export function saveForecast(
   key: string,
   record: WeatherRecord,
   extra: { name?: string; slug?: string } = {},
   now: number = Date.now(),
+): Promise<void> {
+  // One save at a time: each reads, changes and writes the shared index, so
+  // two at once would drop each other's entries (and their files would never
+  // be evicted).
+  const next = saving.then(() => saveNow(key, record, extra, now));
+  saving = next;
+  return next;
+}
+
+let saving: Promise<void> = Promise.resolve();
+
+async function saveNow(
+  key: string,
+  record: WeatherRecord,
+  extra: { name?: string; slug?: string },
+  now: number,
 ): Promise<void> {
   if (!KEY.test(key) || key === INDEX) return;
   if (record.meta.provider === "fallback") return;
@@ -150,6 +167,7 @@ export async function saveForecast(
       record: { ...record, raw: slimBody(record.raw) },
     };
     const json = JSON.stringify(entry);
+    // UTF-16 length, close enough for a size guard (the web's measure too).
     if (json.length > MAX_ENTRY_BYTES) return;
     await store().write(key, json);
     const index = await readIndex();
@@ -213,4 +231,27 @@ export async function loadForecast(
   } catch {
     return null;
   }
+}
+
+/**
+ * The kept home copy is shown for a fix only within this distance of where it
+ * was fetched: offline in another city, the last city's weather is not "here".
+ */
+export const SAVED_HOME_RADIUS_KM = 25;
+
+/**
+ * Whether the kept home copy belongs to the point the Weather tab is showing.
+ * The default city (no fix: `fallback`) is not the person's place, so any
+ * copy of theirs is the better guess.
+ */
+export function savedHomeFits(
+  view: SavedView,
+  point: { lat: number; lon: number; fallback?: boolean },
+): boolean {
+  if (point.fallback) return true;
+  const at = view.weather.location ?? view.weather.coordinates;
+  if (!at) return false;
+  return (
+    haversineKm(point.lat, point.lon, at.lat, at.lon) <= SAVED_HOME_RADIUS_KM
+  );
 }

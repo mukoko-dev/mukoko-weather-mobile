@@ -305,6 +305,21 @@ describe("apiRequest", () => {
     });
   });
 
+  it("treats a body cut off after the headers as offline, never as an empty answer", async () => {
+    globalThis.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => {
+        throw new TypeError("Network request failed");
+      },
+    })) as unknown as typeof fetch;
+    await expect(apiFetch(ROUTES.weather)).rejects.toMatchObject({
+      name: "NetworkError",
+      kind: "offline",
+    });
+  });
+
   it("lets the caller's own abort through untouched", async () => {
     const abort = Object.assign(new Error("Aborted"), { name: "AbortError" });
     mockFetch({ networkError: abort });

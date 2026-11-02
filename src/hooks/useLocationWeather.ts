@@ -54,7 +54,15 @@ type Held = {
   slug: string | undefined;
   load: DetailLoad;
   refreshError?: string;
+  /** Set while `load` is the copy kept on the phone: when it was fetched. */
+  savedAt?: number;
 };
+
+/** What the page says over the copy kept on the phone. */
+function savedNote(reason: string, savedAt: number): string {
+  const age = updatedAgoLabel(savedAt).toLowerCase();
+  return `${reason} Showing what is saved on this device, ${age}.`;
+}
 
 export function useLocationWeather(slug: string | undefined) {
   const [held, setHeld] = useState<Held>(() => ({
@@ -71,6 +79,9 @@ export function useLocationWeather(slug: string | undefined) {
   }
   const [refreshing, setRefreshing] = useState(false);
   const inFlight = useRef<AbortController | null>(null);
+  // Whether something is drawn for this slug, for the failure path below.
+  const drawn = useRef(false);
+  drawn.current = current.slug === slug && current.load.kind === "ready";
 
   // Every update lands after the awaited fetch, never synchronously in the
   // mount effect.
@@ -90,19 +101,27 @@ export function useLocationWeather(slug: string | undefined) {
       if (signal.aborted) return;
       const reason = failureMessage(err);
       // Nothing on screen yet: the copy the phone kept for this place, with
-      // its age, beats an error face.
-      const saved = await loadForecast(slug);
+      // its age, beats an error face. (A page already drawn keeps itself and
+      // never reads the disk.)
+      const saved = drawn.current ? null : await loadForecast(slug);
       if (signal.aborted) return;
       setHeld((prev) => {
         if (prev.slug === slug && prev.load.kind === "ready") {
-          return { ...prev, refreshError: reason };
+          // A copy from the phone stays marked as one, with its age.
+          return {
+            ...prev,
+            refreshError:
+              prev.savedAt === undefined
+                ? reason
+                : savedNote(reason, prev.savedAt),
+          };
         }
         if (saved) {
-          const age = updatedAgoLabel(saved.fetchedAt).toLowerCase();
           return {
             slug,
             load: { kind: "ready", weather: saved.weather },
-            refreshError: `${reason} Showing what is saved on this device, ${age}.`,
+            refreshError: savedNote(reason, saved.fetchedAt),
+            savedAt: saved.fetchedAt,
           };
         }
         return { slug, load: { kind: "error", message: reason } };

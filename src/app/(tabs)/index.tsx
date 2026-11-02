@@ -47,6 +47,7 @@ import {
   type SavedView,
   loadForecast,
   saveForecast,
+  savedHomeFits,
 } from "@/state/forecast-store";
 
 /** Harare, Mukoko's editorial default, used when there is no location fix. */
@@ -148,8 +149,9 @@ export default function WeatherHome() {
       if (signal.aborted) return;
       // The Worker could not be reached: the forecast this phone kept from
       // the last good load, with its age, beats an error.
-      const view = await loadForecast(HOME_KEY);
+      const kept = await loadForecast(HOME_KEY);
       if (signal.aborted) return;
+      const view = kept && savedHomeFits(kept, loc) ? kept : null;
       setState(
         view
           ? { kind: "saved", view, reason: failureMessage(err) }
@@ -234,7 +236,15 @@ export default function WeatherHome() {
   // row, and the full wordmark would wrap it onto three lines on a phone.
   const brand = <MukokoLogo onSky showWordmark={false} testID="home-brand" />;
   if (state.kind === "loading") {
-    return <WeatherSkeleton leading={brand} inTabs onRetry={onRetry} />;
+    // "Still trying" is about the weather service, so it waits for the fix:
+    // while the GPS is still locating there is no request to retry.
+    return (
+      <WeatherSkeleton
+        leading={brand}
+        inTabs
+        onRetry={coords ? onRetry : undefined}
+      />
+    );
   }
   if (state.kind === "saved") {
     const { view } = state;

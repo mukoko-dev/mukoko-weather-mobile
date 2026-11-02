@@ -147,10 +147,12 @@ export function rebaseBody(
   if (freshness === "forecast" && rebased.hourly) {
     const h = rebased.hourly;
     const c = body.current ?? {};
-    const at = (key: string): unknown => {
+    // A field the hours do not carry is unknown for this hour: never the old
+    // reading's value (a 14:00 UV or daytime flag shown at 21:00).
+    const at = (key: string): number | null => {
       const series = h[key];
       const v = Array.isArray(series) ? series[0] : undefined;
-      return typeof v === "number" && Number.isFinite(v) ? v : c[key];
+      return typeof v === "number" && Number.isFinite(v) ? v : null;
     };
     const first = strings(h.time)[0];
     rebased.current = {

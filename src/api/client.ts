@@ -308,9 +308,15 @@ export async function apiRequest<T = unknown>(
       signal: controller.signal,
     });
     const contentType = response.headers.get("content-type") ?? "";
+    // A body that is not JSON reads as nothing, as before. A body cut off on
+    // the way (the link dropped after the headers) is a network failure, not
+    // an empty answer: it must never replace good data.
     parsed = contentType.includes("json")
-      ? await response.json().catch(() => undefined)
-      : await response.text().catch(() => undefined);
+      ? await response.json().catch((err: unknown) => {
+          if ((err as Error | null)?.name === "SyntaxError") return undefined;
+          throw err;
+        })
+      : await response.text();
   } catch (err) {
     if (timedOut) throw new NetworkError("timeout", url);
     // The caller gave up (their own abort, as before): not a failure.

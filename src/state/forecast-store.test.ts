@@ -11,6 +11,7 @@ import {
   HOME_KEY,
   loadForecast,
   saveForecast,
+  savedHomeFits,
   setForecastStorage,
 } from "@/state/forecast-store";
 
@@ -111,4 +112,26 @@ it("treats a corrupt or failing store as nothing kept, never an error", async ()
     saveForecast("harare", record(), {}, NOW),
   ).resolves.toBeUndefined();
   expect(await loadForecast("harare", NOW)).toBeNull();
+});
+
+it("keeps two saves at once from losing each other's index entries", async () => {
+  await Promise.all([
+    saveForecast("a-place", record(), {}, NOW),
+    saveForecast("b-place", record(), {}, NOW + 1),
+  ]);
+  const index = JSON.parse(store.data.get("index") as string);
+  expect(Object.keys(index).sort()).toEqual(["a-place", "b-place"]);
+});
+
+it("shows the kept home copy only near the current fix", async () => {
+  await saveForecast(HOME_KEY, record(), {}, NOW);
+  const view = await loadForecast(HOME_KEY, NOW);
+  if (!view) throw new Error("expected a kept copy");
+  expect(savedHomeFits(view, { lat: -17.83, lon: 31.05 })).toBe(true);
+  // Bulawayo, ~360 km away: not "here".
+  expect(savedHomeFits(view, { lat: -20.15, lon: 28.58 })).toBe(false);
+  // No fix at all (the default city): the person's last copy is the better guess.
+  expect(savedHomeFits(view, { lat: -20.15, lon: 28.58, fallback: true })).toBe(
+    true,
+  );
 });
