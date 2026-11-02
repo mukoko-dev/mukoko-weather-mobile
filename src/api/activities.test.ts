@@ -202,6 +202,22 @@ describe("loadActivities / loadCategories", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("is not cancelled when the first caller leaves; the others still get the answer", async () => {
+    // The lane, the hero line and the sheet all join one request. A place
+    // change aborts the first caller's controller; the request must go on.
+    const calls = mockFetch({ body: activitiesFixture });
+    const leaving = new AbortController();
+    const first = loadActivities(leaving.signal);
+    const stays = loadActivities(new AbortController().signal);
+    leaving.abort();
+    const list = await stays;
+    expect(list).toHaveLength(55);
+    expect(list).not.toBe(ACTIVITIES);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].signal).toBeFalsy();
+    await first;
+  });
+
   it("falls back to the web's seed when the Worker fails, and does not cache the failure", async () => {
     mockFetch({ status: 503, body: { error: "unavailable" } });
     expect(await loadActivities()).toBe(ACTIVITIES);
@@ -234,6 +250,18 @@ describe("loadSuitabilityRules", () => {
     expect(calls[0].url).toBe(`${BASE}/v1/suitability`);
     await loadSuitabilityRules();
     expect(calls).toHaveLength(1);
+  });
+
+  it("is not cancelled when the first caller leaves, so the others do not fail", async () => {
+    const calls = mockFetch({ body: suitabilityFixture });
+    const leaving = new AbortController();
+    const first = loadSuitabilityRules(leaving.signal);
+    const stays = loadSuitabilityRules(new AbortController().signal);
+    leaving.abort();
+    await expect(stays).resolves.toHaveLength(10);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].signal).toBeFalsy();
+    await first;
   });
 
   it("throws on a failed request (no invented rating) and tries again next time", async () => {

@@ -179,14 +179,17 @@ function fresh<T>(e: Entry<T> | null, now: number): e is Entry<T> {
  * and the failure is not cached, so the next ask tries again.
  */
 export async function loadActivities(
-  signal?: AbortSignal,
+  _signal?: AbortSignal,
   now: number = Date.now(),
 ): Promise<Activity[]> {
   if (fresh(activitiesEntry, now)) return activitiesEntry.value;
   if (activitiesFlight) return activitiesFlight;
+  // The request is shared by every caller that joins it, so it is not tied to
+  // the first caller's `AbortSignal` (that caller leaving would reject it for
+  // the rest). Each caller ignores its own late answer instead.
   activitiesFlight = (async () => {
     try {
-      const body = await apiFetch<unknown>(ROUTES.activities, { signal });
+      const body = await apiFetch<unknown>(ROUTES.activities);
       const list = toActivities(body);
       if (list.length === 0) return ACTIVITIES;
       activitiesEntry = { value: list, at: now };
@@ -202,16 +205,16 @@ export async function loadActivities(
 
 /** The categories, with the same fall back to the web's six. */
 export async function loadCategories(
-  signal?: AbortSignal,
+  _signal?: AbortSignal,
   now: number = Date.now(),
 ): Promise<ActivityCategoryInfo[]> {
   if (fresh(categoriesEntry, now)) return categoriesEntry.value;
   if (categoriesFlight) return categoriesFlight;
+  // Shared by every caller, so not tied to the first caller's signal.
   categoriesFlight = (async () => {
     try {
       const body = await apiFetch<unknown>(ROUTES.activities, {
         query: { mode: "categories" },
-        signal,
       });
       const list = toCategories(body);
       if (list.length === 0) return ACTIVITY_CATEGORIES;
@@ -233,13 +236,16 @@ export async function loadCategories(
  * usable rule throws too.
  */
 export async function loadSuitabilityRules(
-  signal?: AbortSignal,
+  _signal?: AbortSignal,
   now: number = Date.now(),
 ): Promise<SuitabilityRuleDoc[]> {
   if (fresh(rulesEntry, now)) return rulesEntry.value;
   if (rulesFlight) return rulesFlight;
+  // Shared by every caller, so not tied to the first caller's signal: the
+  // lane, the hero line and the advice sheet mount together and one leaving
+  // (a place change) must not reject the request the others are waiting on.
   rulesFlight = (async () => {
-    const body = await apiFetch<unknown>(ROUTES.suitability, { signal });
+    const body = await apiFetch<unknown>(ROUTES.suitability);
     const rules = toRules(body);
     if (rules.length === 0) {
       throw new Error("The activity rules were empty.");
