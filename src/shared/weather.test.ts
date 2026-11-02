@@ -73,6 +73,38 @@ describe("checkFrostRisk", () => {
     expect(checkFrostRisk(hourly)).toBeNull();
   });
 
+  it("never reads a missing overnight reading as a frost hour", () => {
+    // `toForecast` keeps a null inside a column; `null <= 3` is true in JS.
+    const hourly = {
+      time: [
+        "2026-06-01T22:00:00Z",
+        "2026-06-02T05:00:00Z",
+        "2026-06-02T06:00",
+      ],
+      temperature_2m: [null, Number.NaN, 18],
+      apparent_temperature: [10, 8, 18],
+      relative_humidity_2m: [50, 50, 50],
+      precipitation_probability: [0, 0, 0],
+      precipitation: [0, 0, 0],
+      weather_code: [0, 0, 0],
+      visibility: [10000, 10000, 10000],
+      cloud_cover: [10, 10, 10],
+      surface_pressure: [1015, 1015, 1015],
+      wind_speed_10m: [5, 5, 5],
+      wind_direction_10m: [0, 0, 0],
+      wind_gusts_10m: [8, 8, 8],
+      uv_index: [0, 0, 0],
+      is_day: [0, 0, 1],
+    } as unknown as Parameters<typeof checkFrostRisk>[0];
+    expect(checkFrostRisk(hourly)).toBeNull();
+    // A real cold hour beside a missing one still alerts, on the real one.
+    const mixed = {
+      ...hourly,
+      temperature_2m: [null, 1.5, 18],
+    } as unknown as Parameters<typeof checkFrostRisk>[0];
+    expect(checkFrostRisk(mixed)?.lowestTemp).toBe(1.5);
+  });
+
   it("flags severe frost when overnight temps go below 0°C", () => {
     const hourly = {
       time: ["2026-06-01T22:00:00Z", "2026-06-02T05:00:00Z"],
