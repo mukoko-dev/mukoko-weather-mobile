@@ -88,7 +88,9 @@ describe("the forecast page", () => {
       />,
     );
     expect(tree.getByText("Harare Forecast")).toBeTruthy();
-    expect(tree.getByText("Harare / Forecast")).toBeTruthy();
+    expect(
+      tree.getByLabelText("Breadcrumb: Home / Zimbabwe / Harare / Forecast"),
+    ).toBeTruthy();
     expect(tree.getByText("Harare · 1490m")).toBeTruthy();
     expect(tree.getByText("24-Hour Forecast")).toBeTruthy();
     expect(tree.getByText("7-Day Forecast")).toBeTruthy();
@@ -147,7 +149,9 @@ describe("the atmosphere page", () => {
       />,
     );
     expect(tree.getByText("Harare Atmosphere")).toBeTruthy();
-    expect(tree.getByText("Harare / Atmosphere")).toBeTruthy();
+    expect(
+      tree.getByLabelText("Breadcrumb: Home / Zimbabwe / Harare / Atmosphere"),
+    ).toBeTruthy();
     expect(tree.getByText("Wind")).toBeTruthy();
     expect(tree.getByText("Atmospheric Details")).toBeTruthy();
     expect(tree.getByText("24-hour hourly trends")).toBeTruthy();

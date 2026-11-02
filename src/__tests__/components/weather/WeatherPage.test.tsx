@@ -11,11 +11,13 @@ import {
   BackControl,
   WeatherError,
   WeatherPage,
-  breadcrumbOf,
-  countryLabel,
   shareMessage,
+  trailOf,
 } from "@/components/weather/WeatherPage";
+import { countryLabel } from "@/shared/place-info";
+import { trailText } from "@/shared/place-trail";
 
+import { pendingFetch } from "@/test-utils/farm-fetch";
 import {
   IPHONE_INSETS,
   PHONE_WIDTHS,
@@ -38,6 +40,7 @@ jest.mock("react-native-safe-area-context", () =>
 );
 
 beforeEach(() => {
+  pendingFetch();
   setInsets(IPHONE_INSETS);
   setWindow(393, 852);
   jest.clearAllMocks();
@@ -64,6 +67,12 @@ describe("WeatherPage", () => {
     expect(tree.getAllByText("Conditions")).toHaveLength(2);
     expect(tree.getByText("Wind")).toBeTruthy();
     expect(tree.queryByText("7-Day Forecast")).toBeNull();
+    // The cards under the tiles: farm weather and the El Niño outlook (loading
+    // here), the map's honest placeholder, and the About card.
+    expect(tree.getByTestId("agriculture-snapshot")).toBeTruthy();
+    expect(tree.getByTestId("enso-card")).toBeTruthy();
+    expect(tree.getByText("The map is coming")).toBeTruthy();
+    expect(tree.getByText("About Harare")).toBeTruthy();
     expect(HAS_EMOJI.test(allText(tree.toJSON()))).toBe(false);
   });
 
@@ -103,7 +112,10 @@ describe("WeatherPage", () => {
           inTabs
         />,
       );
-      expect(tree.getByText("Singapore American School")).toBeTruthy();
+      // The name is the hero's heading and the last crumb of the trail.
+      expect(
+        tree.getAllByText("Singapore American School").length,
+      ).toBeGreaterThanOrEqual(1);
     },
   );
 
@@ -112,7 +124,7 @@ describe("WeatherPage", () => {
     const tree = await render(
       <WeatherPage weather={weather} name="Harare" inTabs />,
     );
-    expect(tree.getByText("Harare")).toBeTruthy();
+    expect(tree.getAllByText("Harare").length).toBeGreaterThanOrEqual(1);
     expect(tree.queryAllByText("Conditions")).toHaveLength(0);
   });
 
@@ -144,22 +156,33 @@ describe("WeatherPage", () => {
     expect(router.push).toHaveBeenCalledWith("/menu");
   });
 
-  it("builds the trail from country then province", () => {
+  it("builds the trail the web's way: Home, country, province, place", () => {
     expect(
-      breadcrumbOf({ lat: 0, lon: 0, country: "Zimbabwe", province: "Harare" }),
-    ).toBe("Zimbabwe / Harare");
-    expect(breadcrumbOf({ lat: 0, lon: 0, country: "Zimbabwe" })).toBe(
-      "Zimbabwe",
+      trailText(
+        trailOf(
+          { lat: 0, lon: 0, country: "ZW", province: "Mashonaland East" },
+          "Marondera",
+        ),
+      ),
+    ).toBe("Home / Zimbabwe / Mashonaland East / Marondera");
+    // The province is skipped when it is the place's own name.
+    expect(
+      trailText(
+        trailOf(
+          { lat: 0, lon: 0, country: "ZW", province: "Harare" },
+          "Harare",
+        ),
+      ),
+    ).toBe("Home / Zimbabwe / Harare");
+    // A place that is not known yet still has a trail.
+    expect(trailText(trailOf(undefined, "Current location"))).toBe(
+      "Home / Current location",
     );
-    expect(breadcrumbOf(undefined)).toBeUndefined();
   });
 
   it("says the country's name, not its ISO code, as the web does", () => {
     expect(countryLabel("ZW")).toBe("Zimbabwe");
     expect(countryLabel("zw")).toBe("Zimbabwe");
-    expect(
-      breadcrumbOf({ lat: 0, lon: 0, country: "ZW", province: "Harare" }),
-    ).toBe("Zimbabwe / Harare");
     // Not a code: shown as given. Missing: nothing.
     expect(countryLabel("Zimbabwe")).toBe("Zimbabwe");
     expect(countryLabel(undefined)).toBeUndefined();

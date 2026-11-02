@@ -6,15 +6,16 @@
  */
 
 import { router, useLocalSearchParams } from "expo-router";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MapIcon } from "@/components/shell/ShellIcons";
+import { PillButton } from "@/components/weather/PillButton";
 import { BackControl } from "@/components/weather/WeatherPage";
 import { WxText } from "@/components/weather/WxText";
 import { usePageColors } from "@/hooks/usePageColors";
 import { displayNameFromSlug, isLocationSlug } from "@/shared/current-slug";
-import { RADIUS, SIZE, SPACE, TOUCH } from "@/theme/mzizi";
+import { SIZE, SPACE } from "@/theme/mzizi";
 import { NEUTRAL_SKY, SKY_FG, skyStops } from "@/theme/sky";
 
 export default function MapPlaceholder() {
@@ -56,18 +57,13 @@ export default function MapPlaceholder() {
           Rain, wind, cloud and air quality on a map, as on the website. It
           arrives once our weather service serves the map tiles.
         </WxText>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back to the weather"
+        <PillButton
+          label="Back to the weather"
+          size="md"
           onPress={() =>
             router.canGoBack() ? router.back() : router.replace("/")
           }
-          style={[styles.button, { backgroundColor: SKY_FG }]}
-        >
-          <WxText type="bodyLg" weight={600} color={sky.top}>
-            Back to the weather
-          </WxText>
-        </Pressable>
+        />
       </View>
     </View>
   );
@@ -81,13 +77,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: SPACE.stack,
-  },
-  button: {
-    minHeight: TOUCH.default,
-    paddingHorizontal: SIZE.pillPadX,
-    borderRadius: RADIUS.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: SPACE.snug,
   },
 });

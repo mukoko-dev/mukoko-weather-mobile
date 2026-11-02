@@ -21,24 +21,29 @@
 import * as Location from "expo-location";
 import { useCallback, useEffect, useState } from "react";
 
-import { geoLookup } from "@/api/locations";
+import { geoLookup, type LocationSummary } from "@/api/locations";
 import { fetchWeather, type WeatherResponse } from "@/api/weather";
+import {
+  HARARE_DEFAULT,
+  PLACE_LOOKUP_TIMEOUT_MS,
+  fallbackPlace,
+  weatherForPage,
+} from "@/api/place";
 import { MukokoLogo } from "@/components/MukokoLogo";
 import { WeatherError, WeatherPage } from "@/components/weather/WeatherPage";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
 
 /** Harare, Mukoko's editorial default, used when there is no location fix. */
-const FALLBACK = {
-  lat: -17.8252,
-  lon: 31.0335,
-  label: "Harare",
-  slug: "harare",
-};
+const FALLBACK = HARARE_DEFAULT;
 
 type Coords = {
   lat: number;
   lon: number;
   label?: string;
+  /** The place the fix was named as, once the geo lookup has answered. */
+  place?: LocationSummary;
+  /** True once the geo lookup has answered or failed (see `weatherForPage`). */
+  settled?: boolean;
   /** The place's slug, for the links to its forecast and atmosphere pages. */
   slug?: string;
   /** True for the Harare default: not the person's own location. */
@@ -70,14 +75,27 @@ export default function WeatherHome() {
     }
   }, []);
 
-  /** Name the exact place under a GPS fix (nothing is stored). */
-  const resolveName = useCallback(
-    async (loc: Coords): Promise<{ name: string; slug: string } | null> => {
+  /**
+   * Name the exact place under a GPS fix (nothing is stored). The Harare
+   * default is only looked up, never named afresh.
+   */
+  const resolvePlace = useCallback(
+    async (loc: Coords): Promise<LocationSummary | null> => {
+      // A slow or hung reverse geocode never keeps the place cards away:
+      // after the timeout they are drawn for the bare point.
+      let timer: ReturnType<typeof setTimeout> | undefined;
       try {
-        const { location } = await geoLookup(loc.lat, loc.lon, true);
-        return location ? { name: location.name, slug: location.slug } : null;
+        const timeout = new Promise<null>((resolve) => {
+          timer = setTimeout(() => resolve(null), PLACE_LOOKUP_TIMEOUT_MS);
+        });
+        const lookup = geoLookup(loc.lat, loc.lon, !loc.fallback).then(
+          ({ location }) => location,
+        );
+        return await Promise.race([lookup, timeout]);
       } catch {
         return null;
+      } finally {
+        clearTimeout(timer);
       }
     },
     [],
@@ -101,24 +119,50 @@ export default function WeatherHome() {
       // Start the weather at once; name the place alongside, so a slow
       // geocode never holds the first paint.
       void load(loc);
-      if (loc.label) return;
-      const place = await resolveName(loc);
-      if (place) {
-        setCoords((prev) => ({
-          ...(prev ?? loc),
-          label: place.name,
-          slug: place.slug,
-        }));
-      }
+      const found = await resolvePlace(loc);
+      // Settled whether or not it was named: the place cards wait for this, so
+      // they ask the Worker once, for the place, not first for the bare point.
+      // The Harare default keeps its own name and links.
+      setCoords((prev) => {
+        const base = prev ?? loc;
+        if (loc.fallback) {
+          return { ...base, place: fallbackPlace(found), settled: true };
+        }
+        return {
+          ...base,
+          ...(found
+            ? { label: found.name, slug: found.slug, place: found }
+            : {}),
+          settled: true,
+        };
+      });
     })();
-  }, [load, resolveLocation, resolveName]);
+  }, [load, resolveLocation, resolvePlace]);
 
   const onRefresh = useCallback(async () => {
     if (!coords) return;
     setRefreshing(true);
-    await load(coords);
+    // A fix the lookup could not name (slow, failed) gets another try.
+    const naming =
+      coords.settled && !coords.place && !coords.fallback
+        ? resolvePlace(coords).then((found) => {
+            if (found) {
+              setCoords((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      label: found.name,
+                      slug: found.slug,
+                      place: found,
+                    }
+                  : prev,
+              );
+            }
+          })
+        : Promise.resolve();
+    await Promise.all([load(coords), naming]);
     setRefreshing(false);
-  }, [coords, load]);
+  }, [coords, load, resolvePlace]);
 
   const onRetry = useCallback(() => {
     if (!coords) return;
@@ -146,7 +190,7 @@ export default function WeatherHome() {
     coords?.label ?? state.weather.location?.name ?? "Current location";
   return (
     <WeatherPage
-      weather={state.weather}
+      weather={weatherForPage(state.weather, coords)}
       name={name}
       slug={coords?.slug}
       isCurrentLocation={Boolean(coords && !coords.fallback)}

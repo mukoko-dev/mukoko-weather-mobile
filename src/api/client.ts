@@ -50,10 +50,42 @@ export const ROUTES = {
   search: "/v1/search",
   /** GET ?slug -> one place. */
   locations: "/v1/locations",
+  /** GET [?id|category|q|mode=categories] -> the activities (or categories). */
+  activities: "/v1/activities",
+  /** GET [?key] -> the suitability rules the activity ratings are read from. */
+  suitability: "/v1/suitability",
+  /** GET ?location&hours -> recent community reports; POST -> file one. Not live yet. */
+  reports: "/v1/reports",
+  /** POST {reportId} -> upvote a report. Not live yet. */
+  reportsUpvote: "/v1/reports/upvote",
+  /**
+   * POST {location} -> {insight}: the AI weather summary. Not verified live,
+   * and the web serves it only as an internal route: see `src/api/ai.ts`
+   * before turning sign-in on.
+   */
+  aiSummary: "/v1/ai/summary",
+  /** POST {message, locationName, ...} -> {response}: the inline follow-up. Same caveat. */
+  aiFollowup: "/v1/ai/followup",
   /** POST {deviceId, preferences?} -> a device preference profile. */
   devices: "/v1/devices",
   /** POST {message, history, activities?} -> Shamwari's reply. */
   chat: "/v1/ai/chat",
+  /** GET ?lat&lon -> the US AQI, its pollutants and the WHO guidelines. */
+  airQuality: "/v1/air-quality",
+  /** GET ?lat&lon -> the haze panel (smoke, dust, smog, seasons). */
+  haze: "/v1/haze",
+  /** GET ?lat&lon&date -> today's climate-normal high and low. */
+  normals: "/v1/normals",
+  /** GET ?lat&lon -> the twelve monthly climate normals. */
+  normalsMonthly: "/v1/normals/monthly",
+  /** GET ?location&days -> the days recorded for a place. */
+  history: "/v1/history",
+  /** GET ?lat&lon[&location&country&crops] -> farm windows, rain, soil, water balance. */
+  agriculture: "/v1/agriculture",
+  /** GET -> the El Nino / La Nina phase (NOAA CPC ONI). */
+  enso: "/v1/enso",
+  /** GET ?slug|lat&lon[&country] -> a place's season, climate, crop calendar and soil. */
+  profile: "/v1/locations/profile",
 } as const;
 
 /** `http(s)://host[:port]` with nothing after it, as the base URL must be. */

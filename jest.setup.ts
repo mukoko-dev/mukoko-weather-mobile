@@ -37,3 +37,10 @@ jest.mock("expo-secure-store", () => {
     },
   };
 });
+
+// No test reaches the network. `fetch` fails unless a test installs its own
+// (`mockFetch` / `routeFetch` in src/api): the cards that ask the weather
+// Worker then show their unavailable state, as they would offline.
+globalThis.fetch = jest.fn(async () => {
+  throw new Error("The network is off in tests.");
+}) as unknown as typeof fetch;

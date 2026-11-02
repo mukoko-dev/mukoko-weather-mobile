@@ -86,9 +86,10 @@ export interface SeriesConfig {
   showDots?: boolean;
   /**
    * Bars only: colour each bar from its own value (a hex from a published
-   * scale, such as the WHO UV bands) instead of one series colour.
+   * scale, such as the WHO UV bands) instead of one series colour. `index` is
+   * the bar's point, for a colour decided per point (a day's peak UV).
    */
-  colorByValue?: (value: number | null) => string;
+  colorByValue?: (value: number | null, index: number) => string;
 }
 
 export interface TimeSeriesChartProps {
@@ -117,6 +118,11 @@ export interface TimeSeriesChartProps {
   /** Plot width over height. The web's `aspect-[2/1]` is 2. Default 2. */
   aspect?: number;
   showDots?: boolean;
+  /**
+   * What VoiceOver says after the title, when a sentence says it better than
+   * each series' lowest and highest ("Good until 15:00. Best around 09:00.").
+   */
+  summary?: string;
   testID?: string;
 }
 
@@ -193,6 +199,7 @@ export function TimeSeriesChart({
   maxTicksLimit = 8,
   aspect = 2,
   showDots = false,
+  summary: summaryOverride,
   testID = "time-series-chart",
 }: TimeSeriesChartProps) {
   const { colors, dark } = usePageColors();
@@ -262,7 +269,9 @@ export function TimeSeriesChart({
   const usable = data.length >= 2;
   const hasData = usable && specs.some((s) => s.values.some((v) => v !== null));
   const index = selected !== null && selected < data.length ? selected : null;
-  const summary = hasData ? describeChart(textSeries, labels, valueFormat) : "";
+  const summary = hasData
+    ? (summaryOverride ?? describeChart(textSeries, labels, valueFormat))
+    : "";
 
   const colorOf = (s: SeriesConfig) =>
     (palette as Record<string, string>)[s.color] ?? s.color;
@@ -467,7 +476,10 @@ export function TimeSeriesChart({
                       rx={CHART.barRadius}
                       fill={
                         cfg.colorByValue
-                          ? cfg.colorByValue(drawn.spec.values[b.index])
+                          ? cfg.colorByValue(
+                              drawn.spec.values[b.index],
+                              b.index,
+                            )
                           : color
                       }
                       fillOpacity={cfg.opacity ?? CHART.barOpacity}

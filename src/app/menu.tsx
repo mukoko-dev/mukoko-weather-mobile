@@ -18,6 +18,7 @@ import {
   MapIcon,
   SettingsIcon,
 } from "@/components/shell/ShellIcons";
+import { PageCard } from "@/components/weather/PageCard";
 import { WxText } from "@/components/weather/WxText";
 import { usePageColors } from "@/hooks/usePageColors";
 import { isFeatureEnabled } from "@/shared/feature-flags";
@@ -82,12 +83,7 @@ export default function MenuSheet() {
           <CloseIcon size={SIZE.iconMd} color={colors.textPrimary} />
         </Pressable>
       </View>
-      <View
-        style={[
-          styles.group,
-          { backgroundColor: colors.card, borderColor: colors.border },
-        ]}
-      >
+      <PageCard style={styles.group}>
         {rows.map((row, i) => (
           <Pressable
             key={row.id}
@@ -118,7 +114,7 @@ export default function MenuSheet() {
             </View>
           </Pressable>
         ))}
-      </View>
+      </PageCard>
     </ScrollView>
   );
 }
@@ -138,11 +134,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  group: {
-    borderRadius: RADIUS.card,
-    borderWidth: BORDER.rest,
-    overflow: "hidden",
-  },
+  // The rows carry their own padding and dividers, edge to edge.
+  group: { padding: 0, overflow: "hidden" },
   row: {
     minHeight: TOUCH.default,
     flexDirection: "row",
