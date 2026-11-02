@@ -8,7 +8,7 @@ import type { HourlyWeather } from "./weather";
 
 function makeHourly(codes: number[], gusts?: number[]): HourlyWeather {
   const start = new Date();
-  start.setHours(8, 0, 0, 0); // deterministic hour labels
+  start.setUTCHours(8, 0, 0, 0); // deterministic hour labels (no offset: read as UTC)
   return {
     time: codes.map((_, i) =>
       new Date(start.getTime() + i * 3600_000).toISOString(),

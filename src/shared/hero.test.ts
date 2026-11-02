@@ -163,13 +163,13 @@ describe("skyFamily", () => {
   });
 });
 
-/** Hourly series starting at 14:00 local on 8 Oct 2026, 1 hour apart. */
+/** Hourly series starting at 14:00 on 8 Oct 2026, 1 hour apart (no offset: UTC). */
 function hourlyFrom(codes: number[]): HourlyWeather {
-  const base = new Date(2026, 9, 8, 14, 0, 0);
+  const base = new Date(Date.UTC(2026, 9, 8, 14, 0, 0));
   const time = codes.map((_, i) => {
     const d = new Date(base.getTime() + i * 3600_000);
     const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`;
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:00`;
   });
   const n = codes.length;
   const zeros = Array(n).fill(0);
@@ -192,12 +192,17 @@ function hourlyFrom(codes: number[]): HourlyWeather {
 describe("currentHourIndex", () => {
   it("finds the first hour at or after now on the same day", () => {
     const times = ["2026-10-08T13:00", "2026-10-08T14:00", "2026-10-08T15:00"];
-    expect(currentHourIndex(times, new Date(2026, 9, 8, 14, 20))).toBe(1);
+    expect(
+      currentHourIndex(times, new Date(Date.UTC(2026, 9, 8, 14, 20))),
+    ).toBe(1);
   });
 
   it("falls back to the start when no hour matches", () => {
     expect(
-      currentHourIndex(["2026-01-01T00:00"], new Date(2026, 9, 8, 14)),
+      currentHourIndex(
+        ["2026-01-01T00:00"],
+        new Date(Date.UTC(2026, 9, 8, 14)),
+      ),
     ).toBe(0);
   });
 });
@@ -210,13 +215,16 @@ describe("heroOutlook", () => {
   it("states when the condition changes, from the deterministic hourly summary", () => {
     // 14:00 clear (0), 15:00 clear, 16:00 rain (63)
     const hourly = hourlyFrom([0, 0, 63, 63, 63, 63]);
-    const sentence = heroOutlook(hourly, new Date(2026, 9, 8, 14, 10));
+    const sentence = heroOutlook(
+      hourly,
+      new Date(Date.UTC(2026, 9, 8, 14, 10)),
+    );
     expect(sentence).toBe("Rain expected around 16:00.");
   });
 
   it("says the condition will continue when nothing changes", () => {
     const hourly = hourlyFrom([0, 0, 0, 0]);
-    expect(heroOutlook(hourly, new Date(2026, 9, 8, 14, 0))).toBe(
+    expect(heroOutlook(hourly, new Date(Date.UTC(2026, 9, 8, 14, 0)))).toBe(
       "Clear conditions will continue for the next 4 hours.",
     );
   });

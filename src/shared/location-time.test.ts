@@ -23,7 +23,6 @@ import {
   locationHourNow,
   longitudeOffsetSeconds,
   resolveOffsetSeconds,
-  viewerOffsetSeconds,
   wallClockMs,
 } from "./location-time";
 import { hourlySummary } from "./hourly-summary";
@@ -239,14 +238,18 @@ describe("location-time helpers", () => {
     );
   });
 
-  it("an explicit offset always wins; missing falls back to the viewer", () => {
+  it("an explicit offset always wins; missing is UTC, never the phone's zone (issue #64)", () => {
     expect(resolveOffsetSeconds(0)).toBe(0);
     expect(resolveOffsetSeconds(-18000)).toBe(-18000);
-    const now = new Date();
-    expect(resolveOffsetSeconds(undefined, now)).toBe(viewerOffsetSeconds(now));
-    expect(resolveOffsetSeconds(Number.NaN, now)).toBe(
-      viewerOffsetSeconds(now),
-    );
+    const tz = jest.spyOn(Date.prototype, "getTimezoneOffset");
+    tz.mockReturnValue(-480); // a phone in UTC+8
+    try {
+      expect(resolveOffsetSeconds(undefined, new Date())).toBe(0);
+      expect(resolveOffsetSeconds(Number.NaN)).toBe(0);
+      expect(resolveOffsetSeconds(null)).toBe(0);
+    } finally {
+      tz.mockRestore();
+    }
   });
 
   it("returns 0 for an empty or stale series", () => {
