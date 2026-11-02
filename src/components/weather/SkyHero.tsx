@@ -109,7 +109,11 @@ export function HeroTopRow({
         {leading}
         {trail && trail.length > 0 ? (
           <View style={styles.trail}>
-            <PlaceTrail items={trail} onHome={onHome ?? noop} color={SKY_FG_DIM} />
+            <PlaceTrail
+              items={trail}
+              onHome={onHome ?? noop}
+              color={SKY_FG_DIM}
+            />
           </View>
         ) : null}
       </View>

@@ -61,7 +61,9 @@ export function PillButton({
       <WxText
         type="body"
         weight={600}
-        color={filled ? farm.onPrimary : link ? colors.primary : colors.textPrimary}
+        color={
+          filled ? farm.onPrimary : link ? colors.primary : colors.textPrimary
+        }
       >
         {label}
       </WxText>

@@ -23,6 +23,7 @@ function weatherFiles(): string[] {
     ...components,
     join(root, "app", "(tabs)", "index.tsx"),
     join(root, "app", "location", "[slug].tsx"),
+    join(root, "app", "location", "[slug]", "agriculture.tsx"),
   ];
 }
 
@@ -88,6 +89,13 @@ describe("the weather screens and components use tokens, not numbers", () => {
         "src/components/weather/WeatherSkeleton.tsx",
         "src/app/(tabs)/index.tsx",
         "src/app/location/[slug].tsx",
+        "src/app/location/[slug]/agriculture.tsx",
+        "src/components/weather/AgricultureSnapshot.tsx",
+        "src/components/weather/AgriSeriesChart.tsx",
+        "src/components/weather/AboutPlaceCard.tsx",
+        "src/components/weather/EnsoCard.tsx",
+        "src/components/weather/MapPreviewCard.tsx",
+        "src/components/weather/SubPage.tsx",
       ]),
     );
   });
@@ -112,6 +120,23 @@ describe("the weather screens and components use tokens, not numbers", () => {
       expect(text).not.toMatch(/\bpadding\w*\s*:/);
       expect(text).not.toMatch(/\bScrollView\b/);
     }
+  });
+
+  it("gives the agriculture page the SAME gutter and insets: SubPage reads WeatherScroll's pagePadding, the route sets none", () => {
+    const sub = readFileSync(
+      join(root, "components", "weather", "SubPage.tsx"),
+      "utf8",
+    );
+    expect(sub).toContain('import { pagePadding } from "./WeatherScroll"');
+    expect(sub).toContain("pagePadding(insets, false)");
+    expect(sub).not.toMatch(/\bSPACE\.gutter\b/);
+    const route = readFileSync(
+      join(root, "app", "location", "[slug]", "agriculture.tsx"),
+      "utf8",
+    );
+    expect(route).not.toMatch(/\bSafeAreaView\b/);
+    expect(route).not.toMatch(/\bpadding\w*\s*:/);
+    expect(route).not.toMatch(/\bScrollView\b/);
   });
 
   it("builds both screens from the same WeatherPage", () => {

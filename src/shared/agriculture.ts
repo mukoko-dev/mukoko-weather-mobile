@@ -198,7 +198,10 @@ export function farmingActivities(selected: readonly string[]): string[] {
  */
 export function cropsFromPreferences(selected: readonly string[]): string[] {
   const crops = farmingActivities(selected);
-  if (selected.includes(FARMING_CATEGORY_ID) && !crops.includes(GENERAL_CROP_ID)) {
+  if (
+    selected.includes(FARMING_CATEGORY_ID) &&
+    !crops.includes(GENERAL_CROP_ID)
+  ) {
     crops.unshift(GENERAL_CROP_ID);
   }
   return crops;
@@ -336,10 +339,10 @@ export function isAgricultureReady(
 } {
   return Boolean(
     data?.available &&
-      data.windows &&
-      data.rain &&
-      data.headline &&
-      data.verdict,
+    data.windows &&
+    data.rain &&
+    data.headline &&
+    data.verdict,
   );
 }
 

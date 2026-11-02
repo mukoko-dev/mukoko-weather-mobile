@@ -28,7 +28,8 @@ export const RECORDED: Record<string, Route> = {
 
 function reply(route: Route): Promise<Response> {
   if (route === "hang") return new Promise<Response>(() => undefined);
-  if (route === "offline") return Promise.reject(new TypeError("Network request failed"));
+  if (route === "offline")
+    return Promise.reject(new TypeError("Network request failed"));
   const status = route.status ?? 200;
   return Promise.resolve({
     ok: status >= 200 && status < 300,

@@ -52,7 +52,9 @@ export function spokenStages(crop: CropCalendar): string {
   return STAGE_ORDER.flatMap((stage) => {
     const months = crop.months[stage];
     if (!months?.length) return [];
-    return [`${STAGE_LABELS[stage]}: ${monthRange(months).replace(/–/g, " to ")}.`];
+    return [
+      `${STAGE_LABELS[stage]}: ${monthRange(months).replace(/–/g, " to ")}.`,
+    ];
   }).join(" ");
 }
 
@@ -100,7 +102,10 @@ export function CropCalendarTable({
                     ? stageStyle(stage, farm, colors.textPrimary)
                     : { fill: farm.surfaceDim, text: colors.textTertiary };
                   return (
-                    <View key={m} style={[styles.cell, { backgroundColor: look.fill }]}>
+                    <View
+                      key={m}
+                      style={[styles.cell, { backgroundColor: look.fill }]}
+                    >
                       <WxText type="caption" weight={600} color={look.text}>
                         {stage ? STAGE_LABELS[stage].charAt(0) : ""}
                       </WxText>
@@ -140,7 +145,10 @@ export function CropCalendarTable({
                 <View
                   style={[
                     styles.swatch,
-                    { backgroundColor: stageStyle(s, farm, colors.textPrimary).fill },
+                    {
+                      backgroundColor: stageStyle(s, farm, colors.textPrimary)
+                        .fill,
+                    },
                   ]}
                 />
                 <CardNote>{`${STAGE_LABELS[s].charAt(0)} ${STAGE_LABELS[s]}`}</CardNote>
@@ -166,7 +174,12 @@ const styles = StyleSheet.create({
   months: { flexDirection: "row", gap: SPACE.hair },
   monthSlot: { flex: 1, alignItems: "center" },
   current: { textDecorationLine: "underline" },
-  legend: { flexDirection: "row", flexWrap: "wrap", columnGap: SPACE.stack, rowGap: SPACE.hair },
+  legend: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    columnGap: SPACE.stack,
+    rowGap: SPACE.hair,
+  },
   legendItem: { flexDirection: "row", alignItems: "center", gap: SPACE.tight },
   swatch: {
     width: FARM_SIZE.swatchWidth,

@@ -41,7 +41,11 @@ function strOrNull(v: unknown): string | null {
  */
 export function readAgriculture(raw: unknown): AgricultureResult {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new ApiError("The farm data could not be read.", 502, ROUTES.agriculture);
+    throw new ApiError(
+      "The farm data could not be read.",
+      502,
+      ROUTES.agriculture,
+    );
   }
   const b = raw as Record<string, unknown>;
   const attribution = strOrNull(b.attribution);

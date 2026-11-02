@@ -41,9 +41,9 @@ describe("readHistoryAnswer", () => {
   });
 
   it("carries the degraded flag and the missing count only as the Worker sent them", () => {
-    expect(
-      readHistoryAnswer({ data: [], degraded: true, missing: 3 }),
-    ).toEqual({ data: [], degraded: true, missing: 3 });
+    expect(readHistoryAnswer({ data: [], degraded: true, missing: 3 })).toEqual(
+      { data: [], degraded: true, missing: 3 },
+    );
     expect(readHistoryAnswer({ degraded: "yes", missing: "3" })).toEqual({
       data: [],
       degraded: false,
@@ -89,9 +89,9 @@ describe("normals for the window", () => {
     const some = { available: true, normalHigh: 27, normalLow: 15 };
     expect(averageNormals({ available: false }, some)).toEqual(some);
     expect(averageNormals(some, { available: false })).toEqual(some);
-    expect(
-      averageNormals({ available: false }, { available: false }),
-    ).toEqual({ available: false });
+    expect(averageNormals({ available: false }, { available: false })).toEqual({
+      available: false,
+    });
   });
 
   it("keeps the one value an end has", () => {

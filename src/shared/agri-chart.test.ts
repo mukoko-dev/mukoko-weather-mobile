@@ -27,7 +27,12 @@ const BOX: ChartBox = {
   barGap: 0.3,
   maxXLabels: 5,
 };
-const rain: SeriesSpec = { key: "rainMm", label: "Rain", kind: "bar", tone: "rain" };
+const rain: SeriesSpec = {
+  key: "rainMm",
+  label: "Rain",
+  kind: "bar",
+  tone: "rain",
+};
 const et0: SeriesSpec = { key: "et0Mm", label: "ET₀", tone: "terracotta" };
 
 describe("niceTicks", () => {
@@ -60,8 +65,12 @@ describe("valuesOf and yScale", () => {
   it("starts a bar series at zero and honours the axis's own bounds", () => {
     const s = yScale(rows, [rain, et0], mm);
     expect(s.min).toBe(0);
-    expect(s.max).toBeGreaterThanOrEqual(Math.max(...valuesOf(rows, ["rainMm", "et0Mm"])));
-    expect(yScale(rows, [rain], { min: 0, max: 24, format: String })).toMatchObject({
+    expect(s.max).toBeGreaterThanOrEqual(
+      Math.max(...valuesOf(rows, ["rainMm", "et0Mm"])),
+    );
+    expect(
+      yScale(rows, [rain], { min: 0, max: 24, format: String }),
+    ).toMatchObject({
       min: 0,
       max: 24,
     });
@@ -89,7 +98,9 @@ describe("runs and paths", () => {
       { x: 20, y: 5 },
     ];
     expect(linePath(run)).toBe("M0.0 10.0 L20.0 5.0");
-    expect(areaPath(run, 40)).toBe("M0.0 10.0 L20.0 5.0 L20.0 40.0 L0.0 40.0 Z");
+    expect(areaPath(run, 40)).toBe(
+      "M0.0 10.0 L20.0 5.0 L20.0 40.0 L0.0 40.0 Z",
+    );
     expect(areaPath([], 40)).toBe("");
   });
 });
@@ -137,7 +148,9 @@ describe("chartGeometry on the recorded 16 days", () => {
   it("labels at most the asked number of days, first and last included", () => {
     expect(g.xTicks.length).toBeLessThanOrEqual(BOX.maxXLabels);
     expect(g.xTicks[0].label).toBe(rows[0].date);
-    expect(g.xTicks[g.xTicks.length - 1].label).toBe(rows[rows.length - 1].date);
+    expect(g.xTicks[g.xTicks.length - 1].label).toBe(
+      rows[rows.length - 1].date,
+    );
   });
 
   it("draws an area as a closed path", () => {
@@ -161,7 +174,12 @@ describe("chartGeometry on the recorded 16 days", () => {
 
 describe("describeChart (what VoiceOver reads)", () => {
   it("names the span and each series' low and high with the day", () => {
-    const text = describeChart("Rain against crop water use", rows, [rain, et0], mm);
+    const text = describeChart(
+      "Rain against crop water use",
+      rows,
+      [rain, et0],
+      mm,
+    );
     expect(text).toContain("Rain against crop water use. 16 days,");
     expect(text).toContain(`${rows[0].date} to ${rows[rows.length - 1].date}`);
     expect(text).toMatch(/Rain: lowest .* mm on .*, highest .* mm on .*\./);
@@ -179,6 +197,8 @@ describe("describeChart (what VoiceOver reads)", () => {
   });
 
   it("says there is no data for no rows", () => {
-    expect(describeChart("Soil", [], [], { format: String })).toBe("Soil. No data.");
+    expect(describeChart("Soil", [], [], { format: String })).toBe(
+      "Soil. No data.",
+    );
   });
 });

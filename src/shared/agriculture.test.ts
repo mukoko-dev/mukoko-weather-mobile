@@ -494,6 +494,8 @@ describe("why there is no farm data", () => {
   it("reads the recorded unavailable answer as not ready", () => {
     const off = agricultureUnavailable as unknown as AgricultureResponse;
     expect(isAgricultureReady(off)).toBe(false);
-    expect(unavailableFor(off.reason).title).toBe("No farm data for this point");
+    expect(unavailableFor(off.reason).title).toBe(
+      "No farm data for this point",
+    );
   });
 });

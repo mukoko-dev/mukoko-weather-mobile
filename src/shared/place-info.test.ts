@@ -33,9 +33,9 @@ describe("aboutElevation", () => {
   });
 
   it("takes the forecast's terrain height for a spot with the placeholder 0", () => {
-    expect(aboutElevation({ elevation: 0, source: "geolocation" }, 1484.4)).toBe(
-      1484,
-    );
+    expect(
+      aboutElevation({ elevation: 0, source: "geolocation" }, 1484.4),
+    ).toBe(1484);
     expect(aboutElevation({ source: "geocoded" }, 12)).toBe(12);
     expect(aboutElevation({ elevation: 0, source: "seed" }, 1484)).toBe(1484);
   });

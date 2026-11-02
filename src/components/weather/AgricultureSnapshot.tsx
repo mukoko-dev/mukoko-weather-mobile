@@ -72,7 +72,10 @@ export type AgricultureSnapshotViewProps = {
   onOpenInsights?: () => void;
 };
 
-export type AgricultureSnapshotProps = Omit<AgricultureSnapshotViewProps, "state"> & {
+export type AgricultureSnapshotProps = Omit<
+  AgricultureSnapshotViewProps,
+  "state"
+> & {
   /** The user's farming crops (activity ids), possibly none. */
   crops: readonly string[];
 };
@@ -117,7 +120,9 @@ function windowTile(
 }
 
 /** The stats under the windows, as the web's six: label and value. */
-export function snapshotStats(data: Ready): { label: string; value: string; bad?: boolean }[] {
+export function snapshotStats(
+  data: Ready,
+): { label: string; value: string; bad?: boolean }[] {
   const moisture = data.soil?.moistureBand
     ? ` · ${MOISTURE_LABELS[data.soil.moistureBand]}`
     : "";
@@ -211,7 +216,10 @@ export function AgricultureSnapshotBody({
         <View
           accessible
           accessibilityLabel={`${STATUS_LABELS[verdict]} overall for field work today`}
-          style={[styles.verdict, { backgroundColor: withAlpha(verdictTone, 0.15) }]}
+          style={[
+            styles.verdict,
+            { backgroundColor: withAlpha(verdictTone, 0.15) },
+          ]}
         >
           <WxText type="bodySm" weight={600} color={verdictTone}>
             {STATUS_LABELS[verdict]}

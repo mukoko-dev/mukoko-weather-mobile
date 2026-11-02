@@ -168,7 +168,10 @@ describe("WeatherPage", () => {
     // The province is skipped when it is the place's own name.
     expect(
       trailText(
-        trailOf({ lat: 0, lon: 0, country: "ZW", province: "Harare" }, "Harare"),
+        trailOf(
+          { lat: 0, lon: 0, country: "ZW", province: "Harare" },
+          "Harare",
+        ),
       ),
     ).toBe("Home / Zimbabwe / Harare");
     // A place that is not known yet still has a trail.

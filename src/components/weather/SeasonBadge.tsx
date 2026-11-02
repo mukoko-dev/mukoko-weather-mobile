@@ -17,8 +17,19 @@ import { usePageColors } from "@/hooks/usePageColors";
 import { usePlaceProfile } from "@/hooks/usePlaceProfile";
 import { locationMonth } from "@/shared/agriculture";
 import { type PlaceInfo } from "@/shared/place-info";
-import { type ResolvedSeason, resolveSeason, seasonLine } from "@/shared/season";
-import { BORDER, RADIUS, SPACE, TYPE, lineHeightOf, withAlpha } from "@/theme/mzizi";
+import {
+  type ResolvedSeason,
+  resolveSeason,
+  seasonLine,
+} from "@/shared/season";
+import {
+  BORDER,
+  RADIUS,
+  SPACE,
+  TYPE,
+  lineHeightOf,
+  withAlpha,
+} from "@/theme/mzizi";
 import { SKY_FG, SKY_FG_DIM, SKY_SURFACE } from "@/theme/sky";
 
 import { Bar, ShimmerProvider } from "./Shimmer";
@@ -132,8 +143,7 @@ const styles = StyleSheet.create({
   },
   // A typical badge: two lines of body text, its padding and its border.
   loading: {
-    minHeight:
-      lineHeightOf("body") * 2 + SPACE.hair * 2 + BORDER.rest * 2,
+    minHeight: lineHeightOf("body") * 2 + SPACE.hair * 2 + BORDER.rest * 2,
     justifyContent: "center",
     alignItems: "center",
     width: "100%",

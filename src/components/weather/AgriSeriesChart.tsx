@@ -18,7 +18,14 @@
 
 import { useState } from "react";
 import { type LayoutChangeEvent, StyleSheet, View } from "react-native";
-import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from "react-native-svg";
+import Svg, {
+  Circle,
+  G,
+  Line,
+  Path,
+  Rect,
+  Text as SvgText,
+} from "react-native-svg";
 
 import { useFarmColors } from "@/hooks/useFarmColors";
 import { usePageColors } from "@/hooks/usePageColors";
@@ -173,7 +180,12 @@ export function AgriSeriesChart({
                 return (
                   <G key={spec.key}>
                     {areas.map((d, i) => (
-                      <Path key={`a${i}`} d={d} fill={color} fillOpacity={spec.opacity ?? 0.15} />
+                      <Path
+                        key={`a${i}`}
+                        d={d}
+                        fill={color}
+                        fillOpacity={spec.opacity ?? 0.15}
+                      />
                     ))}
                     {bars.map((b, i) => (
                       <Rect
@@ -203,7 +215,9 @@ export function AgriSeriesChart({
                           strokeWidth={FARM_SIZE.chartLine}
                           strokeLinejoin="round"
                           strokeLinecap="round"
-                          strokeDasharray={spec.dashed ? FARM_SIZE.dash : undefined}
+                          strokeDasharray={
+                            spec.dashed ? FARM_SIZE.dash : undefined
+                          }
                           fill="none"
                         />
                       ),
@@ -255,6 +269,11 @@ const styles = StyleSheet.create({
   wrap: { gap: SPACE.snug },
   plot: { width: "100%" },
   reserve: { height: FARM_SIZE.chartHeight },
-  legend: { flexDirection: "row", flexWrap: "wrap", columnGap: SPACE.stack, rowGap: SPACE.hair },
+  legend: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    columnGap: SPACE.stack,
+    rowGap: SPACE.hair,
+  },
   legendItem: { flexDirection: "row", alignItems: "center", gap: SPACE.tight },
 });

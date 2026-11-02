@@ -128,6 +128,7 @@ mukoko-weather-mobile/
         shamwari.tsx             # AI chat placeholder
         my.tsx                   # Account, device id, sign-in
       location/[slug].tsx        # /location/harare etc. — the same WeatherPage, with Back
+      location/[slug]/agriculture.tsx  # /location/harare/agriculture — farm windows, advice, charts, calendar
       sign-in.tsx                # WorkOS AuthKit launcher
       sign-in-callback.tsx       # OAuth redirect target (mukoko://sign-in-callback)
     brand/
@@ -135,6 +136,7 @@ mukoko-weather-mobile/
       fonts.ts                   # @expo-google-fonts/* loader map
     theme/
       mzizi.ts                   # Weather screens' tokens, mirrored from the web: space, type scale, radius, touch, page colours
+      farm.ts                    # Severity, malachite, chart-series and ENSO colours for the farm and place cards
       sky.ts                     # The eight page skies (light + dark), stars, rain streaks
       colors.ts                  # Light + dark palette for the other tabs (mineral-derived)
       typography.ts              # Type scale for the other tabs: hero/display/title/body/mono
@@ -142,6 +144,11 @@ mukoko-weather-mobile/
     api/
       client.ts                  # base URL, ROUTES table, fetch wrapper, error parsing
       weather.ts                 # GET /v1/weather (+ /v1/locations for a slug), converted to the screens' model
+      agriculture.ts             # GET /v1/agriculture: ready, or unavailable with the Worker's reason
+      enso.ts                    # GET /v1/enso (El Nino / La Nina phase)
+      profile.ts                 # GET /v1/locations/profile (season, climate, crop calendar), cached 30 min
+      agri-history.ts            # GET /v1/history and /v1/normals for the 30-day card
+      place.ts                   # The place under a weather answer, as the farm and place cards take it
       locations.ts               # GET /v1/search, /v1/geo, /v1/locations
       chat.ts                    # POST /v1/ai/chat (Shamwari)
       devices.ts                 # POST /v1/devices (device preference profile)
@@ -160,6 +167,13 @@ mukoko-weather-mobile/
         ConditionsCard.tsx       #   outlook sentence + hourly strip (place time)
         ConditionTiles.tsx       #   wind, UV, feels like, visibility, rain, humidity, pressure, sun
         DailyCard.tsx            #   the week
+        AgricultureSnapshot.tsx  #   farm verdict, four windows, six figures; every "no data" reason in words
+        EnsoCard.tsx             #   El Nino / La Nina outlook
+        AboutPlaceCard.tsx       #   the place's facts + profile rows (climate zone, typical month, crop calendar)
+        SeasonBadge.tsx          #   the season line in the Conditions card's footer
+        MapPreviewCard.tsx       #   honest placeholder: the map is not in the app yet
+        PlaceTrail.tsx           #   Home / Country / Province / Place
+        Agriculture*.tsx, CropCalendarTable.tsx, AgriSeriesChart.tsx, SubPage.tsx  #   the agriculture page
         WeatherSkeleton.tsx      #   structural loading state
         WeatherPage.tsx          #   one page for both screens; error state
     hooks/
@@ -174,17 +188,20 @@ mukoko-weather-mobile/
 
 ## What's wired vs. switched off
 
-| Surface                                               | Status           | Notes                                                                                                                                                                                                                                                                                                  |
-| ----------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Weather home (sky, hero, Conditions, tiles, 7-day)    | Live             | `GET /v1/weather?lat&lon`; the answer is converted to the screens' model in `src/api/weather.ts`                                                                                                                                                                                                       |
-| Location detail (`/location/[slug]`)                  | Live             | `GET /v1/locations?slug=` for the coordinate, then `GET /v1/weather`                                                                                                                                                                                                                                   |
-| Explore / search                                      | Live             | `GET /v1/search?q=`                                                                                                                                                                                                                                                                                    |
-| Use my location                                       | Live             | `GET /v1/geo?lat&lon&autoCreate=true` names the exact place under the fix. Nothing is stored; the app has no route that creates a place                                                                                                                                                                |
-| Shamwari AI tab                                       | Live             | Full-viewport chat screen (`src/app/(tabs)/shamwari.tsx`) against `POST /v1/ai/chat`; mirrors the Worker's message-length, history and rate limits                                                                                                                                                     |
-| Brand fonts (Noto Serif + Noto Sans + JetBrains Mono) | Live             | Bundled via `@expo-google-fonts/*`                                                                                                                                                                                                                                                                     |
-| Device identity (SecureStore UUID)                    | Live             | Generated on first launch                                                                                                                                                                                                                                                                              |
-| Device registration                                   | **Switched off** | `POST /v1/devices` with the install id and nothing else, behind `DEVICE_REGISTRATION_ENABLED` in `src/device/register.ts` (off: a person's preferences are to live in their own synced database, so the server-side device profile is being retired). Even when on, development builds log and skip it |
-| WorkOS AuthKit sign-in                                | **Switched off** | The API has no route to exchange the code for a session, so the screen says "Sign-in isn't available yet" and keeps no session. Flip `SIGN_IN_AVAILABLE` in `src/api/auth.ts` once it exists (design: issue #41)                                                                                       |
+| Surface                                                    | Status           | Notes                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Weather home (sky, hero, Conditions, tiles, 7-day)         | Live             | `GET /v1/weather?lat&lon`; the answer is converted to the screens' model in `src/api/weather.ts`                                                                                                                                                                                                                                              |
+| Location detail (`/location/[slug]`)                       | Live             | `GET /v1/locations?slug=` for the coordinate, then `GET /v1/weather`                                                                                                                                                                                                                                                                          |
+| Agriculture card and page (`/location/[slug]/agriculture`) | Live             | `GET /v1/agriculture` (windows, rain, soil, water balance, GDD, 16-day charts, crop calendar), `/v1/history` + `/v1/normals` (30 days against normal), `/v1/enso`. When the Worker answers `available: false` the card says why from its `reason`. Shamwari's briefing and advice line need an account: the cards say so while sign-in is off |
+| Season line and "About {place}" rows                       | Live             | `GET /v1/locations/profile`: the season in the place's month (local names), climate zone, typical month, next season, crop calendar. A place with no crop calendar names no crops; derived values say "estimated"                                                                                                                             |
+| Weather map card                                           | **Placeholder**  | Says the map is coming. The map needs tile routes on the Cloudflare backend first (see "Needs a Cloudflare route first")                                                                                                                                                                                                                      |
+| Explore / search                                           | Live             | `GET /v1/search?q=`                                                                                                                                                                                                                                                                                                                           |
+| Use my location                                            | Live             | `GET /v1/geo?lat&lon&autoCreate=true` names the exact place under the fix. Nothing is stored; the app has no route that creates a place                                                                                                                                                                                                       |
+| Shamwari AI tab                                            | Live             | Full-viewport chat screen (`src/app/(tabs)/shamwari.tsx`) against `POST /v1/ai/chat`; mirrors the Worker's message-length, history and rate limits                                                                                                                                                                                            |
+| Brand fonts (Noto Serif + Noto Sans + JetBrains Mono)      | Live             | Bundled via `@expo-google-fonts/*`                                                                                                                                                                                                                                                                                                            |
+| Device identity (SecureStore UUID)                         | Live             | Generated on first launch                                                                                                                                                                                                                                                                                                                     |
+| Device registration                                        | **Switched off** | `POST /v1/devices` with the install id and nothing else, behind `DEVICE_REGISTRATION_ENABLED` in `src/device/register.ts` (off: a person's preferences are to live in their own synced database, so the server-side device profile is being retired). Even when on, development builds log and skip it                                        |
+| WorkOS AuthKit sign-in                                     | **Switched off** | The API has no route to exchange the code for a session, so the screen says "Sign-in isn't available yet" and keeps no session. Flip `SIGN_IN_AVAILABLE` in `src/api/auth.ts` once it exists (design: issue #41)                                                                                                                              |
 
 ### Needs a Cloudflare route first
 
@@ -194,6 +211,13 @@ change, not an app change:
 - **Sign-in:** a token-exchange route on the Mukoko or Nyuchi API that takes
   `{ code, codeVerifier, redirectUri }` and answers a session, holding the
   WorkOS secret. Issue #41 has the design.
+- **Map tiles (the weather map):** weather overlay tiles (XYZ + TileJSON) and
+  base-map vector tiles with a style, behind the one gateway. The app may not
+  call a tile provider or a second host.
+- **Shamwari's farm advice and agronomy briefing:** `POST /v1/ai/agriculture`
+  (the web's `{location, activities, mode: "snapshot" | "briefing"}` request,
+  answering `{text, source, cached, mode, generatedAt}`), signed-in only, so it
+  waits for the sign-in route above.
 - **Creating a place:** belongs to the Nyuchi API, not to a Worker and not to
   this app. GPS uses `autoCreate=true`, which names the spot without storing it.
 
@@ -249,7 +273,7 @@ families are not used here.
 npm test
 ```
 
-33 test files, covering the API client (URL building, base-URL rules, all three
+53 test files, covering the API client (URL building, base-URL rules, all three
 error formats), each route against answers recorded from the weather Worker, the
 chat, device and sign-in behaviour, the one-backend guard, device identity, the
 shared weather/i18n/locations/ICAO helpers, brand tokens, and component render

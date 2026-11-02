@@ -43,7 +43,13 @@ export const CHART_BLOCKS: ChartBlock[] = [
     note: "Daily rain (bars) and reference evapotranspiration, ET₀ (line), in mm.",
     keys: ["rainMm", "et0Mm"],
     series: [
-      { key: "rainMm", label: "Rain (mm)", kind: "bar", opacity: 0.6, tone: "rain" },
+      {
+        key: "rainMm",
+        label: "Rain (mm)",
+        kind: "bar",
+        opacity: 0.6,
+        tone: "rain",
+      },
       { key: "et0Mm", label: "Crop water use, ET₀ (mm)", tone: "terracotta" },
     ],
     axis: { min: 0, format: mm },
@@ -108,8 +114,19 @@ export const CHART_BLOCKS: ChartBlock[] = [
     note: "Hours each day that are fit to spray, against hours the leaves stay wet (disease pressure).",
     keys: ["sprayHours", "leafWetHours"],
     series: [
-      { key: "sprayHours", label: "Hours fit to spray", kind: "bar", opacity: 0.7, tone: "malachite" },
-      { key: "leafWetHours", label: "Leaf-wet hours", dashed: true, tone: "cobalt" },
+      {
+        key: "sprayHours",
+        label: "Hours fit to spray",
+        kind: "bar",
+        opacity: 0.7,
+        tone: "malachite",
+      },
+      {
+        key: "leafWetHours",
+        label: "Leaf-wet hours",
+        dashed: true,
+        tone: "cobalt",
+      },
     ],
     axis: { min: 0, max: 24, format: (v) => `${v} h` },
     rows: "forecast",

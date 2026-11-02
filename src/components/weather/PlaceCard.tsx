@@ -43,7 +43,10 @@ export function PlaceCard({
   return (
     <View
       testID={testID}
-      style={[styles.card, { backgroundColor: colors.card, borderColor: border }]}
+      style={[
+        styles.card,
+        { backgroundColor: colors.card, borderColor: border },
+      ]}
     >
       {children}
     </View>

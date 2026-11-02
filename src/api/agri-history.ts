@@ -106,12 +106,7 @@ export async function fetchWindowNormals(
 ): Promise<Normals> {
   const end = await fetchNormalsOn(lat, lon, isoDaysAgo(0, nowMs), signal);
   const start = end.available
-    ? await fetchNormalsOn(
-        lat,
-        lon,
-        isoDaysAgo(WINDOW_DAYS - 1, nowMs),
-        signal,
-      )
+    ? await fetchNormalsOn(lat, lon, isoDaysAgo(WINDOW_DAYS - 1, nowMs), signal)
     : end;
   return averageNormals(start, end);
 }

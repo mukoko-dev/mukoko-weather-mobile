@@ -65,10 +65,17 @@ export function SubPage({
                 testID="back-control"
                 style={[styles.back, { borderColor: colors.border }]}
               >
-                <ChevronLeftIcon size={SIZE.iconMd} color={colors.textPrimary} />
+                <ChevronLeftIcon
+                  size={SIZE.iconMd}
+                  color={colors.textPrimary}
+                />
               </Pressable>
               <View style={styles.trail}>
-                <PlaceTrail items={trail} onHome={onHome} color={colors.textTertiary} />
+                <PlaceTrail
+                  items={trail}
+                  onHome={onHome}
+                  color={colors.textTertiary}
+                />
               </View>
             </View>
             <View style={styles.title}>
@@ -119,13 +126,26 @@ export function SubPageLoading({ onBack }: { onBack: () => void }) {
                 onPress={onBack}
                 style={[styles.back, { borderColor: colors.border }]}
               >
-                <ChevronLeftIcon size={SIZE.iconMd} color={colors.textPrimary} />
+                <ChevronLeftIcon
+                  size={SIZE.iconMd}
+                  color={colors.textPrimary}
+                />
               </Pressable>
             </View>
             <Bar color={tint} width="60%" height={SIZE.iconMd * 2} />
             <Bar color={tint} width="40%" height={SIZE.iconMd} />
-            <Bar color={tint} width="100%" height={SIZE.insightMin} radius={RADIUS.card} />
-            <Bar color={tint} width="100%" height={SIZE.insightMin} radius={RADIUS.card} />
+            <Bar
+              color={tint}
+              width="100%"
+              height={SIZE.insightMin}
+              radius={RADIUS.card}
+            />
+            <Bar
+              color={tint}
+              width="100%"
+              height={SIZE.insightMin}
+              radius={RADIUS.card}
+            />
           </View>
         </View>
       </View>
@@ -181,7 +201,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     gap: SPACE.section,
   },
-  topRow: { flexDirection: "row", alignItems: "center", gap: SPACE.snug, paddingTop: SPACE.hair },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.snug,
+    paddingTop: SPACE.hair,
+  },
   back: {
     width: TOUCH.min,
     height: TOUCH.min,

@@ -92,7 +92,9 @@ export function AgricultureHistory({
     <StatTile
       key="rain-file"
       label="Rain on file"
-      value={recorded && summary.rainMm != null ? formatMm(summary.rainMm) : "—"}
+      value={
+        recorded && summary.rainMm != null ? formatMm(summary.rainMm) : "—"
+      }
       hint={
         recorded
           ? `${summary.days} days stored (forecast or archive, not a gauge)`

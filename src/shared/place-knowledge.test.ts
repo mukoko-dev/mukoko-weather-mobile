@@ -184,7 +184,6 @@ describe("profileRows", () => {
   });
 });
 
-
 describe("recorded Worker answers", () => {
   it("turns the recorded Harare profile into the four rows", () => {
     const rows = profileRows(profileHarare as unknown as PlaceProfile);

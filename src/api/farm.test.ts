@@ -51,7 +51,9 @@ describe("GET /v1/agriculture", () => {
     expect(result.kind).toBe("ready");
     if (result.kind !== "ready") return;
     expect(result.data.verdict).toBe("go");
-    expect(result.data.headline).toBe("Good day to spray, harvest and irrigate.");
+    expect(result.data.headline).toBe(
+      "Good day to spray, harvest and irrigate.",
+    );
     expect(result.data.windows?.plant.status).toBe("wait");
     expect(result.data.daily).toHaveLength(46);
     expect(result.data.calendar[0].label).toBe("Maize");
@@ -59,7 +61,9 @@ describe("GET /v1/agriculture", () => {
 
   it("reads available:false with its reason as a value, not an error", async () => {
     mockFetch({ body: agricultureOff });
-    expect(await fetchAgriculture({ slug: "sea", lat: 0, lon: -140 }, [])).toEqual({
+    expect(
+      await fetchAgriculture({ slug: "sea", lat: 0, lon: -140 }, []),
+    ).toEqual({
       kind: "unavailable",
       reason: "provider_error",
       attribution: expect.stringContaining("Open-Meteo"),
@@ -136,7 +140,9 @@ describe("GET /v1/enso", () => {
   });
 
   it("reads available:false as unavailable", async () => {
-    mockFetch({ body: { available: false, series: [], source: "NOAA CPC ONI" } });
+    mockFetch({
+      body: { available: false, series: [], source: "NOAA CPC ONI" },
+    });
     expect(await fetchEnso()).toEqual({ kind: "unavailable" });
   });
 
@@ -156,16 +162,21 @@ describe("GET /v1/locations/profile", () => {
       lon: "31.0500",
     });
     expect(
-      profileQuery({ slug: "nairobi-ke", lat: -1.28, lon: 36.81, country: "KE" }),
+      profileQuery({
+        slug: "nairobi-ke",
+        lat: -1.28,
+        lon: 36.81,
+        country: "KE",
+      }),
     ).toEqual({
       slug: "nairobi-ke",
       lat: "-1.2800",
       lon: "36.8100",
       country: "KE",
     });
-    expect(profileQuery({ slug: "x", lat: 1, lon: 2, country: "Kenya" })).not.toHaveProperty(
-      "country",
-    );
+    expect(
+      profileQuery({ slug: "x", lat: 1, lon: 2, country: "Kenya" }),
+    ).not.toHaveProperty("country");
   });
 
   it("asks by point alone for a place with no slug, and keys it to about a kilometre", () => {

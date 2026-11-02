@@ -54,7 +54,9 @@ describe("placeTrail (the web's breadcrumb rules)", () => {
   it("drops a country or province it does not know instead of guessing", () => {
     expect(trailText(placeTrail({ name: "A spot" }))).toBe("Home / A spot");
     expect(
-      trailText(placeTrail({ name: "A spot", countryName: "  ", province: "" })),
+      trailText(
+        placeTrail({ name: "A spot", countryName: "  ", province: "" }),
+      ),
     ).toBe("Home / A spot");
   });
 
