@@ -129,6 +129,33 @@ describe("signed in (the built, switched-off state)", () => {
     });
   });
 
+  it("a label that improves after first paint does not cancel the request and spend a second one", async () => {
+    signedIn(true);
+    const calls = routedFetch({
+      "POST /v1/ai/summary": { body: { insight: "Warm." } },
+    });
+    const tree = await render(<AiSummary place={PLACE} signInAvailable />);
+    await tree.rerender(
+      <AiSummary place={{ ...PLACE, name: "Harare CBD" }} signInAvailable />,
+    );
+    expect(await tree.findByText("Warm.")).toBeTruthy();
+    expect(calls).toHaveLength(1);
+    // A different place is a different request.
+    await tree.rerender(
+      <AiSummary
+        place={{
+          ...PLACE,
+          slug: "bulawayo",
+          name: "Bulawayo",
+          lat: -20.15,
+          lon: 28.58,
+        }}
+        signInAvailable
+      />,
+    );
+    await waitFor(() => expect(calls).toHaveLength(2));
+  });
+
   it("shows a failure and a retry that asks again", async () => {
     signedIn(true);
     routedFetch({

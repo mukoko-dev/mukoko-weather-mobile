@@ -14,8 +14,16 @@
  * so the screens do not call these until it is on; they show the designed
  * signed-out state instead (`src/components/weather/AiSummary.tsx`).
  *
- * The Worker answers anonymous callers too, with only a per-address rate
- * limit; the app does not use that as a way around the web's rule.
+ * NOT VERIFIED, and probably not served: in `mukoko-dev/mukoko-weather` the
+ * public AI Worker serves `/v1/ai/chat`, `/v1/ai/history/analyze` and
+ * `/v1/ai/explore/search` only. The summary and the follow-up are
+ * `POST /internal/ai/summary` and `/internal/ai/followup` on the internal
+ * Worker, reached with a service key and the signed-in person's id by the
+ * web's `/api/ai` proxy, and the web notes that "the summary is not on the
+ * public API at all". So `ROUTES.aiSummary` and `ROUTES.aiFollowup` will most
+ * likely answer 404 for the app. They are never called while sign-in is off;
+ * before turning it on, ask for public routes (AGENTS.md: if the API does not
+ * serve it, ask for an API route) rather than assuming these.
  *
  * Privacy: the summary body carries the place and nothing about the person.
  * The activities a person picked are NOT sent (the web sends their ids so the

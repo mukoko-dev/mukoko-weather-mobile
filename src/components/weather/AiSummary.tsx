@@ -78,8 +78,11 @@ export function AiSummary({
       controller.abort();
     };
     // `onLoaded` is a callback from the page; it must not restart the request.
+    // Nor must `name`: the place is its slug and point, and a label that
+    // improves after first paint (the GPS geocode) would cancel the request
+    // and spend a second metered model call for the same place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signedIn, slug, name, lat, lon, country, elevation, attempt]);
+  }, [signedIn, slug, lat, lon, country, elevation, attempt]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
   const header = <SparklesIcon size={SIZE.iconSm} color={sodalite} />;

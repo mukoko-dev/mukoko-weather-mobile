@@ -127,9 +127,17 @@ export function WeatherPage({
   const family = skyFamily(code, isDay);
   const info = weatherCodeToInfo(code);
   const activityLine = useHeroActivityLine(forecast, now);
-  // The AI insight, once loaded, is what the follow-up chat starts from.
-  const [insight, setInsight] = useState<string | null>(null);
   const place = weather.location;
+  // The AI insight, once loaded, is what the follow-up chat starts from. It is
+  // kept with the place it was written for, so the page reused for another
+  // place (GPS moved, a new route param) never hands the follow-up the last
+  // place's summary, and a failed summary for the new place leaves none.
+  const placeKey = place ? (place.slug ?? `${place.lat},${place.lon}`) : "";
+  const [insightFor, setInsightFor] = useState<{
+    placeKey: string;
+    text: string;
+  } | null>(null);
+  const insight = insightFor?.placeKey === placeKey ? insightFor.text : null;
 
   const onShare = () => {
     void Share.share({
@@ -175,6 +183,7 @@ export function WeatherPage({
             {place ? (
               <>
                 <AiSummary
+                  key={`summary:${placeKey}`}
                   place={{
                     slug: place.slug,
                     name,
@@ -182,9 +191,10 @@ export function WeatherPage({
                     lon: place.lon,
                     country: place.country,
                   }}
-                  onLoaded={setInsight}
+                  onLoaded={(text) => setInsightFor({ placeKey, text })}
                 />
                 <AiFollowup
+                  key={`followup:${placeKey}`}
                   name={name}
                   slug={place.slug ?? ""}
                   insight={insight}
