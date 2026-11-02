@@ -188,12 +188,16 @@ describe("WeatherPage", () => {
     expect(countryLabel(undefined)).toBeUndefined();
   });
 
-  it("falls back to the code where the runtime has no region names", () => {
+  it("names the country where the runtime has no region names, as Hermes (issue #72)", () => {
     const spy = jest.spyOn(Intl, "DisplayNames").mockImplementation(() => {
       throw new TypeError("Intl.DisplayNames is not supported");
     });
     try {
-      expect(countryLabel("ZW")).toBe("ZW");
+      expect(countryLabel("ZW")).toBe("Zimbabwe");
+      expect(countryLabel("sg")).toBe("Singapore");
+      expect(countryLabel("CD")).toBe("DR Congo");
+      // A code no table knows is still shown, never nothing.
+      expect(countryLabel("QQ")).toBe("QQ");
     } finally {
       spy.mockRestore();
     }
