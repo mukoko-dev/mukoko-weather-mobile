@@ -16,6 +16,7 @@ import { apiRequest, ROUTES } from "@/api/client";
 import { fetchLocation, type LocationSummary } from "@/api/locations";
 import { type ModelForecast } from "@/shared/model-comparison";
 import { type MinutelyData } from "@/shared/nowcast";
+import { longitudeOffsetSeconds } from "@/shared/location-time";
 import { type WeatherData, weatherCodeToInfo } from "@/shared/weather";
 
 export type DailyForecast = {
@@ -98,6 +99,12 @@ export type WeatherResponse = {
   /** IANA time zone of the place, for example `Africa/Harare`. */
   timezone?: string;
   utcOffsetSeconds?: number;
+  /**
+   * True when the Worker sent no offset and `utcOffsetSeconds` is the
+   * longitude estimate (the seasonal fallback), as the web's
+   * `utc_offset_estimated`.
+   */
+  utcOffsetEstimated?: boolean;
 };
 
 export type WeatherQuery = { slug: string } | { lat: number; lon: number };
@@ -110,6 +117,7 @@ export type WireWeather = {
   daily?: Record<string, unknown>;
   timezone?: unknown;
   utc_offset_seconds?: unknown;
+  utc_offset_estimated?: unknown;
   elevation?: unknown;
   minutely?: unknown;
   models?: unknown;
@@ -332,12 +340,35 @@ export function alignHourly(
   return out;
 }
 
+/**
+ * The Worker's `ensure_utc_offset`, applied again at the app's edge: every
+ * screen reads "now" and the hour labels in the PLACE's time, so an answer
+ * without `utc_offset_seconds` (the seasonal fallback today) gets the
+ * longitude estimate, marked `utc_offset_estimated`, and is never read in the
+ * phone's own zone (issue #64). A provider offset always wins.
+ */
+export function ensureUtcOffset(
+  raw: WireWeather,
+  lon: number | undefined,
+): WireWeather {
+  if (num(raw.utc_offset_seconds) !== null) return raw;
+  if (typeof lon !== "number" || !Number.isFinite(lon)) return raw;
+  return {
+    ...raw,
+    utc_offset_seconds: longitudeOffsetSeconds(lon),
+    utc_offset_estimated: true,
+  };
+}
+
 /** Convert the Worker's answer into the model the screens use. */
 export function toWeatherResponse(
-  raw: WireWeather,
+  wire: WireWeather,
   meta: WeatherMeta = {},
   place?: LocationSummary,
+  /** The longitude asked about, for the offset estimate; else the place's. */
+  lon?: number,
 ): WeatherResponse {
+  const raw = ensureUtcOffset(wire, lon ?? place?.lon);
   const current = toCurrent(raw.current);
   const offset = num(raw.utc_offset_seconds);
   return {
@@ -366,6 +397,7 @@ export function toWeatherResponse(
     fetchedAt: meta.fetchedAt ?? undefined,
     timezone: typeof raw.timezone === "string" ? raw.timezone : undefined,
     utcOffsetSeconds: offset ?? undefined,
+    utcOffsetEstimated: raw.utc_offset_estimated === true || undefined,
   };
 }
 
@@ -394,7 +426,12 @@ export type WeatherRecord = {
 
 /** The screens' model for a record (live or stored). */
 export function weatherFromRecord(record: WeatherRecord): WeatherResponse {
-  const weather = toWeatherResponse(record.raw, record.meta, record.place);
+  const weather = toWeatherResponse(
+    record.raw,
+    record.meta,
+    record.place,
+    record.coordinates?.lon,
+  );
   return record.place || !record.coordinates
     ? weather
     : { ...weather, coordinates: record.coordinates };
