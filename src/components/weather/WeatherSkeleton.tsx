@@ -51,7 +51,7 @@ const WIDTH = {
 export const SKELETON = { hours: 8, tilesRows: 2 } as const;
 
 /** A row of the real text size and leading holding one bar 0.7 em tall. */
-function TextBar({
+export function TextBar({
   type,
   width,
   color,
@@ -80,7 +80,7 @@ function TextBar({
 }
 
 /** The top row: a live control at the left if given, else a bar; bars at the right. */
-function TopRowSkeleton({ leading }: { leading?: ReactNode }) {
+export function TopRowSkeleton({ leading }: { leading?: ReactNode }) {
   const bar = withAlpha(SKY_FG, 0.18);
   return (
     <View style={styles.topRow} testID="skeleton-top-row">
