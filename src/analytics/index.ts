@@ -18,7 +18,7 @@ import * as Application from "expo-application";
 import * as Crypto from "expo-crypto";
 import { Platform } from "react-native";
 
-import { ApiError, apiRequest } from "@/api/client";
+import { ApiError, apiRequest, ROUTES } from "@/api/client";
 import type { EventName, EventProps } from "@/analytics/events";
 import {
   EventQueue,
@@ -31,14 +31,10 @@ import {
 
 export * from "@/analytics/events";
 
-/**
- * The proposed ingest route on the weather API. It moves into `ROUTES` in
- * `src/api/client.ts` once the API serves it (the home slices are editing that
- * table now).
- */
-export const EVENTS_ROUTE = "/v1/events";
+/** The proposed ingest routes, from the API route table. */
+export const EVENTS_ROUTE = ROUTES.events;
 /** POST {installId}: delete what the API holds for an install id. */
-export const EVENTS_FORGET_ROUTE = "/v1/events/forget";
+export const EVENTS_FORGET_ROUTE = ROUTES.eventsForget;
 
 /**
  * Off: the route does not exist yet. Turn on only when the API serves

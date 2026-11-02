@@ -86,6 +86,14 @@ export const ROUTES = {
   enso: "/v1/enso",
   /** GET ?slug|lat&lon[&country] -> a place's season, climate, crop calendar and soil. */
   profile: "/v1/locations/profile",
+  /**
+   * POST {schema, installId, batchId, sentAt, client, events} -> 202: the
+   * on-device event queue (src/analytics). Proposed, not live yet:
+   * mukoko-dev/mukoko-weather#438. Sent without the sign-in token.
+   */
+  events: "/v1/events",
+  /** POST {installId} -> 204: delete what the API holds for an install id. Proposed. */
+  eventsForget: "/v1/events/forget",
 } as const;
 
 /** `http(s)://host[:port]` with nothing after it, as the base URL must be. */

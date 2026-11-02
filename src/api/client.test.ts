@@ -129,6 +129,8 @@ describe("ROUTES", () => {
       agriculture: "/v1/agriculture",
       enso: "/v1/enso",
       profile: "/v1/locations/profile",
+      events: "/v1/events",
+      eventsForget: "/v1/events/forget",
     });
   });
 });

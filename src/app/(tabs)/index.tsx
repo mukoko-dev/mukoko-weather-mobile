@@ -21,6 +21,7 @@
 import * as Location from "expo-location";
 import { useCallback, useEffect, useState } from "react";
 
+import { coarsePlace, track } from "@/analytics";
 import { geoLookup, type LocationSummary } from "@/api/locations";
 import { fetchWeather, type WeatherResponse } from "@/api/weather";
 import {
@@ -105,6 +106,11 @@ export default function WeatherHome() {
     try {
       const weather = await fetchWeather({ lat: loc.lat, lon: loc.lon });
       setState({ kind: "ready", weather });
+      // Coarse place only: a ~39 x 20 km cell and the country code.
+      track("forecast_shown", {
+        surface: "home",
+        place: coarsePlace(weather.location ?? loc),
+      });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "We could not load the weather.";
