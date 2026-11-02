@@ -6,17 +6,19 @@
  */
 
 import {
+  type Anchor,
   type AxisConfig,
   type Bar,
   type Domain,
   type Point,
   type Reading,
+  X_LABEL_EM,
   areaPath,
   barsOf,
+  anchorOf,
+  chooseLabelIndices,
   estimateTextWidth,
-  labelIndices,
   linePath,
-  maxLabelsFitting,
   niceTicks,
   resolveDomain,
   runsOf,
@@ -53,7 +55,12 @@ export type ChartInput = {
 };
 
 export type Tick = { value: number; y: number; text: string };
-export type XLabel = { index: number; x: number; text: string };
+export type XLabel = {
+  index: number;
+  x: number;
+  text: string;
+  anchor: Anchor;
+};
 
 export type DrawnSeries = {
   spec: SeriesSpec;
@@ -164,15 +171,17 @@ export function buildChartModel(input: ChartInput): ChartModel {
   const texts = labels.map((l, i) =>
     input.xTickFormat ? input.xTickFormat(l, i) : l,
   );
-  const labelWidth = Math.max(
-    0,
-    ...texts.map((t) => estimateTextWidth(t, fontSize)),
-  );
-  const fit = maxLabelsFitting(plot.width, labelWidth, input.maxTicksLimit);
-  const xLabels: XLabel[] = labelIndices(count, fit).map((index) => ({
+  const widths = texts.map((t) => estimateTextWidth(t, fontSize, X_LABEL_EM));
+  const xLabels: XLabel[] = chooseLabelIndices(
+    xs,
+    widths,
+    input.maxTicksLimit,
+    Math.ceil(fontSize / 3),
+  ).map((index) => ({
     index,
     x: xs[index],
     text: texts[index],
+    anchor: anchorOf(index, count),
   }));
 
   const drawn: DrawnSeries[] = [...series]

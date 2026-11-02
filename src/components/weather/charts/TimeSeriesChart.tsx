@@ -433,13 +433,7 @@ export function TimeSeriesChart({
                 key={`x${l.index}`}
                 x={l.x}
                 y={model.plot.top + model.plot.height + fontSize + SPACE.hair}
-                textAnchor={
-                  l.index === 0
-                    ? "start"
-                    : l.index === labels.length - 1
-                      ? "end"
-                      : "middle"
-                }
+                textAnchor={l.anchor}
                 fontSize={fontSize}
                 fontFamily={FONT_FILE.sans[400]}
                 fill={colors.textTertiary}

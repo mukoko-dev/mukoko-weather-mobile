@@ -1,12 +1,13 @@
 /** The chart geometry: axes, ticks, paths, bars and which point a touch lands on. */
 
 import {
+  X_LABEL_EM,
+  anchorOf,
   areaPath,
   barsOf,
+  chooseLabelIndices,
   estimateTextWidth,
-  labelIndices,
   linePath,
-  maxLabelsFitting,
   nearestIndex,
   niceStep,
   niceTicks,
@@ -228,13 +229,16 @@ describe("barsOf", () => {
 
   it("draws bars from the zero line up to the value, inside the plot", () => {
     const bars = barsOf([0, 5, 10], domain, 0, 90, 0, 100);
-    expect(bars.map((b) => b.index)).toEqual([0, 1, 2]);
-    const five = bars[1];
+    expect(bars.map((b) => b.index)).toEqual([1, 2]);
+    const five = bars[0];
     expect(five.y).toBeCloseTo(50);
     expect(five.height).toBeCloseTo(50);
-    expect(bars[2].y).toBeCloseTo(0);
-    // A zero is still a hairline, not nothing.
-    expect(bars[0].height).toBe(1);
+    expect(bars[1].y).toBeCloseTo(0);
+  });
+
+  it("draws nothing for a value on the zero line (a night's UV 0 is an empty slot)", () => {
+    const bars = barsOf([0, 5, 0], domain, 0, 90, 0, 100);
+    expect(bars.map((b) => b.index)).toEqual([1]);
   });
 
   it("is 72% of a band wide (Chart.js 0.9 x 0.8) and centred on it", () => {
@@ -251,20 +255,62 @@ describe("barsOf", () => {
 });
 
 describe("x labels", () => {
-  it("shows every label when they fit, and an even spread when they do not", () => {
-    expect(labelIndices(5, 8)).toEqual([0, 1, 2, 3, 4]);
-    expect(labelIndices(24, 8)).toEqual([0, 3, 6, 9, 12, 15, 18, 21]);
-    expect(labelIndices(0, 8)).toEqual([]);
-    expect(labelIndices(10, 1)).toEqual([0]);
+  /** 24 hourly labels, 12 dp type: "Now", then "03:00" and so on, ~34 dp each. */
+  const xs = Array.from({ length: 24 }, (_, i) => xAt(i, 24, 30, 290, false));
+  const widths = Array.from({ length: 24 }, (_, i) =>
+    estimateTextWidth(i === 0 ? "Now" : "03:00", 12, X_LABEL_EM),
+  );
+
+  it("anchors the first label at its start and the last at its end", () => {
+    expect(anchorOf(0, 7)).toBe("start");
+    expect(anchorOf(6, 7)).toBe("end");
+    expect(anchorOf(3, 7)).toBe("middle");
+    expect(anchorOf(0, 1)).toBe("start");
   });
 
-  it("limits the count to what fits the plot", () => {
-    const w = estimateTextWidth("00:00", 12);
-    expect(maxLabelsFitting(300, w, 8)).toBeLessThanOrEqual(8);
-    expect(maxLabelsFitting(100, w, 8)).toBeLessThan(
-      maxLabelsFitting(300, w, 8),
+  it("shows every label when they all fit", () => {
+    const x7 = Array.from({ length: 7 }, (_, i) => xAt(i, 7, 30, 290, false));
+    const w7 = [5, 3, 3, 3, 3, 3, 3].map((n) => estimateTextWidth("x".repeat(n), 12, X_LABEL_EM));
+    expect(chooseLabelIndices(x7, w7, 8, 4)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  it("skips labels evenly when they would touch, never more than the limit", () => {
+    const shown = chooseLabelIndices(xs, widths, 8, 6);
+    expect(shown[0]).toBe(0);
+    const step = shown[1] - shown[0];
+    expect(step).toBeGreaterThan(1);
+    shown.forEach((v, k) => expect(v).toBe(k * step));
+    expect(shown.length).toBeLessThanOrEqual(8);
+    expect(chooseLabelIndices(xs, widths, 3, 6).length).toBeLessThanOrEqual(3);
+  });
+
+  it("draws fewer when the text is bigger or the plot narrower", () => {
+    const big = widths.map((w) => w * 1.5);
+    expect(chooseLabelIndices(xs, big, 24, 6).length).toBeLessThanOrEqual(
+      chooseLabelIndices(xs, widths, 24, 6).length,
     );
-    expect(maxLabelsFitting(10, w, 8)).toBe(2);
-    expect(maxLabelsFitting(300, 0, 8)).toBe(8);
+    const narrow = Array.from({ length: 24 }, (_, i) => xAt(i, 24, 30, 120, false));
+    expect(chooseLabelIndices(narrow, widths, 24, 6).length).toBeLessThan(
+      chooseLabelIndices(xs, widths, 24, 6).length,
+    );
+  });
+
+  it("no two drawn labels touch", () => {
+    for (const w of [1, 1.5, 2]) {
+      const ws = widths.map((n) => n * w);
+      const shown = chooseLabelIndices(xs, ws, 24, 6);
+      for (let k = 1; k < shown.length; k++) {
+        const a = shown[k - 1];
+        const b = shown[k];
+        const aEnd = xs[a] + (a === 0 ? ws[a] : ws[a] / 2);
+        const bStart = xs[b] - (b === 23 ? ws[b] : ws[b] / 2);
+        expect(bStart - aEnd).toBeGreaterThanOrEqual(6);
+      }
+    }
+  });
+
+  it("is empty for no points and the first label alone when nothing fits", () => {
+    expect(chooseLabelIndices([], [], 8, 6)).toEqual([]);
+    expect(chooseLabelIndices([0, 1], [50, 50], 8, 6)).toEqual([0]);
   });
 });

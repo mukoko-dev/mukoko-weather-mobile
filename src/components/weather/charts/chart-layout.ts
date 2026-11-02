@@ -229,6 +229,8 @@ export function areaPath(pts: readonly Point[], baseY: number): string {
 /** Chart.js `barPercentage` and `categoryPercentage` defaults. */
 export const BAR_PERCENTAGE = 0.9;
 export const CATEGORY_PERCENTAGE = 0.8;
+/** A bar shorter than this (dp) is not drawn. */
+export const MIN_BAR_HEIGHT = 0.5;
 
 export type Bar = {
   index: number;
@@ -265,47 +267,80 @@ export function barsOf(
       top,
       plotHeight,
     );
+    const height = Math.abs(baseline - y);
+    // A value on the zero line has no height: nothing is drawn, so a UV index
+    // of 0 at night is an empty slot, not a hairline that reads as a value.
+    if (height < MIN_BAR_HEIGHT) return;
     const cx = xAt(index, count, left, plotWidth, true);
-    bars.push({
-      index,
-      x: cx - width / 2,
-      y: Math.min(y, baseline),
-      width,
-      height: Math.max(Math.abs(baseline - y), 1),
-    });
+    bars.push({ index, x: cx - width / 2, y: Math.min(y, baseline), width, height });
   });
   return bars;
 }
 
+export type Anchor = "start" | "middle" | "end";
+
 /**
- * The indices of the x labels to draw: evenly spread, at most `max` of them,
- * always starting with the first (Chart.js `autoSkip`).
+ * How an x label sits on its point: the first starts at it and the last ends
+ * at it, so neither runs off the plot; the rest are centred.
  */
-export function labelIndices(count: number, max: number): number[] {
-  if (count <= 0) return [];
-  const limit = Math.max(1, Math.floor(max));
-  const step = Math.max(1, Math.ceil(count / limit));
-  const out: number[] = [];
-  for (let i = 0; i < count; i += step) out.push(i);
-  return out;
+export function anchorOf(index: number, count: number): Anchor {
+  if (index === 0) return "start";
+  return index === count - 1 ? "end" : "middle";
 }
 
-/** The label step that keeps labels about `labelWidth` wide from touching on `plotWidth`. */
-export function maxLabelsFitting(
-  plotWidth: number,
-  labelWidth: number,
-  limit: number,
-): number {
-  if (!(labelWidth > 0)) return limit;
-  return Math.max(
-    2,
-    Math.min(limit, Math.floor(plotWidth / (labelWidth * 1.4))),
-  );
+/** The span a label covers on the x axis, from its point, width and anchor. */
+function spanOf(x: number, width: number, anchor: Anchor): [number, number] {
+  if (anchor === "start") return [x, x + width];
+  if (anchor === "end") return [x - width, x];
+  return [x - width / 2, x + width / 2];
 }
+
+/**
+ * The x labels to draw: every label when they fit, else every second, third,
+ * and so on, starting with the first (Chart.js `autoSkip`). A step is chosen
+ * when no two drawn labels come within `gap` of touching, measured from each
+ * label's own width and anchor, and there are at most `limit` of them.
+ */
+export function chooseLabelIndices(
+  xs: readonly number[],
+  widths: readonly number[],
+  limit: number,
+  gap: number,
+): number[] {
+  const count = xs.length;
+  if (count === 0) return [];
+  const max = Math.max(1, Math.floor(limit));
+  for (let step = 1; step < count; step++) {
+    const shown: number[] = [];
+    for (let i = 0; i < count; i += step) shown.push(i);
+    if (shown.length > max) continue;
+    let ok = true;
+    for (let k = 1; k < shown.length && ok; k++) {
+      const a = spanOf(xs[shown[k - 1]], widths[shown[k - 1]], anchorOf(shown[k - 1], count));
+      const b = spanOf(xs[shown[k]], widths[shown[k]], anchorOf(shown[k], count));
+      ok = b[0] - a[1] >= gap;
+    }
+    if (ok) return shown;
+  }
+  return [0];
+}
+
+/**
+ * What one character of an axis label is, in em (Noto Sans digits are 0.57,
+ * a % is 0.86). The y gutter is sized with the roomier figure so a label
+ * never runs off the left; x labels are checked against each other with the
+ * tighter one, so a week of day names is not thinned for no reason.
+ */
+export const Y_LABEL_EM = 0.68;
+export const X_LABEL_EM = 0.55;
 
 /** A rough width of a label in dp, from its length and the type size. */
-export function estimateTextWidth(text: string, fontSize: number): number {
-  return text.length * fontSize * 0.62;
+export function estimateTextWidth(
+  text: string,
+  fontSize: number,
+  perChar: number = Y_LABEL_EM,
+): number {
+  return text.length * fontSize * perChar;
 }
 
 /**
