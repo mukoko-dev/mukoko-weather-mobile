@@ -9,8 +9,9 @@
  *
  * - Gutter: `SPACE.gutter` on each side, never less than the safe-area inset.
  * - Top: the status bar's inset; the sky runs underneath it.
- * - Bottom: `SPACE.section` plus the home-indicator inset (unless the tab bar
- *   already sits there).
+ * - Bottom: `SPACE.section` plus the floating bottom bar's clearance where the
+ *   shell draws it (AppChrome), else the home-indicator inset.
+ * - Swipe: left / right between places, from the shell (useLocationSwipe).
  * - Column: capped at `SIZE.contentMax` and centred on a tablet.
  * - Sky overscroll: pulling down past the top shows the sky's top colour.
  */
@@ -28,6 +29,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useShell } from "@/components/shell/ShellContext";
 import { usePageColors } from "@/hooks/usePageColors";
 import { type SkyFamily } from "@/shared/hero";
 import { SIZE, SPACE } from "@/theme/mzizi";
@@ -51,16 +53,22 @@ export type WeatherScrollProps = {
   inTabs?: boolean;
 };
 
-/** The padding the column gets from the insets: gutter plus safe area. */
+/**
+ * The padding the column gets from the insets: gutter plus safe area. Where
+ * the shell's floating bar sits over the page (`barClearance` > 0) the page
+ * leaves that instead, which already includes the home-indicator inset.
+ */
 export function pagePadding(
   insets: { top: number; bottom: number; left: number; right: number },
   inTabs: boolean,
+  barClearance = 0,
 ) {
+  const bottom = barClearance > 0 ? barClearance : inTabs ? 0 : insets.bottom;
   return {
     paddingTop: insets.top,
     paddingLeft: Math.max(SPACE.gutter, insets.left),
     paddingRight: Math.max(SPACE.gutter, insets.right),
-    paddingBottom: SPACE.section + (inTabs ? 0 : insets.bottom),
+    paddingBottom: SPACE.section + bottom,
   };
 }
 
@@ -72,6 +80,7 @@ export function WeatherScroll({
   inTabs = false,
 }: WeatherScrollProps) {
   const insets = useSafeAreaInsets();
+  const { clearance, swipeHandlers } = useShell();
   const { colors, dark } = usePageColors();
   const [scrollY] = useState(() => new Animated.Value(0));
   const [onSky, setOnSky] = useState(true);
@@ -104,7 +113,10 @@ export function WeatherScroll({
   });
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
+    <View
+      style={[styles.root, { backgroundColor: colors.background }]}
+      {...swipeHandlers}
+    >
       <Animated.ScrollView
         onScroll={onScroll}
         scrollEventThrottle={16}
@@ -127,7 +139,7 @@ export function WeatherScroll({
           pointerEvents="none"
         />
         <WeatherSky family={family} />
-        <View style={pagePadding(insets, inTabs)}>
+        <View style={pagePadding(insets, inTabs, clearance)}>
           <View style={styles.column}>{children}</View>
         </View>
       </Animated.ScrollView>

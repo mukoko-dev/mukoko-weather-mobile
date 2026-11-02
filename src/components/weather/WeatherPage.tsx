@@ -30,9 +30,13 @@ import { HeroTopRow, SkyHero } from "./SkyHero";
 import { WeatherScroll } from "./WeatherScroll";
 import { WxText } from "./WxText";
 
-/** Open the Settings tab (sign in, theme, saved places). */
+/**
+ * The hero's account control: the ⋯ menu as a native sheet (src/app/menu.tsx),
+ * the web's phone menu: Use my location, the map, Locations, Explore and My
+ * Weather (settings, saved places, sign in).
+ */
 export function openSettings() {
-  router.navigate("/my");
+  router.push("/menu");
 }
 
 /** Go back, or home when this page is the first screen. */

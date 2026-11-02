@@ -23,6 +23,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { geoLookup } from "@/api/locations";
 import { fetchWeather, type WeatherResponse } from "@/api/weather";
+import { MukokoLogo } from "@/components/MukokoLogo";
 import { WeatherError, WeatherPage } from "@/components/weather/WeatherPage";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
 
@@ -112,9 +113,20 @@ export default function WeatherHome() {
     void load(coords);
   }, [coords, load]);
 
-  if (state.kind === "loading") return <WeatherSkeleton inTabs />;
+  // The brand mark sits where a place page has Back, as the web header does.
+  const brand = <MukokoLogo onSky testID="home-brand" />;
+  if (state.kind === "loading") {
+    return <WeatherSkeleton leading={brand} inTabs />;
+  }
   if (state.kind === "error") {
-    return <WeatherError message={state.message} onRetry={onRetry} inTabs />;
+    return (
+      <WeatherError
+        message={state.message}
+        onRetry={onRetry}
+        leading={brand}
+        inTabs
+      />
+    );
   }
 
   const name =
@@ -124,6 +136,7 @@ export default function WeatherHome() {
       weather={state.weather}
       name={name}
       isCurrentLocation={Boolean(coords && !coords.fallback)}
+      leading={brand}
       onRefresh={onRefresh}
       refreshing={refreshing}
       inTabs

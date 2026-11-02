@@ -25,7 +25,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 
 import {
   sendChatMessage,
@@ -41,6 +41,7 @@ import { DEFAULT_SUGGESTED_PROMPTS } from "@/components/chat/prompts";
 import { SuggestedPrompts } from "@/components/chat/SuggestedPrompts";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { usePalette } from "@/hooks/usePalette";
+import { isFeatureEnabled } from "@/shared/feature-flags";
 
 /** Cap rendered turns to keep memory bounded in long conversations. */
 const MAX_RENDERED_MESSAGES = 30;
@@ -51,7 +52,17 @@ function nextId(prefix: string): string {
   return `${prefix}-${Date.now()}-${messageSeq}`;
 }
 
-export default function ShamwariScreen() {
+/**
+ * Shamwari is PAUSED, as on the web (`FLAGS.shamwari_chat` is false): the
+ * route sends you to My Location and nothing in the shell links here. Flip
+ * the flag to bring the chat back.
+ */
+export default function ShamwariRoute() {
+  if (!isFeatureEnabled("shamwari_chat")) return <Redirect href="/" />;
+  return <ShamwariScreen />;
+}
+
+function ShamwariScreen() {
   const palette = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();

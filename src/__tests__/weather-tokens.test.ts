@@ -19,9 +19,16 @@ function weatherFiles(): string[] {
   const components = readdirSync(dir)
     .filter((f) => /\.tsx?$/.test(f))
     .map((f) => join(dir, f));
+  const shell = readdirSync(join(root, "components", "shell"))
+    .filter((f) => /\.tsx?$/.test(f))
+    .map((f) => join(root, "components", "shell", f));
   return [
     ...components,
+    ...shell,
     join(root, "app", "(tabs)", "index.tsx"),
+    join(root, "app", "(tabs)", "locations.tsx"),
+    join(root, "app", "menu.tsx"),
+    join(root, "app", "map.tsx"),
     join(root, "app", "location", "[slug].tsx"),
   ];
 }

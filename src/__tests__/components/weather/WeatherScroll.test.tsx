@@ -78,6 +78,15 @@ describe("pagePadding", () => {
     expect(pagePadding(IPHONE_INSETS, true).paddingBottom).toBe(SPACE.section);
   });
 
+  it("leaves the floating bar's clearance where the shell draws it", () => {
+    expect(pagePadding(IPHONE_INSETS, true, 118).paddingBottom).toBe(
+      SPACE.section + 118,
+    );
+    expect(pagePadding(IPHONE_INSETS, false, 118).paddingBottom).toBe(
+      SPACE.section + 118,
+    );
+  });
+
   it("never sits under a landscape notch: the gutter is at least the inset", () => {
     const p = pagePadding({ top: 0, bottom: 21, left: 59, right: 59 }, false);
     expect(p.paddingLeft).toBe(59);
