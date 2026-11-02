@@ -23,7 +23,10 @@ import {
   locationMonth,
 } from "@/shared/agriculture";
 import { type PlaceInfo, aboutElevation } from "@/shared/place-info";
-import { type TrailItem } from "@/shared/place-trail";
+import { recallWeather } from "@/hooks/weather-cache";
+import { skyFamily } from "@/shared/hero";
+import { countryLabel } from "@/shared/place-info";
+import { type TrailItem, placeTrail } from "@/shared/place-trail";
 import { resolveSeason } from "@/shared/season";
 import { usePreferences } from "@/state/preferences";
 import { SPACE } from "@/theme/mzizi";
@@ -88,15 +91,27 @@ export function AgricultureScreen({
   const subtitle = [place.province, metres !== null ? `${metres} m` : null]
     .filter(Boolean)
     .join(" · ");
-  // The web's sub-page trail: Home / Place / this page.
+  // One trail shape across a place's pages (issue #79): Home / Country /
+  // Province / Place / Agriculture, as Forecast and Atmosphere.
   const trail: TrailItem[] = [
-    { label: "Home", kind: "home" },
-    { label: place.name, kind: "plain" },
+    ...placeTrail({
+      name: place.name,
+      countryName: countryLabel(place.country),
+      province: place.province,
+    }).map((item) =>
+      item.kind === "current" ? { ...item, kind: "plain" as const } : item,
+    ),
     { label: "Agriculture", kind: "current" },
   ];
+  // The place's own sky when its weather was just shown, else a neutral day.
+  const shown = place.slug ? recallWeather(place.slug) : undefined;
+  const family = shown
+    ? skyFamily(shown.current.weatherCode ?? 0, shown.current.isDay ?? true)
+    : undefined;
 
   return (
     <SubPage
+      family={family}
       trail={trail}
       title={`${place.name} Agriculture`}
       subtitle={subtitle || undefined}
@@ -105,7 +120,7 @@ export function AgricultureScreen({
       headerExtra={
         profile.status === "loading" ? undefined : (
           <View style={styles.season}>
-            <SeasonBadge resolved={season} tone="page" />
+            <SeasonBadge resolved={season} tone="sky" />
           </View>
         )
       }

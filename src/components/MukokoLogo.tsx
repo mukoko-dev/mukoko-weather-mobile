@@ -55,8 +55,17 @@ export function MukokoLogo({
         resizeMode="contain"
         accessibilityIgnoresInvertColors
       />
+      {/* The wordmark is a brand mark, not body text: it never grows with
+          Dynamic Type (issue #78), so it cannot run under the controls
+          beside it. */}
       {showWordmark ? (
-        <WxText type="h5" weight={700} family="serif" color={color}>
+        <WxText
+          type="h5"
+          weight={700}
+          family="serif"
+          color={color}
+          allowFontScaling={false}
+        >
           weather
         </WxText>
       ) : null}

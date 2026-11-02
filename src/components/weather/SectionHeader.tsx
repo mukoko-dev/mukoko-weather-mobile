@@ -68,11 +68,14 @@ export function SectionHeader({
 }
 
 const styles = StyleSheet.create({
+  // Wraps: at the largest text sizes the action moves under the title rather
+  // than squeezing it to one letter a line (issue #68).
   row: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: SPACE.snug,
+    columnGap: SPACE.snug,
   },
   title: { flexShrink: 1 },
   action: {

@@ -59,6 +59,22 @@ export const TYPE = {
 
 export type TypeToken = keyof typeof TYPE;
 
+/**
+ * The most each size grows with the person's text size (Dynamic Type), as
+ * iOS caps its own large titles (issues #68, #78). Body text grows freely;
+ * headings already large stop where a place name or a title would no longer
+ * fit a phone's width and would break mid-word. `chrome` is for navigation
+ * (the bar's labels, the trail, eyebrows), which iOS also caps.
+ */
+export const TEXT_SCALE_MAX = {
+  display: 1.3,
+  h2: 1.4,
+  h3: 1.5,
+  h4: 1.6,
+  h5: 2,
+  chrome: 1.35,
+} as const satisfies Partial<Record<TypeToken | "chrome", number>>;
+
 /** Line height in dp for a type token. */
 export function lineHeightOf(token: TypeToken): number {
   const { size, leading } = TYPE[token];

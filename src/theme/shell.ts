@@ -26,6 +26,11 @@ export const BAR = {
   chipMax: 160,
   /** The current chip's fill opacity on the translucent bar (`bg-card/90`). */
   surfaceAlpha: 0.94,
+  /**
+   * The card tint over the Liquid Glass bar: enough that page text under the
+   * bar never competes with its labels (issue #77), still reads as glass.
+   */
+  glassTint: 0.82,
 } as const;
 
 /**

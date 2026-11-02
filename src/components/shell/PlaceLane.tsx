@@ -27,7 +27,14 @@ import {
   laneScrollLeft,
   type LaneChip,
 } from "@/shared/location-pager";
-import { BORDER, RADIUS, SIZE, SPACE, TOUCH } from "@/theme/mzizi";
+import {
+  BORDER,
+  RADIUS,
+  SIZE,
+  SPACE,
+  TEXT_SCALE_MAX,
+  TOUCH,
+} from "@/theme/mzizi";
 import { BAR, chipColorsFor } from "@/theme/shell";
 
 export type PlaceLaneProps = {
@@ -163,6 +170,7 @@ function Chip({
           weight={600}
           color={fg}
           numberOfLines={1}
+          maxFontSizeMultiplier={TEXT_SCALE_MAX.chrome}
           style={styles.chipText}
         >
           {label}

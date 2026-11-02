@@ -147,7 +147,12 @@ describe("the weather screens and components use tokens, not numbers", () => {
       join(root, "components", "weather", "SubPage.tsx"),
       "utf8",
     );
-    expect(sub).toContain('import { pagePadding } from "./WeatherScroll"');
+    // The page itself is a WeatherScroll (issue #79); its loading and
+    // failure faces read the same pagePadding.
+    expect(sub).toMatch(
+      /import \{ WeatherScroll, pagePadding \} from "\.\/WeatherScroll"/,
+    );
+    expect(sub).toContain("<WeatherScroll family={family}>");
     expect(sub).toContain("pagePadding(insets, false)");
     expect(sub).not.toMatch(/\bSPACE\.gutter\b/);
     const route = readFileSync(

@@ -84,9 +84,11 @@ function Streaks({ width }: { width: number }) {
 
 export type WeatherSkyProps = {
   family: SkyFamily;
+  /** The least height, for a heading on the sky lower down (SkyExtent). */
+  minReach?: number;
 };
 
-export function WeatherSky({ family }: WeatherSkyProps) {
+export function WeatherSky({ family, minReach = 0 }: WeatherSkyProps) {
   const { dark, colors } = usePageColors();
   const { width, height } = useWindowDimensions();
   const stops = skyStops(family, dark);
@@ -96,7 +98,7 @@ export function WeatherSky({ family }: WeatherSkyProps) {
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={[styles.box, { height: skyReach(height) }]}
+      style={[styles.box, { height: Math.max(skyReach(height), minReach) }]}
       testID={`weather-sky-${family}`}
     >
       <LinearGradient
