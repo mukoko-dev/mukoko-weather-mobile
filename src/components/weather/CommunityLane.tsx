@@ -360,7 +360,12 @@ export function CommunityLane({ slug, forecast, now }: CommunityLaneProps) {
                     {lane.best && cells
                       ? `Best: ${bestWindowText(cells, lane.best, "–", offset)}`
                       : cells
-                        ? "No good window"
+                        ? // An activity with no rule has no rating at all: that
+                          // is not "no good window", which would say the
+                          // weather is bad for something never rated.
+                          cells.some((c) => c.level !== null)
+                          ? "No good window"
+                          : "No rating yet"
                         : ""}
                   </WxText>
                 </View>

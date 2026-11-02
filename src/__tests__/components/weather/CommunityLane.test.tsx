@@ -85,6 +85,30 @@ describe("CommunityLane with nothing picked", () => {
   });
 });
 
+describe("CommunityLane for an activity with no rule", () => {
+  it("says 'No rating yet', not 'No good window', when nothing could be rated", async () => {
+    // Only the farming rule is served: football (sports) has no rule at all.
+    toggleActivity("football");
+    routedFetch({
+      ...ROUTES,
+      "GET /v1/suitability": {
+        body: {
+          rules: (
+            suitabilityFixture as { rules: { key: string }[] }
+          ).rules.filter((r) => r.key === "category:farming"),
+        },
+      },
+    });
+    const tree = await render(<Lane />);
+    const row = await tree.findByTestId("lane-football");
+    expect(row.props.accessibilityLabel).toMatch(
+      /no forecast for this activity/,
+    );
+    expect(tree.getByText("No rating yet")).toBeTruthy();
+    expect(tree.queryByText("No good window")).toBeNull();
+  });
+});
+
 describe("CommunityLane with activities picked", () => {
   it("rates 24 hours per activity from the Worker's rules, and says what the lane means", async () => {
     toggleActivity("crop-farming");
