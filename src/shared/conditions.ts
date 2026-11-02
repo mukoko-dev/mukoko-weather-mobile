@@ -58,10 +58,7 @@ export function aqiSentence(
  * The LOCATION's calendar date (YYYY-MM-DD) for the normals request. With no
  * offset it falls back to the viewer's calendar day.
  */
-export function localIsoDate(
-  now: Date,
-  offsetSeconds?: number | null,
-): string {
+export function localIsoDate(now: Date, offsetSeconds?: number | null): string {
   return locationDateString(resolveOffsetSeconds(offsetSeconds, now), now);
 }
 

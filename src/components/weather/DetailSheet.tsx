@@ -37,98 +37,105 @@ export type DetailSheetProps = {
   testID?: string;
 };
 
-export function DetailSheet({
-  open,
+/**
+ * The sheet's content, mounted only while the sheet is open (so a closed sheet
+ * costs nothing and needs no safe-area provider).
+ */
+function SheetBody({
   title,
   onClose,
   headline,
   sentence,
   about,
   children,
-  testID,
-}: DetailSheetProps) {
+}: Omit<DetailSheetProps, "open" | "testID">) {
   const { colors } = usePageColors();
   const insets = useSafeAreaInsets();
-  const reduceMotion = useReduceMotion();
+  return (
+    <View
+      style={[styles.root, { backgroundColor: colors.background }]}
+      accessibilityViewIsModal
+    >
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingLeft: Math.max(SPACE.gutter, insets.left),
+            paddingRight: Math.max(SPACE.gutter, insets.right),
+            paddingBottom: SPACE.section + insets.bottom,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <WxText
+            type="bodySm"
+            weight={600}
+            uppercase
+            tracking="wider"
+            color={colors.textTertiary}
+            accessibilityRole="header"
+          >
+            {title}
+          </WxText>
+          {headline ? (
+            <WxText
+              type="h2"
+              weight={600}
+              family="serif"
+              tabular
+              color={colors.textPrimary}
+            >
+              {headline}
+            </WxText>
+          ) : null}
+          {sentence ? (
+            <WxText type="body" color={colors.textSecondary}>
+              {sentence}
+            </WxText>
+          ) : null}
+        </View>
 
+        {children}
+
+        {about ? (
+          <WxText type="bodySm" color={colors.textTertiary}>
+            {about}
+          </WxText>
+        ) : null}
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={onClose}
+          style={({ pressed }) => [
+            styles.close,
+            {
+              borderColor: colors.border,
+              borderWidth: pressed ? BORDER.active : BORDER.rest,
+            },
+          ]}
+        >
+          <WxText type="bodyLg" weight={600} color={colors.textPrimary}>
+            Close
+          </WxText>
+        </Pressable>
+      </ScrollView>
+    </View>
+  );
+}
+
+export function DetailSheet({ open, testID, ...body }: DetailSheetProps) {
+  const reduceMotion = useReduceMotion();
   return (
     <Modal
       visible={open}
       animationType={reduceMotion ? "none" : "slide"}
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={body.onClose}
       testID={testID}
     >
-      <View
-        style={[styles.root, { backgroundColor: colors.background }]}
-        accessibilityViewIsModal
-      >
-        <ScrollView
-          contentContainerStyle={[
-            styles.content,
-            {
-              paddingLeft: Math.max(SPACE.gutter, insets.left),
-              paddingRight: Math.max(SPACE.gutter, insets.right),
-              paddingBottom: SPACE.section + insets.bottom,
-            },
-          ]}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.header}>
-            <WxText
-              type="bodySm"
-              weight={600}
-              uppercase
-              tracking="wider"
-              color={colors.textTertiary}
-              accessibilityRole="header"
-            >
-              {title}
-            </WxText>
-            {headline ? (
-              <WxText
-                type="h2"
-                weight={600}
-                family="serif"
-                tabular
-                color={colors.textPrimary}
-              >
-                {headline}
-              </WxText>
-            ) : null}
-            {sentence ? (
-              <WxText type="body" color={colors.textSecondary}>
-                {sentence}
-              </WxText>
-            ) : null}
-          </View>
-
-          {children}
-
-          {about ? (
-            <WxText type="bodySm" color={colors.textTertiary}>
-              {about}
-            </WxText>
-          ) : null}
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-            onPress={onClose}
-            style={({ pressed }) => [
-              styles.close,
-              {
-                borderColor: colors.border,
-                borderWidth: pressed ? BORDER.active : BORDER.rest,
-              },
-            ]}
-          >
-            <WxText type="bodyLg" weight={600} color={colors.textPrimary}>
-              Close
-            </WxText>
-          </Pressable>
-        </ScrollView>
-      </View>
+      <SheetBody {...body} />
     </Modal>
   );
 }

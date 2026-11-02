@@ -31,7 +31,8 @@ export function niceStep(range: number, count: number): number {
   const rough = range / Math.max(1, count);
   const mag = 10 ** Math.floor(Math.log10(rough));
   const norm = rough / mag;
-  const f = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10;
+  const f =
+    norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10;
   return f * mag;
 }
 
@@ -161,7 +162,9 @@ export function areaPaths(
   axis: Axis,
   plot: Plot,
 ): string[] {
-  const baseline = f2(yAt(Math.max(axis.min, Math.min(0, axis.max)), axis, plot));
+  const baseline = f2(
+    yAt(Math.max(axis.min, Math.min(0, axis.max)), axis, plot),
+  );
   return runs(values)
     .filter((run) => run.length > 1)
     .map((run) => {
@@ -245,7 +248,8 @@ export function describeSeries(
     const highest = idx.reduce((a, b) => (b[0] > a[0] ? b : a));
     const at = (i: number) => (labels[i] ? ` at ${labels[i]}` : "");
     const u = s.unit ? ` ${s.unit}` : "";
-    if (idx.length === 1) return `${s.label}: ${trim(first[0])}${u}${at(first[1])}`;
+    if (idx.length === 1)
+      return `${s.label}: ${trim(first[0])}${u}${at(first[1])}`;
     return (
       `${s.label}: from ${trim(first[0])}${u}${at(first[1])} to ${trim(last[0])}${u}${at(last[1])}; ` +
       `lowest ${trim(lowest[0])}${u}${at(lowest[1])}, highest ${trim(highest[0])}${u}${at(highest[1])}`

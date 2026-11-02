@@ -13,7 +13,10 @@ import {
   widestSpread,
 } from "./model-comparison";
 
-const hours = Array.from({ length: 30 }, (_, i) => `2026-11-01T${String(i % 24).padStart(2, "0")}:00`);
+const hours = Array.from(
+  { length: 30 },
+  (_, i) => `2026-11-01T${String(i % 24).padStart(2, "0")}:00`,
+);
 const model = (id: string, base: number): ModelForecast => ({
   model: id,
   temperature_2m: hours.map((_, i) => base + i / 10),
@@ -56,7 +59,11 @@ describe("comparisonSeries", () => {
   });
 
   it("skips a model with no temperature series, and copes with no answer", () => {
-    const empty: ModelForecast = { model: "gfs_seamless", temperature_2m: [], precipitation: [] };
+    const empty: ModelForecast = {
+      model: "gfs_seamless",
+      temperature_2m: [],
+      precipitation: [],
+    };
     expect(comparisonSeries([empty])).toEqual([]);
     expect(comparisonSeries(undefined)).toEqual([]);
   });
@@ -75,7 +82,9 @@ describe("prepareModelComparisonData", () => {
   });
 
   it("is empty for no time axis", () => {
-    expect(prepareModelComparisonData([model("ecmwf_ifs", 20)], []).times).toEqual([]);
+    expect(
+      prepareModelComparisonData([model("ecmwf_ifs", 20)], []).times,
+    ).toEqual([]);
   });
 });
 
@@ -88,6 +97,8 @@ describe("widestSpread", () => {
     expect(widestSpread(data)).toBe(3);
   });
   it("is null with fewer than two models", () => {
-    expect(widestSpread(prepareModelComparisonData([model("ecmwf_ifs", 20)], hours))).toBeNull();
+    expect(
+      widestSpread(prepareModelComparisonData([model("ecmwf_ifs", 20)], hours)),
+    ).toBeNull();
   });
 });

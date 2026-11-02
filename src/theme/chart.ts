@@ -20,6 +20,8 @@ export const CHART = {
   /** The legend swatch. */
   swatchWidth: 16,
   swatchHeight: 3,
+  /** The quiet stub standing for a dry 15-minute step. */
+  stub: 32,
   /** Most labels along the x axis. */
   maxXLabels: 6,
 } as const;

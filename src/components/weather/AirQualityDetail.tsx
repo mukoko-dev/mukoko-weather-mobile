@@ -223,7 +223,12 @@ const styles = StyleSheet.create({
     gap: SPACE.stack,
     paddingVertical: SPACE.cozy,
   },
-  pollutantName: { flex: 1, minWidth: 0, gap: SPACE.hair, alignItems: "flex-start" },
+  pollutantName: {
+    flex: 1,
+    minWidth: 0,
+    gap: SPACE.hair,
+    alignItems: "flex-start",
+  },
   pollutantValue: { flexShrink: 0, gap: SPACE.hair },
   chip: {
     borderRadius: RADIUS.sm,

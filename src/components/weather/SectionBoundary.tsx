@@ -42,7 +42,11 @@ export class SectionBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.warn(`[${this.props.name}] could not render`, error.message, info.componentStack);
+    console.warn(
+      `[${this.props.name}] could not render`,
+      error.message,
+      info.componentStack,
+    );
   }
 
   render() {

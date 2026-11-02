@@ -43,5 +43,9 @@ export function TriangleAlertIcon(p: IconProps) {
 
 /** A chevron pointing right: a row that opens something. */
 export function ChevronRightIcon(p: IconProps) {
-  return <Frame {...p} strokeWidth={2.25}>{() => <Path d="m9 18 6-6-6-6" />}</Frame>;
+  return (
+    <Frame {...p} strokeWidth={2.25}>
+      {() => <Path d="m9 18 6-6-6-6" />}
+    </Frame>
+  );
 }

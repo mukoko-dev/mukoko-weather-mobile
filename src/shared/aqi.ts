@@ -11,12 +11,7 @@
 
 /** EPA US AQI categories, lowest to highest severity. */
 export type AqiBand =
-  | "good"
-  | "moderate"
-  | "usg"
-  | "unhealthy"
-  | "very_unhealthy"
-  | "hazardous";
+  "good" | "moderate" | "usg" | "unhealthy" | "very_unhealthy" | "hazardous";
 
 export const AQI_BANDS: readonly AqiBand[] = [
   "good",

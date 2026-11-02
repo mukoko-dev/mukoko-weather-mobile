@@ -136,7 +136,11 @@ describe("linePaths and areaPaths", () => {
   it("closes the area down to the zero line (or the floor)", () => {
     const [area] = areaPaths([0, 10], axis, plot);
     expect(area).toBe("M 0 100 L 0 100 L 240 0 L 240 100 Z");
-    const [high] = areaPaths([1010, 1014], { min: 1000, max: 1020, ticks: [] }, plot);
+    const [high] = areaPaths(
+      [1010, 1014],
+      { min: 1000, max: 1020, ticks: [] },
+      plot,
+    );
     // The floor is 1000 (zero is below the axis), so the base is the bottom.
     expect(high.endsWith("100 Z")).toBe(true);
     expect(areaPaths([5], axis, plot)).toEqual([]);
@@ -178,10 +182,18 @@ describe("describeSeries", () => {
 
   it("says no data rather than zero, and handles one point", () => {
     expect(
-      describeSeries("Rain", [{ label: "mm", unit: "", values: [null, null] }], []),
+      describeSeries(
+        "Rain",
+        [{ label: "mm", unit: "", values: [null, null] }],
+        [],
+      ),
     ).toBe("Rain. mm: no data.");
     expect(
-      describeSeries("UV", [{ label: "UV", unit: "", values: [null, 6.4] }], ["a", "b"]),
+      describeSeries(
+        "UV",
+        [{ label: "UV", unit: "", values: [null, 6.4] }],
+        ["a", "b"],
+      ),
     ).toBe("UV. UV: 6.4 at b.");
   });
 });

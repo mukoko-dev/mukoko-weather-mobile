@@ -10,12 +10,7 @@
  */
 
 import { type ReactNode } from "react";
-import {
-  Pressable,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 
 import { usePageColors } from "@/hooks/usePageColors";
 import {

@@ -52,15 +52,21 @@ export function CardSkeleton({
           square ? styles.square : null,
           {
             backgroundColor: colors.card,
-            borderColor: mineral
-              ? mineralEdge(mineral, scheme)
-              : colors.border,
+            borderColor: mineral ? mineralEdge(mineral, scheme) : colors.border,
           },
         ]}
       >
-        <Bar color={bar} width="40%" height={Math.round(TYPE.bodySm.size * 0.8)} />
+        <Bar
+          color={bar}
+          width="40%"
+          height={Math.round(TYPE.bodySm.size * 0.8)}
+        />
         <Bar color={bar} width="30%" height={Math.round(TYPE.h2.size * 0.8)} />
-        <Bar color={bar} width="85%" height={Math.round(TYPE.bodySm.size * 0.8)} />
+        <Bar
+          color={bar}
+          width="85%"
+          height={Math.round(TYPE.bodySm.size * 0.8)}
+        />
       </View>
     </ShimmerProvider>
   );

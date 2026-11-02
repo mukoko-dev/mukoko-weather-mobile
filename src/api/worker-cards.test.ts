@@ -54,7 +54,9 @@ describe("the nowcast and the models in /v1/weather", () => {
   });
 
   it("drops a nowcast with no number and a model with no id or no temperatures", () => {
-    expect(toMinutely({ precipitation: [null, "x"], time: [] })).toBeUndefined();
+    expect(
+      toMinutely({ precipitation: [null, "x"], time: [] }),
+    ).toBeUndefined();
     expect(toMinutely(null)).toBeUndefined();
     expect(
       toModels([
@@ -75,9 +77,7 @@ describe("air quality", () => {
   it("asks the Worker for the rounded point and converts the recorded answer", async () => {
     const calls = mockFetch({ body: airQualityHarare });
     const aq = await fetchAirQuality(-17.82912, 31.05234);
-    expect(calls[0].url).toBe(
-      `${BASE}/v1/air-quality?lat=-17.829&lon=31.052`,
-    );
+    expect(calls[0].url).toBe(`${BASE}/v1/air-quality?lat=-17.829&lon=31.052`);
     expect(aq.aqi).toBe(68);
     expect(aq.level).toBe("moderate");
     expect(aq.dominantPollutant).toBe("pm2_5");
@@ -135,7 +135,9 @@ describe("haze", () => {
       level: null,
       type: null,
     });
-    expect(toHaze({ available: true, level: "apocalyptic", type: "smog" }).available).toBe(false);
+    expect(
+      toHaze({ available: true, level: "apocalyptic", type: "smog" }).available,
+    ).toBe(false);
     expect(toHaze(null).available).toBe(false);
   });
 
@@ -183,7 +185,9 @@ describe("climate context", () => {
   it("reads twelve monthly normals, January first", async () => {
     const calls = mockFetch({ body: normalsMonthlyHarare });
     const normals = await fetchMonthlyNormals(-17.8252, 31.0335);
-    expect(calls[0].url).toBe(`${BASE}/v1/normals/monthly?lat=-17.825&lon=31.034`);
+    expect(calls[0].url).toBe(
+      `${BASE}/v1/normals/monthly?lat=-17.825&lon=31.034`,
+    );
     expect(normals.months).toHaveLength(12);
     expect(normals.months[0]).toMatchObject({
       month: 1,

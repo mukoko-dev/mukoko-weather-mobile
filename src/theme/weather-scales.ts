@@ -121,10 +121,7 @@ const MODEL_LINE_INDEX: Record<string, number> = {
 };
 const FALLBACK_LINE_INDEX = 4;
 
-export function modelLineColor(
-  model: string,
-  scheme: ColorSchemeName,
-): string {
+export function modelLineColor(model: string, scheme: ColorSchemeName): string {
   const set = WX_MODEL_LINES[scheme === "dark" ? "dark" : "light"];
   return set[MODEL_LINE_INDEX[model] ?? FALLBACK_LINE_INDEX];
 }

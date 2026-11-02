@@ -55,9 +55,13 @@ describe("localIsoDate", () => {
 describe("todayHighFrom", () => {
   it("rounds today's high and is null without one", () => {
     expect(
-      todayHighFrom({ temperature_2m_max: [28.6, 30] } as unknown as DailyWeather),
+      todayHighFrom({
+        temperature_2m_max: [28.6, 30],
+      } as unknown as DailyWeather),
     ).toBe(29);
-    expect(todayHighFrom({ temperature_2m_max: [] } as unknown as DailyWeather)).toBeNull();
+    expect(
+      todayHighFrom({ temperature_2m_max: [] } as unknown as DailyWeather),
+    ).toBeNull();
     expect(todayHighFrom(undefined)).toBeNull();
     expect(
       todayHighFrom({ temperature_2m_max: [NaN] } as unknown as DailyWeather),

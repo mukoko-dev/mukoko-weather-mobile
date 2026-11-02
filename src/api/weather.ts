@@ -255,7 +255,9 @@ export function toMinutely(raw: unknown): MinutelyData | undefined {
   const precip = column(block, "precipitation");
   if (!precip.some((v) => num(v) !== null)) return undefined;
   return {
-    time: column(block, "time").filter((t): t is string => typeof t === "string"),
+    time: column(block, "time").filter(
+      (t): t is string => typeof t === "string",
+    ),
     precipitation: precip.map((v) => num(v) ?? 0),
   };
 }
@@ -375,7 +377,10 @@ async function fetchWeatherAt(
   );
   return place
     ? weather
-    : { ...weather, coordinates: { lat: roundCoord(lat), lon: roundCoord(lon) } };
+    : {
+        ...weather,
+        coordinates: { lat: roundCoord(lat), lon: roundCoord(lon) },
+      };
 }
 
 export async function fetchWeather(

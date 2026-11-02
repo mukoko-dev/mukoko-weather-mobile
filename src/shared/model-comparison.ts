@@ -92,7 +92,10 @@ export function prepareModelComparisonData(
     series: models.map((m) => ({
       key: m.model,
       label: modelShortLabel(m.model),
-      values: Array.from({ length: len }, (_, i) => m.temperature_2m[i] ?? null),
+      values: Array.from(
+        { length: len },
+        (_, i) => m.temperature_2m[i] ?? null,
+      ),
     })),
   };
 }

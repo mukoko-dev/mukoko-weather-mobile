@@ -4,7 +4,13 @@
  * mineral; a model in its categorical line).
  */
 
-import { metricChartSpec, modelChartSpec, monthlyChartSpec, nowcastChartSpec, uvDaysChartSpec } from "@/components/weather/charts/chart-specs";
+import {
+  metricChartSpec,
+  modelChartSpec,
+  monthlyChartSpec,
+  nowcastChartSpec,
+  uvDaysChartSpec,
+} from "@/components/weather/charts/chart-specs";
 import { resolveAxis } from "@/shared/chart-geometry";
 import { type MetricChart, metricSeries } from "@/shared/metric-details";
 import { nowcastRows } from "@/shared/nowcast";
@@ -12,7 +18,11 @@ import { prepareModelComparisonData } from "@/shared/model-comparison";
 import { WX_UV } from "@/theme/mzizi";
 import { WX_SERIES, modelLineColor } from "@/theme/weather-scales";
 
-import { HARARE_OFFSET, NOW, harareWeather } from "@/test-utils/weather-fixtures";
+import {
+  HARARE_OFFSET,
+  NOW,
+  harareWeather,
+} from "@/test-utils/weather-fixtures";
 
 const weather = harareWeather();
 const points = metricSeries(weather.forecast!.hourly, HARARE_OFFSET, NOW);
@@ -28,25 +38,32 @@ describe("the next-24-hours charts", () => {
     "pressure",
   ];
 
-  it.each(charts)("%s has a title, an x label per hour and a value per label", (chart) => {
-    const spec = metricChartSpec(chart, points, "light");
-    expect(spec.title).toMatch(/next 24 hours/);
-    expect(spec.labels).toHaveLength(points.length);
-    expect(spec.labels[0]).toBe("Now");
-    for (const s of spec.series) {
-      expect(s.values).toHaveLength(points.length);
-      expect(s.label.length).toBeGreaterThan(0);
-    }
-  });
+  it.each(charts)(
+    "%s has a title, an x label per hour and a value per label",
+    (chart) => {
+      const spec = metricChartSpec(chart, points, "light");
+      expect(spec.title).toMatch(/next 24 hours/);
+      expect(spec.labels).toHaveLength(points.length);
+      expect(spec.labels[0]).toBe("Now");
+      for (const s of spec.series) {
+        expect(s.values).toHaveLength(points.length);
+        expect(s.label.length).toBeGreaterThan(0);
+      }
+    },
+  );
 
   it("draws wind as an area with dashed gusts, on a floor of zero with headroom", () => {
     const spec = metricChartSpec("wind", points, "light");
-    expect(spec.series.map((s) => [s.kind ?? "line", s.dashed ?? false])).toEqual([
+    expect(
+      spec.series.map((s) => [s.kind ?? "line", s.dashed ?? false]),
+    ).toEqual([
       ["area", false],
       ["line", true],
     ]);
     expect(spec.left.min).toBe(0);
-    const top = Math.max(...points.map((p) => Math.max(p.windSpeed, p.windGusts)));
+    const top = Math.max(
+      ...points.map((p) => Math.max(p.windSpeed, p.windGusts)),
+    );
     expect(spec.left.max).toBe(top + 5);
   });
 
@@ -80,7 +97,10 @@ describe("the next-24-hours charts", () => {
   });
 
   it("fixes humidity to 0-100 percent and visibility to a floor of 0 km", () => {
-    expect(metricChartSpec("humidity", points, "light").left).toMatchObject({ min: 0, max: 100 });
+    expect(metricChartSpec("humidity", points, "light").left).toMatchObject({
+      min: 0,
+      max: 100,
+    });
     expect(metricChartSpec("visibility", points, "light").left.min).toBe(0);
   });
 });
@@ -113,8 +133,18 @@ describe("the other charts", () => {
   });
 
   it("monthly rainfall keeps a missing month as a gap, not zero", () => {
-    const rows = [{ label: "Jan", meanHighC: null, meanLowC: null, precipMm: null, rainyDays: null }];
-    expect(monthlyChartSpec(rows, "precipitation", "light").series[0].values).toEqual([null]);
+    const rows = [
+      {
+        label: "Jan",
+        meanHighC: null,
+        meanLowC: null,
+        precipMm: null,
+        rainyDays: null,
+      },
+    ];
+    expect(
+      monthlyChartSpec(rows, "precipitation", "light").series[0].values,
+    ).toEqual([null]);
   });
 
   it("the models chart draws one coloured line per model with hour labels", () => {
@@ -129,7 +159,10 @@ describe("the other charts", () => {
   });
 
   it("the nowcast is four rain bars from zero", () => {
-    const spec = nowcastChartSpec(nowcastRows({ time: [], precipitation: [0, 0.2, 0.4, 0.1] }), "light");
+    const spec = nowcastChartSpec(
+      nowcastRows({ time: [], precipitation: [0, 0.2, 0.4, 0.1] }),
+      "light",
+    );
     expect(spec.labels).toEqual(["Now", "+15", "+30", "+45"]);
     expect(spec.series[0].kind).toBe("bar");
     expect(spec.left.min).toBe(0);

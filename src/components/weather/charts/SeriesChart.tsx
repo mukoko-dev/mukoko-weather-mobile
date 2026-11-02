@@ -171,7 +171,9 @@ export function SeriesChart({
   const hasBars = series.some((s) => s.kind === "bar");
   const plot: Plot = { width, height, centered: hasBars };
   const leftAxis = resolveAxis(
-    series.filter((s) => (s.axis ?? "left") === "left").flatMap((s) => s.values),
+    series
+      .filter((s) => (s.axis ?? "left") === "left")
+      .flatMap((s) => s.values),
     left,
   );
   const rightAxis =
@@ -328,7 +330,10 @@ export function SeriesChart({
       ) : null}
 
       {showLegend ? (
-        <View style={styles.legend} importantForAccessibility="no-hide-descendants">
+        <View
+          style={styles.legend}
+          importantForAccessibility="no-hide-descendants"
+        >
           {series.map((s) => (
             <View key={s.key} style={styles.legendItem}>
               <LegendSwatch series={s} />
@@ -357,7 +362,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  solid: { width: CHART.swatchWidth, height: CHART.swatchHeight, borderRadius: RADIUS.pill },
-  dash: { width: CHART.swatchWidth / 2 - 2, height: CHART.swatchHeight, borderRadius: RADIUS.pill },
-  barSwatch: { width: CHART.swatchHeight * 3, height: CHART.swatchHeight * 3, borderRadius: RADIUS.sm / 2 },
+  solid: {
+    width: CHART.swatchWidth,
+    height: CHART.swatchHeight,
+    borderRadius: RADIUS.pill,
+  },
+  dash: {
+    width: CHART.swatchWidth / 2 - 2,
+    height: CHART.swatchHeight,
+    borderRadius: RADIUS.pill,
+  },
+  barSwatch: {
+    width: CHART.swatchHeight * 3,
+    height: CHART.swatchHeight * 3,
+    borderRadius: RADIUS.sm / 2,
+  },
 });

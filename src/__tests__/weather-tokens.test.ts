@@ -16,9 +16,12 @@ const root = join(__dirname, "..");
 
 function weatherFiles(): string[] {
   const dir = join(root, "components", "weather");
-  const components = readdirSync(dir)
-    .filter((f) => /\.tsx?$/.test(f))
-    .map((f) => join(dir, f));
+  const charts = join(dir, "charts");
+  const components = [dir, charts].flatMap((d) =>
+    readdirSync(d)
+      .filter((f) => /\.tsx?$/.test(f))
+      .map((f) => join(d, f)),
+  );
   return [
     ...components,
     join(root, "app", "(tabs)", "index.tsx"),

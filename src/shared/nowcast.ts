@@ -62,8 +62,12 @@ export function nowcastTotal(rows: readonly NowcastRow[]): number {
 /** The spoken form of the chart: what each step holds. */
 export function nowcastSpoken(rows: readonly NowcastRow[]): string {
   if (rows.length === 0) return "No nowcast data.";
-  if (nowcastTotal(rows) <= 0) return "No precipitation expected in the next hour.";
+  if (nowcastTotal(rows) <= 0)
+    return "No precipitation expected in the next hour.";
   return rows
-    .map((r) => `${r.label === "Now" ? "Now" : `in ${r.label.slice(1)} minutes`}, ${r.precip.toFixed(1)} millimetres`)
+    .map(
+      (r) =>
+        `${r.label === "Now" ? "Now" : `in ${r.label.slice(1)} minutes`}, ${r.precip.toFixed(1)} millimetres`,
+    )
     .join("; ");
 }
