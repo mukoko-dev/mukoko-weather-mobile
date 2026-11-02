@@ -140,7 +140,7 @@ describe("AgricultureSnapshot", () => {
 
   it.each([
     ["provider_unavailable", "Farm data is paused", true],
-    ["provider_error", "No farm data for this point", true],
+    ["provider_error", "Farm data is not answering", true],
     ["insufficient_data", "Not enough forecast hours yet", true],
     ["analysis_error", "The farm numbers could not be worked out", false],
     [null, "Farm data is not available", true],

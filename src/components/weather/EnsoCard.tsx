@@ -18,6 +18,7 @@ import { useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { fetchEnso } from "@/api/enso";
+import { failureMessage } from "@/api/failure";
 import { useFarmColors } from "@/hooks/useFarmColors";
 import { usePageColors } from "@/hooks/usePageColors";
 import { useWorkerData } from "@/hooks/useWorkerData";
@@ -82,7 +83,7 @@ export function EnsoCard({ lat, lon, countryCode }: EnsoCardProps) {
     body = (
       <CardFailed
         title={TITLE}
-        body="The outlook did not load. Mukoko could not be reached; check your connection, then try again."
+        body={`The outlook did not load. ${failureMessage(state.error)}`}
         onRetry={state.reload}
       />
     );

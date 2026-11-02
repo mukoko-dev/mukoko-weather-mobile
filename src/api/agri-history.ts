@@ -11,7 +11,7 @@
  * the normals is rounded to about 110 m.
  */
 
-import { ApiError, apiFetch, ROUTES } from "@/api/client";
+import { ApiError, NetworkError, apiFetch, ROUTES } from "@/api/client";
 import {
   type HistoryAnswer,
   type Normals,
@@ -26,34 +26,17 @@ import { queryDegrees } from "@/shared/agriculture";
 /** How long a first view may wait for the archives. */
 export const HISTORY_TIMEOUT_MS = 20_000;
 
-/** An abort signal that fires when `signal` does or after `ms`. */
-function withTimeout(
-  signal: AbortSignal | undefined,
-  ms: number,
-): { signal: AbortSignal; done: () => void } {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-  const onAbort = () => controller.abort();
-  if (signal?.aborted) controller.abort();
-  else signal?.addEventListener("abort", onAbort);
-  return {
-    signal: controller.signal,
-    done: () => {
-      clearTimeout(timer);
-      signal?.removeEventListener("abort", onAbort);
-    },
-  };
-}
-
 /**
  * Whether a failed history request is worth asking again: the request never
  * got an answer (the network failed) or the Worker failed (5xx). Never a 4xx
  * (a 429 is the rate limit, and asking again spends more of the budget), and
- * never a timeout or a caller that left (`AbortError`: a second wait of 20 s
+ * never a timeout (`NetworkError` "timeout") or a caller that left
+ * (`AbortError`): a second wait of 20 s
  * would double the first view's worst case to 40 s).
  */
 export function worthRetrying(err: unknown): boolean {
   if (err instanceof ApiError) return err.status >= 500;
+  if (err instanceof NetworkError) return err.kind === "offline";
   if (err instanceof Error && err.name === "AbortError") return false;
   return true;
 }
@@ -68,19 +51,17 @@ export async function fetchHistory30(
   // to be worth asking twice.
   for (let attempt = 0; attempt < 2; attempt++) {
     if (signal?.aborted) break;
-    const timed = withTimeout(signal, HISTORY_TIMEOUT_MS);
     try {
       return readHistoryAnswer(
         await apiFetch<unknown>(ROUTES.history, {
           query: { location: slug, days: WINDOW_DAYS },
-          signal: timed.signal,
+          signal,
+          timeoutMs: HISTORY_TIMEOUT_MS,
         }),
       );
     } catch (err) {
       lastError = err;
       if (!worthRetrying(err)) break;
-    } finally {
-      timed.done();
     }
   }
   throw lastError ?? new Error("History could not be loaded.");

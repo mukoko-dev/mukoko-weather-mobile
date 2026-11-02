@@ -103,7 +103,7 @@ export type WeatherResponse = {
 export type WeatherQuery = { slug: string } | { lat: number; lon: number };
 
 /** The Worker's answer. Everything is read defensively. */
-type WireWeather = {
+export type WireWeather = {
   current?: Record<string, unknown>;
   insights?: Record<string, unknown>;
   hourly?: Record<string, unknown>;
@@ -378,39 +378,68 @@ export function roundCoord(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
-async function fetchWeatherAt(
+/**
+ * Everything one answer is rebuilt from: the Worker's body as it came, its
+ * provider headers, and what was asked (a place, or a bare point). This is
+ * what the device keeps (src/state/forecast-store.ts), so a stored forecast is
+ * converted by exactly the code a live one is.
+ */
+export type WeatherRecord = {
+  raw: WireWeather;
+  meta: WeatherMeta;
+  place?: LocationSummary;
+  /** The rounded point, when the weather was asked for by coordinate. */
+  coordinates?: { lat: number; lon: number };
+};
+
+/** The screens' model for a record (live or stored). */
+export function weatherFromRecord(record: WeatherRecord): WeatherResponse {
+  const weather = toWeatherResponse(record.raw, record.meta, record.place);
+  return record.place || !record.coordinates
+    ? weather
+    : { ...weather, coordinates: record.coordinates };
+}
+
+async function fetchRecordAt(
   lat: number,
   lon: number,
   signal?: AbortSignal,
   place?: LocationSummary,
-): Promise<WeatherResponse> {
+): Promise<WeatherRecord> {
   const { data, headers } = await apiRequest<WireWeather>(ROUTES.weather, {
     query: { lat: roundCoord(lat), lon: roundCoord(lon) },
     signal,
   });
-  const weather = toWeatherResponse(
-    data ?? {},
-    {
+  return {
+    raw: data ?? {},
+    meta: {
       provider: headers.get("X-Weather-Provider"),
       fetchedAt: headers.get("X-Fetched-At"),
     },
     place,
-  );
-  return place
-    ? weather
-    : {
-        ...weather,
-        coordinates: { lat: roundCoord(lat), lon: roundCoord(lon) },
-      };
+    coordinates: place
+      ? undefined
+      : { lat: roundCoord(lat), lon: roundCoord(lon) },
+  };
+}
+
+/** The weather and the record it was converted from (to keep on the device). */
+export async function fetchWeatherRecord(
+  query: WeatherQuery,
+  signal?: AbortSignal,
+): Promise<{ weather: WeatherResponse; record: WeatherRecord }> {
+  const record =
+    "slug" in query
+      ? await fetchLocation(query.slug, signal).then((place) =>
+          fetchRecordAt(place.lat, place.lon, signal, place),
+        )
+      : await fetchRecordAt(query.lat, query.lon, signal);
+  return { weather: weatherFromRecord(record), record };
 }
 
 export async function fetchWeather(
   query: WeatherQuery,
   signal?: AbortSignal,
 ): Promise<WeatherResponse> {
-  if ("slug" in query) {
-    const place = await fetchLocation(query.slug, signal);
-    return fetchWeatherAt(place.lat, place.lon, signal, place);
-  }
-  return fetchWeatherAt(query.lat, query.lon, signal);
+  return (await fetchWeatherRecord(query, signal)).weather;
 }

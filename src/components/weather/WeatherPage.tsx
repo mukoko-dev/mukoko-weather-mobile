@@ -27,6 +27,7 @@ import { cropsFromPreferences } from "@/shared/agriculture";
 import { skyFamily } from "@/shared/hero";
 import { countryLabel } from "@/shared/place-info";
 import { type TrailItem, placeTrail } from "@/shared/place-trail";
+import { updatedAgoLabel } from "@/shared/device-weather";
 import { checkFrostRiskAhead, weatherCodeToInfo } from "@/shared/weather";
 import { usePreferences } from "@/state/preferences";
 import { RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
@@ -38,7 +39,11 @@ import { ActivitySheetsProvider } from "./ActivitySheets";
 import { AiFollowup } from "./AiFollowup";
 import { AiSummary } from "./AiSummary";
 import { AgricultureSnapshot } from "./AgricultureSnapshot";
-import { FrostAlertBanner, WeatherUnavailableBanner } from "./AlertBanners";
+import {
+  FrostAlertBanner,
+  SavedForecastBanner,
+  WeatherUnavailableBanner,
+} from "./AlertBanners";
 import { CommunityLane } from "./CommunityLane";
 import { ConditionTiles } from "./ConditionTiles";
 import { ConditionsCard } from "./ConditionsCard";
@@ -161,6 +166,19 @@ export type WeatherPageProps = {
   onRefresh?: () => void | Promise<void>;
   refreshing?: boolean;
   inTabs?: boolean;
+  /**
+   * The weather is the copy kept on this phone, because the Worker could not
+   * be reached: when it was fetched, whether its "now" is a reading or the
+   * forecast for this hour, why the refresh failed, and a way to try again.
+   */
+  saved?: SavedNotice;
+};
+
+export type SavedNotice = {
+  fetchedAt: number;
+  forecastOnly: boolean;
+  reason: string;
+  onRetry?: () => void;
 };
 
 export function WeatherPage({
@@ -173,6 +191,7 @@ export function WeatherPage({
   onRefresh,
   refreshing,
   inTabs,
+  saved,
 }: WeatherPageProps) {
   const now = useNow();
   const { activities } = usePreferences();
@@ -245,6 +264,15 @@ export function WeatherPage({
           onSettings={openSettings}
           activityLine={activityLine}
         />
+        {saved ? (
+          <SavedForecastBanner
+            placeName={name}
+            updated={updatedAgoLabel(saved.fetchedAt, now.getTime())}
+            forecastOnly={saved.forecastOnly}
+            reason={saved.reason}
+            onRetry={saved.onRetry}
+          />
+        ) : null}
         {usingFallback ? (
           <WeatherUnavailableBanner onRefresh={onRefresh} />
         ) : null}
@@ -332,6 +360,10 @@ export function WeatherPage({
 }
 
 export type WeatherErrorProps = {
+  /**
+   * What happened and what to do, by cause: `failureMessage(err)` from
+   * src/api/failure.ts, never the error's own text.
+   */
   message: string;
   onRetry: () => void;
   leading?: ReactNode;
@@ -341,7 +373,8 @@ export type WeatherErrorProps = {
 /**
  * The failure outcome: what happened in plain words, what to do (one primary
  * button, "Try again"), and the same top row as the page so a person can still
- * go back or open Settings. On the neutral sky, never a blank screen.
+ * go back or open Settings (no Share: there is nothing to share). On the
+ * neutral sky, never a blank screen.
  */
 export function WeatherError({
   message,
@@ -356,7 +389,6 @@ export function WeatherError({
       <HeroTopRow
         name="this place"
         leading={leading}
-        onShare={() => undefined}
         onSettings={openSettings}
       />
       <View style={styles.error} testID="weather-error">
@@ -372,9 +404,6 @@ export function WeatherError({
         </WxText>
         <WxText type="bodyLg" align="center" color={SKY_FG_DIM}>
           {message}
-        </WxText>
-        <WxText type="body" align="center" color={SKY_FG_DIM}>
-          Check your connection, then try again.
         </WxText>
         <Pressable
           accessibilityRole="button"

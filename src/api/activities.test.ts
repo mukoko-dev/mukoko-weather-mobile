@@ -214,7 +214,8 @@ describe("loadActivities / loadCategories", () => {
     expect(list).toHaveLength(55);
     expect(list).not.toBe(ACTIVITIES);
     expect(calls).toHaveLength(1);
-    expect(calls[0].signal).toBeFalsy();
+    // Its only signal is the request's own timeout, never a caller's.
+    expect(calls[0].signal?.aborted).toBe(false);
     await first;
   });
 
@@ -260,7 +261,7 @@ describe("loadSuitabilityRules", () => {
     leaving.abort();
     await expect(stays).resolves.toHaveLength(10);
     expect(calls).toHaveLength(1);
-    expect(calls[0].signal).toBeFalsy();
+    expect(calls[0].signal?.aborted).toBe(false);
     await first;
   });
 

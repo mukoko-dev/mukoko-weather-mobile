@@ -132,7 +132,13 @@ describe("searchLocations", () => {
     const calls = mockFetch({ body: searchHarare });
     const controller = new AbortController();
     await searchLocations("harare", controller.signal);
-    expect(calls[0].signal).toBe(controller.signal);
+    // The request runs under its own signal (it also carries the timeout),
+    // which the caller's abort cancels.
+    expect(calls[0].signal?.aborted).toBe(false);
+    const again = mockFetch({ body: searchHarare });
+    controller.abort();
+    await searchLocations("harare", controller.signal).catch(() => undefined);
+    expect(again[0]?.signal?.aborted ?? true).toBe(true);
   });
 
   it("drops entries that are not places and tolerates an empty answer", async () => {

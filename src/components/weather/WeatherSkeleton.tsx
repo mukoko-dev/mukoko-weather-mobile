@@ -11,8 +11,8 @@
  * busy "Loading weather" item, never the bars.
  */
 
-import { type ReactNode } from "react";
-import { StyleSheet, View } from "react-native";
+import { type ReactNode, useEffect, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { usePageColors } from "@/hooks/usePageColors";
 import { type SkyFamily } from "@/shared/hero";
@@ -27,10 +27,18 @@ import {
   lineHeightOf,
   withAlpha,
 } from "@/theme/mzizi";
-import { NEUTRAL_SKY, SKY_FG, SKY_SURFACE } from "@/theme/sky";
+import { NEUTRAL_SKY, SKY_FG, SKY_SURFACE, skyStops } from "@/theme/sky";
 
 import { Bar, ShimmerProvider } from "./Shimmer";
 import { WeatherScroll } from "./WeatherScroll";
+import { WxText } from "./WxText";
+
+/**
+ * How long the skeleton stands alone before the page says it is still trying
+ * (the web's SLOW_LOAD_AFTER_MS). Past what a healthy request takes, so a
+ * normal load never shows the line; well before the request times out.
+ */
+export const SLOW_LOAD_AFTER_MS = 8_000;
 
 /** Typical bar widths, in dp: the middle of what the loaded text measures. */
 const WIDTH = {
@@ -268,18 +276,84 @@ export type WeatherSkeletonProps = {
   inTabs?: boolean;
   /** A real control at the left of the top row (Back), live while loading. */
   leading?: ReactNode;
+  /**
+   * Start the load again. With it, the skeleton says it is still trying after
+   * SLOW_LOAD_AFTER_MS and offers this as "Try again".
+   */
+  onRetry?: () => void;
 };
+
+/**
+ * The web's "still trying" line (`PlaceLoadNotice`, slow): one calm status
+ * line and "Try again" over the same skeleton, once the forecast has taken
+ * longer than a healthy request does. It changes nothing about the request,
+ * it only says it is happening and offers a fresh start.
+ */
+function StillTrying({
+  family,
+  onRetry,
+}: {
+  family: SkyFamily;
+  onRetry: () => void;
+}) {
+  const { dark } = usePageColors();
+  const label = skyStops(family, dark).top;
+  return (
+    <View
+      testID="still-trying"
+      accessibilityRole="summary"
+      accessibilityLiveRegion="polite"
+      style={[
+        styles.slow,
+        {
+          backgroundColor: withAlpha(SKY_FG, SKY_SURFACE.card.fill),
+          borderColor: withAlpha(SKY_FG, SKY_SURFACE.card.border),
+        },
+      ]}
+    >
+      <WxText type="body" color={SKY_FG} style={styles.slowText}>
+        Still trying to reach the weather service…
+      </WxText>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Try again"
+        onPress={onRetry}
+        style={({ pressed }) => [
+          styles.slowButton,
+          { backgroundColor: withAlpha(SKY_FG, pressed ? 0.85 : 1) },
+        ]}
+      >
+        <WxText type="body" weight={600} color={label}>
+          Try again
+        </WxText>
+      </Pressable>
+    </View>
+  );
+}
 
 export function WeatherSkeleton({
   family = NEUTRAL_SKY,
   inTabs = false,
   leading,
+  onRetry,
 }: WeatherSkeletonProps) {
+  // The skeleton is mounted for as long as the load runs, so its own clock is
+  // the load's. A retry remounts nothing, so the line stays up while trying.
+  const [slow, setSlow] = useState(false);
+  const canRetry = Boolean(onRetry);
+  useEffect(() => {
+    if (!canRetry) return;
+    const timer = setTimeout(() => setSlow(true), SLOW_LOAD_AFTER_MS);
+    return () => clearTimeout(timer);
+  }, [canRetry]);
   return (
     <WeatherScroll family={family} inTabs={inTabs}>
       <ShimmerProvider>
         <View testID="weather-skeleton">
           <TopRowSkeleton leading={leading} />
+          {slow && onRetry ? (
+            <StillTrying family={family} onRetry={onRetry} />
+          ) : null}
           <View
             accessible
             accessibilityRole="progressbar"
@@ -299,6 +373,24 @@ export function WeatherSkeleton({
 
 const styles = StyleSheet.create({
   page: { gap: SPACE.section },
+  slow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: SPACE.stack,
+    marginTop: SPACE.stack,
+    padding: SPACE.card,
+    borderRadius: RADIUS.skyCard,
+    borderWidth: BORDER.sky,
+  },
+  slowText: { flex: 1, minWidth: 160 },
+  slowButton: {
+    minHeight: TOUCH.min,
+    paddingHorizontal: SIZE.pillPadX,
+    borderRadius: RADIUS.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   topRow: {
     flexDirection: "row",
     alignItems: "center",

@@ -24,6 +24,7 @@
 import { StyleSheet, View } from "react-native";
 
 import { type AgricultureResult } from "@/api/agriculture";
+import { failureMessage } from "@/api/failure";
 import { SparklesIcon } from "@/components/icons/Icon";
 import { CropIcon } from "@/components/icons/PlaceIcons";
 import { useFarmColors } from "@/hooks/useFarmColors";
@@ -329,7 +330,7 @@ export function AgricultureSnapshotView({
       return (
         <CardFailed
           title="Farm weather did not load"
-          body="Mukoko could not be reached. Check your connection, then try again."
+          body={failureMessage(state.error)}
           onRetry={state.reload}
         />
       );
