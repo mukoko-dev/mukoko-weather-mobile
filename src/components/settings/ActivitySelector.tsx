@@ -11,22 +11,31 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { RADIUS, SPACING, TOUCH_TARGET_MIN } from "@/brand/tokens";
 import { BrandText } from "@/components/BrandText";
 import { ActivityPickerSheet } from "@/components/weather/ActivityPickerSheet";
+import { useActivityCatalogue } from "@/hooks/useActivityData";
 import { usePalette } from "@/hooks/usePalette";
-import { ACTIVITIES } from "@/shared/activities";
+import { ACTIVITIES, type Activity } from "@/shared/activities";
 import { usePreferences } from "@/state/preferences";
 
-/** The names of the picked activities, in the order they were picked. */
-export function pickedNames(ids: string[]): string[] {
+/**
+ * The names of the picked activities, in the order they were picked, read from
+ * the same list the picker and the advice sheet use (the Worker's, the seed
+ * until it answers), so a pick the seed does not know is still named here.
+ */
+export function pickedNames(
+  ids: string[],
+  catalogue: Activity[] = ACTIVITIES,
+): string[] {
   return ids
-    .map((id) => ACTIVITIES.find((a) => a.id === id)?.label)
+    .map((id) => catalogue.find((a) => a.id === id)?.label)
     .filter((l): l is string => l !== undefined);
 }
 
 export function ActivitySelector() {
   const palette = usePalette();
   const { activities } = usePreferences();
+  const { activities: catalogue } = useActivityCatalogue();
   const [open, setOpen] = useState(false);
-  const names = pickedNames(activities);
+  const names = pickedNames(activities, catalogue);
 
   return (
     <View style={styles.wrap}>

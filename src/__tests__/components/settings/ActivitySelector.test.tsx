@@ -5,6 +5,9 @@
 
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
+import activitiesFixture from "@/api/__fixtures__/activities.json";
+import categoriesFixture from "@/api/__fixtures__/activity-categories.json";
+import { resetActivityCaches } from "@/api/activities";
 import {
   ActivitySelector,
   pickedNames,
@@ -21,6 +24,7 @@ jest.mock("react-native-safe-area-context", () =>
 beforeEach(async () => {
   setInsets(IPHONE_INSETS);
   setWindow(393, 852);
+  resetActivityCaches();
   await resetPreferences();
   routedFetch({
     "GET /v1/activities": { status: 503, body: { error: "unavailable" } },
@@ -35,6 +39,15 @@ describe("pickedNames", () => {
     ]);
     expect(pickedNames([])).toEqual([]);
   });
+
+  it("reads names from the list it is given (the Worker's), not only the seed", () => {
+    const catalogue = [
+      { id: "sky-lanterns", label: "Sky lanterns", category: "casual" },
+    ] as never;
+    expect(pickedNames(["sky-lanterns", "football"], catalogue)).toEqual([
+      "Sky lanterns",
+    ]);
+  });
 });
 
 describe("ActivitySelector", () => {
@@ -42,6 +55,34 @@ describe("ActivitySelector", () => {
     const tree = await render(<ActivitySelector />);
     expect(tree.getByText("No activities picked yet.")).toBeTruthy();
     expect(tree.getByLabelText("Choose activities")).toBeTruthy();
+  });
+
+  it("names a pick the Worker added that the shipped seed does not have", async () => {
+    resetActivityCaches();
+    routedFetch({
+      "GET /v1/activities": (call: { url: string }) => ({
+        body: call.url.includes("mode=categories")
+          ? categoriesFixture
+          : {
+              activities: [
+                ...(activitiesFixture.activities as object[]),
+                {
+                  id: "sky-lanterns",
+                  label: "Sky lanterns",
+                  category: "casual",
+                  description: "Lantern night",
+                  icon: "sparkles",
+                  relevantTags: [],
+                },
+              ],
+            },
+      }),
+    });
+    toggleActivity("sky-lanterns");
+    const tree = await render(<ActivitySelector />);
+    await waitFor(() => expect(tree.getByText("Sky lanterns")).toBeTruthy());
+    expect(tree.queryByText("No activities picked yet.")).toBeNull();
+    expect(tree.getByLabelText("Change activities, 1 picked")).toBeTruthy();
   });
 
   it("lists the picks and opens the shared picker", async () => {
