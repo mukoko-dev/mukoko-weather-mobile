@@ -20,6 +20,7 @@ import { IPHONE_INSETS, setInsets, setWindow } from "@/test-utils/mocks";
 import {
   HAS_EMOJI,
   allText,
+  NOW,
   harareWeather,
 } from "@/test-utils/weather-fixtures";
 
@@ -178,9 +179,43 @@ describe("in the page", () => {
         },
       },
     };
-    // Hour 3 is 03:00 local: inside the 22:00-08:00 frost window.
-    const tree = await render(<WeatherPage weather={cold} name="Harare" />);
-    expect(tree.getByText("Frost Warning — SEVERE")).toBeTruthy();
+    // Hour 3 is 03:00 local: inside the 22:00-08:00 frost window, and in the
+    // coming night at the recorded instant (02:45 local).
+    jest.useFakeTimers({ now: NOW, advanceTimers: true });
+    try {
+      const tree = await render(<WeatherPage weather={cold} name="Harare" />);
+      expect(tree.getByText("Frost Warning — SEVERE")).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("raises no frost notice for a cold hour that is not in the coming night", async () => {
+    const weather = harareWeather();
+    const hourly = weather.forecast!.hourly;
+    const cold = {
+      ...weather,
+      forecast: {
+        ...weather.forecast!,
+        hourly: {
+          ...hourly,
+          temperature_2m: hourly.temperature_2m.map((t, i) =>
+            i === 3 ? -1 : t,
+          ),
+        },
+      },
+    };
+    // A day after the recorded instant, that 03:00 is long past.
+    jest.useFakeTimers({
+      now: new Date(NOW.getTime() + 36 * 3_600_000),
+      advanceTimers: true,
+    });
+    try {
+      const tree = await render(<WeatherPage weather={cold} name="Harare" />);
+      expect(tree.queryByTestId("frost-banner")).toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("raises no frost notice from the seasonal estimate, as the web does not", async () => {

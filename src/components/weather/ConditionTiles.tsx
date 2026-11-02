@@ -58,6 +58,7 @@ import { InsightCard, InsightGrid, InsightRow } from "./InsightCard";
 import { MetricDetailSheet } from "./MetricDetailSheet";
 import { MetricValue } from "./MetricValue";
 import { SectionHeader } from "./SectionHeader";
+import { answerKey } from "./answer-key";
 import { ChartErrorBoundary } from "./ChartErrorBoundary";
 import {
   CompassDial,
@@ -140,11 +141,9 @@ export function ConditionTiles({
       fetchNormalHigh(lat as number, lon as number, date, signal),
     [lat, lon, date],
   );
-  const normals = useWorkerData<number | null>(
-    loadNormal,
-    Boolean(point),
-    refreshKey,
-  );
+  // The 1991-2020 normal for a date never changes: it is asked again only
+  // when the date or the point does (its `load`), not on every refresh.
+  const normals = useWorkerData<number | null>(loadNormal, Boolean(point));
   const normalHigh = normals.status === "ready" ? normals.data : null;
   const averages = temperatureAverageInsight(todayHigh, normalHigh);
   const averagesLoading = Boolean(point) && normals.status === "loading";
@@ -199,7 +198,10 @@ export function ConditionTiles({
         />
         {point ? (
           <>
-            <ChartErrorBoundary name="air quality">
+            <ChartErrorBoundary
+              name="air quality"
+              resetKey={answerKey(refreshKey)}
+            >
               <AirQualityCard
                 lat={point.lat}
                 lon={point.lon}
@@ -207,7 +209,7 @@ export function ConditionTiles({
                 refreshKey={refreshKey}
               />
             </ChartErrorBoundary>
-            <ChartErrorBoundary name="haze">
+            <ChartErrorBoundary name="haze" resetKey={answerKey(refreshKey)}>
               <HazeCard
                 lat={point.lat}
                 lon={point.lon}

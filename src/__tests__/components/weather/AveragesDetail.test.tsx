@@ -127,11 +127,15 @@ describe("AveragesDetail", () => {
     );
   });
 
-  it("asks for recorded days only for a place with a slug", async () => {
+  it("asks a GPS point's recorded days by its coordinate", async () => {
     const calls = routeFetch(ROUTES);
     await render(<AveragesDetail data={forecast} lat={-17.8} lon={31} />);
-    await waitFor(() => expect(calls.length).toBeGreaterThan(0));
-    expect(calls.some((c) => c.url.includes("/v1/history"))).toBe(false);
+    await waitFor(() =>
+      expect(calls.some((c) => c.url.includes("/v1/history"))).toBe(true),
+    );
+    const history = calls.find((c) => c.url.includes("/v1/history"))!;
+    expect(history.url).toContain("lat=-17.8");
+    expect(history.url).not.toContain("location=");
   });
 
   it("states the period and source, and what a dash means", async () => {

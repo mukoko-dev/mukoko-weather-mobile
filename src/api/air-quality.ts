@@ -80,12 +80,29 @@ export async function fetchAirQuality(
   lat: number,
   lon: number,
   signal?: AbortSignal,
-): Promise<AirQuality> {
+): Promise<AirQuality | null> {
   const raw = await apiFetch<unknown>(ROUTES.airQuality, {
     query: { lat: roundCoord(lat), lon: roundCoord(lon) },
     signal,
   });
+  // The Worker answered, and there is nothing to score here: a state of its
+  // own (no reading for this place), not a failure Try again could fix.
+  if (isNothingScoreable(raw)) return null;
   const reading = toAirQuality(raw);
   if (!reading) throw new Error("Air quality is unavailable right now.");
   return reading;
+}
+
+/**
+ * The Worker's "nothing scoreable" answer: `{aqi: 0, dominantPollutant: null}`
+ * with empty `subIndexes`. Asking again gives the same answer.
+ */
+export function isNothingScoreable(raw: unknown): boolean {
+  if (!raw || typeof raw !== "object") return false;
+  const w = raw as Record<string, unknown>;
+  return (
+    num(w.aqi) === 0 &&
+    !POLLUTANT_ORDER.some((k) => k === w.dominantPollutant) &&
+    Object.keys(byPollutant(w.subIndexes, false)).length === 0
+  );
 }

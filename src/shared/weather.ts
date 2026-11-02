@@ -1,5 +1,12 @@
 /* Weather types and pure helpers. No network: the app reads weather only through src/api. */
 
+import {
+  currentHourIndex,
+  currentWallHourMs,
+  resolveOffsetSeconds,
+  wallClockMs,
+} from "./location-time";
+
 export interface CurrentWeather {
   temperature_2m: number;
   relative_humidity_2m: number;
@@ -188,6 +195,35 @@ export function checkFrostRisk(
     };
   }
   return null;
+}
+
+/**
+ * The frost banner's question: frost in the coming night, not anywhere in the
+ * series. The Worker's hourly series starts at the place's midnight and runs
+ * for days, so this morning's or Friday night's cold hour would otherwise
+ * raise "Frost risk tonight". Only the next `hours` from the place's current
+ * hour are read.
+ */
+export function checkFrostRiskAhead(
+  hourly: HourlyWeather,
+  offsetSeconds: number | null | undefined,
+  now: Date = new Date(),
+  hours = 24,
+): FrostAlert | null {
+  const offset = resolveOffsetSeconds(offsetSeconds, now);
+  const start = currentHourIndex(hourly.time, offset, now);
+  // A stale series (every hour already past) has no coming night to warn of.
+  const first = wallClockMs(hourly.time[start], offset);
+  if (first === null || first < currentWallHourMs(offset, now)) return null;
+  const end = start + hours;
+  return checkFrostRisk(
+    {
+      ...hourly,
+      time: hourly.time.slice(start, end),
+      temperature_2m: hourly.temperature_2m.slice(start, end),
+    },
+    offsetSeconds,
+  );
 }
 
 /** WMO Weather interpretation codes → label & icon */

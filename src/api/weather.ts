@@ -256,12 +256,20 @@ export function toMinutely(raw: unknown): MinutelyData | undefined {
   const block = raw as Record<string, unknown>;
   const precip = column(block, "precipitation");
   if (!precip.some((v) => num(v) !== null)) return undefined;
-  return {
-    time: column(block, "time").filter(
-      (t): t is string => typeof t === "string",
-    ),
-    precipitation: precip.map((v) => num(v) ?? 0),
-  };
+  // Times and steps stay paired by index: a step whose time is missing is
+  // dropped together with its time, never shifted onto the next one. A
+  // missing amount is 0, the nowcast's "no rain reported" (src/shared/nowcast).
+  const times = column(block, "time");
+  const time: string[] = [];
+  const precipitation: number[] = [];
+  precip.forEach((v, i) => {
+    const t = times[i];
+    if (times.length > 0 && typeof t !== "string") return;
+    time.push(typeof t === "string" ? t : "");
+    precipitation.push(num(v) ?? 0);
+  });
+  if (precipitation.length === 0) return undefined;
+  return { time, precipitation };
 }
 
 /**
@@ -283,7 +291,9 @@ export function toModels(raw: unknown): ModelForecast[] | undefined {
       precipitation: column(e, "precipitation").map(num),
     });
   }
-  return models.length > 0 ? models : undefined;
+  // One model is nothing to compare: the card needs at least two to show
+  // agreement or spread.
+  return models.length >= 2 ? models : undefined;
 }
 
 /** Most hours kept; the screens show the next 24. */

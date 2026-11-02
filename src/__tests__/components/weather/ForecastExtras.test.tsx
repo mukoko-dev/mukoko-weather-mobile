@@ -82,6 +82,18 @@ describe("MinutelyCard", () => {
   });
 });
 
+describe("MinutelyCard below the rain threshold", () => {
+  it("draws no rain chart for traces the sentence calls dry", async () => {
+    const tree = await render(
+      <MinutelyCard
+        minutely={{ time: [], precipitation: [0.02, 0.03, 0, 0] }}
+      />,
+    );
+    expect(tree.getByText("No rain expected in the next hour.")).toBeTruthy();
+    expect(tree.queryAllByRole("adjustable")).toHaveLength(0);
+  });
+});
+
 describe("ModelComparisonCard", () => {
   it("names the four models, charts their lines and says how far apart they are", async () => {
     const w = harareWeather();

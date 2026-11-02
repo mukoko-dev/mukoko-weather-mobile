@@ -46,7 +46,7 @@ export function AirQualityCard({
     (signal: AbortSignal) => fetchAirQuality(lat, lon, signal),
     [lat, lon],
   );
-  const state = useWorkerData<AirQuality>(load, true, refreshKey);
+  const state = useWorkerData<AirQuality | null>(load, true, refreshKey);
   const [open, setOpen] = useState(false);
 
   if (state.status === "loading") {
@@ -59,7 +59,10 @@ export function AirQualityCard({
     );
   }
 
-  if (state.status === "unavailable") {
+  // The request failed (Try again may help), or the Worker has no reading
+  // for this place (asking again gives the same answer, so no Try again).
+  const noReading = state.status === "ready" && state.data === null;
+  if (state.status === "unavailable" || noReading) {
     return (
       <View
         testID="air-quality-unavailable"
@@ -85,29 +88,34 @@ export function AirQualityCard({
           </WxText>
         </View>
         <WxText type="body" color={colors.textSecondary}>
-          Air quality is unavailable right now.
+          {noReading
+            ? "There is no air-quality reading for this place yet."
+            : "Air quality is unavailable right now."}
         </WxText>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Try again"
-          onPress={state.reload}
-          style={({ pressed }) => [
-            styles.retry,
-            {
-              borderColor: colors.border,
-              borderWidth: pressed ? BORDER.active : BORDER.rest,
-            },
-          ]}
-        >
-          <WxText type="body" weight={600} color={colors.textPrimary}>
-            Try again
-          </WxText>
-        </Pressable>
+        {noReading ? null : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Try again"
+            onPress={state.reload}
+            style={({ pressed }) => [
+              styles.retry,
+              {
+                borderColor: colors.border,
+                borderWidth: pressed ? BORDER.active : BORDER.rest,
+              },
+            ]}
+          >
+            <WxText type="body" weight={600} color={colors.textPrimary}>
+              Try again
+            </WxText>
+          </Pressable>
+        )}
       </View>
     );
   }
 
   const reading = state.data;
+  if (!reading) return null;
   const band = aqiBand(reading.aqi);
   const bandLabel = AQI_BAND_LABELS[band];
   return (

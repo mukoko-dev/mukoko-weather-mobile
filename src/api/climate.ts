@@ -60,16 +60,20 @@ export async function fetchMonthlyNormals(
 }
 
 /**
- * The last 30 recorded days of a catalogue place. Only a place the app holds a
- * slug for has a history; a point from a GPS fix has none to ask for.
+ * The last 30 recorded days of a place: by its slug when it is a catalogue
+ * place, else by its point (a GPS fix), which the Worker also serves.
  */
 export async function fetchRecentDays(
-  slug: string,
+  place: string | { lat: number; lon: number },
   signal?: AbortSignal,
 ): Promise<RecentDay[]> {
+  const where =
+    typeof place === "string"
+      ? { location: place }
+      : { lat: roundCoord(place.lat), lon: roundCoord(place.lon) };
   return recentDaysFromHistory(
     await apiFetch<unknown>(ROUTES.history, {
-      query: { location: slug, days: 30 },
+      query: { ...where, days: 30 },
       signal,
     }),
   );
