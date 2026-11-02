@@ -25,15 +25,25 @@ import { type SeriesChartProps } from "./SeriesChart";
 
 export type ChartSpec = Omit<SeriesChartProps, "testID">;
 
+/** One reading per hour; a missing one stays `null`, a gap, never a zero. */
 const pick = (
   points: readonly MetricSeriesPoint[],
   key: keyof Omit<MetricSeriesPoint, "label">,
-): number[] => points.map((p) => p[key]);
+): (number | null)[] => points.map((p) => p[key]);
 
-const maxOf = (values: readonly number[], floor = 0) =>
-  values.length > 0 ? Math.max(...values) : floor;
-const minOf = (values: readonly number[], ceil = 0) =>
-  values.length > 0 ? Math.min(...values) : ceil;
+const finite = (values: readonly (number | null)[]): number[] =>
+  values.filter((v): v is number => typeof v === "number");
+
+/** The largest reading, or `floor` when there is none. */
+const maxOf = (values: readonly (number | null)[], floor = 0) => {
+  const real = finite(values);
+  return real.length > 0 ? Math.max(...real) : floor;
+};
+/** The smallest reading, or `ceil` when there is none. */
+const minOf = (values: readonly (number | null)[], ceil = 0) => {
+  const real = finite(values);
+  return real.length > 0 ? Math.min(...real) : ceil;
+};
 
 const num = (v: number) => `${v}`;
 
@@ -86,7 +96,7 @@ export function metricChartSpec(
             unit: "",
             values: uv,
             color: WX_UV[2],
-            barColors: uv.map((v) => WX_UV[uvBandIndex(v)]),
+            barColors: uv.map((v) => WX_UV[uvBandIndex(v ?? 0)]),
             kind: "bar",
             opacity: 0.85,
           },

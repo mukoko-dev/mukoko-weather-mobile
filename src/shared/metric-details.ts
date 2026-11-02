@@ -16,6 +16,7 @@ import {
   precipitationInsight,
   pressureInsight,
   sunInsight,
+  temperatureAverageInsight,
   uvInsight,
   visibilityInsight,
   windInsight,
@@ -80,23 +81,41 @@ export function isMetricKind(value: unknown): value is MetricKind {
   );
 }
 
+/**
+ * One hour of a detail chart. A reading the forecast has no value for is
+ * `null`, a gap in the line, never a zero: a missing pressure drawn as 0 hPa
+ * would collapse the whole axis, and a missing visibility would be a false dip
+ * to 0 km.
+ */
 export type MetricSeriesPoint = {
   label: string;
-  windSpeed: number;
-  windGusts: number;
-  uvIndex: number;
-  temperature: number;
-  feelsLike: number;
-  visibility: number;
-  precipitation: number;
-  rainProbability: number;
-  humidity: number;
-  dewPoint: number;
-  pressure: number;
+  windSpeed: number | null;
+  windGusts: number | null;
+  uvIndex: number | null;
+  temperature: number | null;
+  feelsLike: number | null;
+  visibility: number | null;
+  precipitation: number | null;
+  rainProbability: number | null;
+  humidity: number | null;
+  dewPoint: number | null;
+  pressure: number | null;
 };
 
 const num = (v: unknown, fallback = 0): number =>
   typeof v === "number" && Number.isFinite(v) ? v : fallback;
+
+/** A reading, or `null` when the forecast has none for that hour. */
+const maybe = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) ? v : null;
+
+/** A reading mapped through `f`, or `null` when it is missing. */
+const mapped = (v: unknown, f: (n: number) => number): number | null => {
+  const n = maybe(v);
+  return n === null ? null : f(n);
+};
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
 
 /** Up to 24 hourly points starting at the LOCATION's current hour. */
 export function metricSeries(
@@ -109,28 +128,35 @@ export function metricSeries(
   const points: MetricSeriesPoint[] = [];
   for (let i = 0; i < 24 && start + i < hourly.time.length; i++) {
     const idx = start + i;
-    const temp = num(hourly.temperature_2m?.[idx]);
-    const rh = num(hourly.relative_humidity_2m?.[idx], 50);
-    const dew = hourly.dew_point_2m?.[idx];
+    const temp = maybe(hourly.temperature_2m?.[idx]);
+    const rh = maybe(hourly.relative_humidity_2m?.[idx]);
+    const dew = maybe(hourly.dew_point_2m?.[idx]);
+    const feels = maybe(hourly.apparent_temperature?.[idx]) ?? temp;
     points.push({
       label:
         i === 0 ? "Now" : locationClockLabel(hourly.time[idx], offsetSeconds),
-      windSpeed: Math.round(num(hourly.wind_speed_10m?.[idx])),
-      windGusts: Math.round(num(hourly.wind_gusts_10m?.[idx])),
-      uvIndex: Math.round(num(hourly.uv_index?.[idx]) * 10) / 10,
-      temperature: Math.round(temp),
-      feelsLike: Math.round(num(hourly.apparent_temperature?.[idx], temp)),
+      windSpeed: mapped(hourly.wind_speed_10m?.[idx], Math.round),
+      windGusts: mapped(hourly.wind_gusts_10m?.[idx], Math.round),
+      uvIndex: mapped(hourly.uv_index?.[idx], round1),
+      temperature: temp === null ? null : Math.round(temp),
+      feelsLike: feels === null ? null : Math.round(feels),
       // Open-Meteo reports visibility in metres; the card speaks kilometres.
-      visibility: Math.round((num(hourly.visibility?.[idx]) / 1000) * 10) / 10,
-      precipitation: Math.round(num(hourly.precipitation?.[idx]) * 10) / 10,
-      rainProbability: Math.round(num(hourly.precipitation_probability?.[idx])),
-      humidity: Math.round(rh),
-      dewPoint: Math.round(
-        typeof dew === "number" && Number.isFinite(dew)
-          ? dew
-          : dewPointFromTempHumidity(temp, rh),
+      visibility: mapped(hourly.visibility?.[idx], (m) => round1(m / 1000)),
+      precipitation: mapped(hourly.precipitation?.[idx], round1),
+      rainProbability: mapped(
+        hourly.precipitation_probability?.[idx],
+        Math.round,
       ),
-      pressure: Math.round(num(hourly.surface_pressure?.[idx])),
+      humidity: rh === null ? null : Math.round(rh),
+      // The model's own dew point, else Magnus from a real temperature and
+      // humidity; with neither there is nothing to draw.
+      dewPoint:
+        dew !== null
+          ? Math.round(dew)
+          : temp !== null && rh !== null
+            ? Math.round(dewPointFromTempHumidity(temp, rh))
+            : null,
+      pressure: mapped(hourly.surface_pressure?.[idx], Math.round),
     });
   }
   return points;
@@ -342,8 +368,10 @@ export function metricDetail(
     case "averages": {
       const high = extras.todayHigh;
       const normal = extras.normalHigh;
-      const hasBoth = typeof high === "number" && typeof normal === "number";
-      const delta = hasBoth ? Math.round(high - normal) : null;
+      // The same comparison the tile makes, so the two never disagree: a
+      // difference under one degree is "near the average" on both (rounding
+      // the raw difference here said "1° below" where the tile said "near").
+      const delta = temperatureAverageInsight(high, normal)?.delta ?? null;
       return {
         ...base,
         headline: deg(high),

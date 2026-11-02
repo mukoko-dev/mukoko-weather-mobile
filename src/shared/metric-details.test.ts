@@ -13,6 +13,7 @@ import {
   moonriseLabel,
   uvForecastDays,
 } from "./metric-details";
+import { temperatureAverageInsight } from "./metric-insights";
 import type { WeatherData } from "./weather";
 
 const N = 48;
@@ -107,6 +108,38 @@ describe("metric details", () => {
     expect(p.feelsLike).toBe(28);
   });
 
+  it("keeps a missing reading as null, never a zero or a made-up value", () => {
+    const w = weather();
+    // NOW is 14:00 on the first day: hour index 14 is the series' first point.
+    const hole = (a: unknown[]) => a.map((v, i) => (i === 14 ? null : v));
+    const series = metricSeries(
+      {
+        ...w.hourly,
+        surface_pressure: hole(w.hourly.surface_pressure),
+        visibility: hole(w.hourly.visibility),
+        uv_index: hole(w.hourly.uv_index),
+        relative_humidity_2m: hole(w.hourly.relative_humidity_2m),
+        wind_speed_10m: hole(w.hourly.wind_speed_10m),
+        temperature_2m: hole(w.hourly.temperature_2m),
+        apparent_temperature: hole(w.hourly.apparent_temperature),
+      } as unknown as typeof w.hourly,
+      0,
+      NOW,
+    );
+    const [first, second] = series;
+    expect(first.pressure).toBeNull();
+    expect(first.visibility).toBeNull();
+    expect(first.uvIndex).toBeNull();
+    expect(first.humidity).toBeNull();
+    expect(first.windSpeed).toBeNull();
+    expect(first.temperature).toBeNull();
+    expect(first.feelsLike).toBeNull();
+    expect(first.dewPoint).toBeNull();
+    // The next hour is untouched.
+    expect(second.pressure).toBe(1012);
+    expect(second.humidity).not.toBeNull();
+  });
+
   it("derives a dew point when the model does not supply one", () => {
     const [p] = metricSeries(weather().hourly, 0, NOW);
     expect(p.dewPoint).toBeGreaterThan(10);
@@ -145,6 +178,31 @@ describe("metric details", () => {
     });
     expect(avg.sentence).toContain("3° above");
     expect(avg.stats[2].value).toBe("+3°");
+  });
+
+  it("the Averages sheet and the Averages tile say the same thing for the same numbers", () => {
+    // Today's high 25 (rounded) against a normal of 25.6: raw difference -0.6.
+    // The tile says "near the average"; the sheet used to round it to -1.
+    for (const [high, normal] of [
+      [25, 25.6],
+      [25, 24.4],
+      [25, 26.4],
+      [25, 23.6],
+      [31, 28],
+      [20, 20],
+    ] as const) {
+      const tile = temperatureAverageInsight(high, normal)!;
+      const sheet = metricDetail("averages", weather(), NOW, {
+        todayHigh: high,
+        normalHigh: normal,
+      });
+      expect(sheet.stats[2].value).toBe(
+        tile.delta === 0 ? "0°" : `${tile.delta > 0 ? "+" : ""}${tile.delta}°`,
+      );
+      expect(sheet.sentence.startsWith("Right at the average")).toBe(
+        tile.delta === 0,
+      );
+    }
   });
 
   it("never throws without a climate normal or moon data", () => {

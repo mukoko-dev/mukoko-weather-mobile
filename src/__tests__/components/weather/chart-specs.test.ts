@@ -62,7 +62,7 @@ describe("the next-24-hours charts", () => {
     ]);
     expect(spec.left.min).toBe(0);
     const top = Math.max(
-      ...points.map((p) => Math.max(p.windSpeed, p.windGusts)),
+      ...points.map((p) => Math.max(p.windSpeed ?? 0, p.windGusts ?? 0)),
     );
     expect(spec.left.max).toBe(top + 5);
   });
@@ -89,11 +89,35 @@ describe("the next-24-hours charts", () => {
 
   it("scales pressure to its own range, not from zero", () => {
     const spec = metricChartSpec("pressure", points, "light");
-    const p = points.map((x) => x.pressure);
+    const p = points.map((x) => x.pressure as number);
     expect(spec.left.min).toBe(Math.min(...p) - 2);
     expect(spec.left.max).toBe(Math.max(...p) + 2);
     const axis = resolveAxis(spec.series[0].values, spec.left);
     expect(axis.min).toBeGreaterThan(800);
+  });
+
+  it("leaves a gap for an hour with no reading, and never scales an axis from a zero", () => {
+    // Hours the forecast has no pressure, visibility or UV for are `null`.
+    const gappy = points.map((p, i) =>
+      i % 4 === 1
+        ? { ...p, pressure: null, visibility: null, uvIndex: null }
+        : p,
+    );
+    const pressure = metricChartSpec("pressure", gappy, "light");
+    expect(pressure.series[0].values.filter((v) => v === null)).toHaveLength(
+      gappy.filter((_, i) => i % 4 === 1).length,
+    );
+    // The axis still follows the real readings (about 1012 hPa), not a 0.
+    expect(pressure.left.min).toBeGreaterThan(800);
+    expect(
+      metricChartSpec("visibility", gappy, "light").series[0].values,
+    ).toContain(null);
+    const uv = metricChartSpec("uv", gappy, "light");
+    expect(uv.series[0].values).toContain(null);
+    expect(uv.series[0].barColors).toHaveLength(gappy.length);
+    // With no reading at all, an axis falls back instead of going to -2.
+    const none = points.map((p) => ({ ...p, pressure: null }));
+    expect(metricChartSpec("pressure", none, "light").left.min).toBe(1008);
   });
 
   it("fixes humidity to 0-100 percent and visibility to a floor of 0 km", () => {
