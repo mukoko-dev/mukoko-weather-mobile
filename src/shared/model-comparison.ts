@@ -81,20 +81,26 @@ export interface ComparisonData {
   series: ComparisonSeries[];
 }
 
-/** Rows and series for the chart. At most 24 hours. */
+/**
+ * Rows and series for the chart: at most 24 hours from `start`, the index of
+ * the place's current hour (the Worker's axis begins at the place's midnight,
+ * and the card is about the next 24 hours, not today's past ones).
+ */
 export function prepareModelComparisonData(
   models: readonly ModelForecast[],
   time: readonly string[],
+  start = 0,
 ): ComparisonData {
-  const len = Math.min(24, time.length);
+  const from = Math.max(0, Math.min(start, time.length));
+  const len = Math.min(24, time.length - from);
   return {
-    times: time.slice(0, len),
+    times: time.slice(from, from + len),
     series: models.map((m) => ({
       key: m.model,
       label: modelShortLabel(m.model),
       values: Array.from(
         { length: len },
-        (_, i) => m.temperature_2m[i] ?? null,
+        (_, i) => m.temperature_2m[from + i] ?? null,
       ),
     })),
   };

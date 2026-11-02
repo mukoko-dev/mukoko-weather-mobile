@@ -160,7 +160,6 @@ function build(
   daysInMonth: number | null,
   kind: "temperature" | "precipitation",
 ): Comparison {
-  const days = Math.max(highs.length, rain.length);
   if (kind === "temperature") {
     const value = highs.length ? r1(mean(highs)) : null;
     const nv = normal?.meanHighC ?? null;
@@ -181,7 +180,10 @@ function build(
     normal?.precipMm != null && daysInMonth
       ? normal.precipMm / daysInMonth
       : null;
-  const nv = perDay !== null && days > 0 ? r1(perDay * days) : null;
+  // Prorated over the days that HAVE a rain reading, the same days summed
+  // above: a day with no reading is left out of both, never counted as dry.
+  const nv =
+    perDay !== null && rain.length > 0 ? r1(perDay * rain.length) : null;
   const delta = value !== null && nv !== null ? r1(value - nv) : null;
   return {
     basis,

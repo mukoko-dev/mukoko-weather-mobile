@@ -121,6 +121,19 @@ describe("forecastComparison", () => {
     expect(c.sentence).toContain("Drier than average");
   });
 
+  it("prorates over the days with a rain reading, so a missing day is not a dry one", () => {
+    // Seven days, two without a reading: 10 mm over five days against a
+    // 2 mm-a-day normal is average, not "drier".
+    const c = forecastComparison(
+      daily([28, 28, 28, 28, 28, 28, 28], [2, 2, null, 2, 2, null, 2]),
+      months(),
+      "precipitation",
+    );
+    expect(c.value).toBe(10);
+    expect(c.normal).toBe(10);
+    expect(c.sentence).toContain("Close to the average");
+  });
+
   it("calls a close value close, and wetter wetter", () => {
     expect(
       forecastComparison(daily([28, 28], [4, 0]), months(), "precipitation")

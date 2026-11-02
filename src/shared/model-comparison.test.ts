@@ -81,6 +81,18 @@ describe("prepareModelComparisonData", () => {
     expect(data.series[0].values[4]).toBeCloseTo(20.4);
   });
 
+  it("starts at the place's current hour, not at midnight", () => {
+    const data = prepareModelComparisonData(
+      [model("ecmwf_ifs", 20)],
+      hours,
+      18,
+    );
+    expect(data.times[0]).toBe(hours[18]);
+    expect(data.series[0].values[0]).toBe(
+      model("ecmwf_ifs", 20).temperature_2m[18],
+    );
+  });
+
   it("is empty for no time axis", () => {
     expect(
       prepareModelComparisonData([model("ecmwf_ifs", 20)], []).times,

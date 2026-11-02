@@ -22,7 +22,7 @@ import { useNow } from "@/hooks/useNow";
 import { rememberWeather } from "@/hooks/weather-cache";
 import { usePageColors } from "@/hooks/usePageColors";
 import { skyFamily } from "@/shared/hero";
-import { checkFrostRisk, weatherCodeToInfo } from "@/shared/weather";
+import { checkFrostRiskAhead, weatherCodeToInfo } from "@/shared/weather";
 import { RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
 import { NEUTRAL_SKY, SKY_FG, SKY_FG_DIM, skyStops } from "@/theme/sky";
 
@@ -178,9 +178,9 @@ export function WeatherPage({
   const frost = useMemo(
     () =>
       forecast && !usingFallback
-        ? checkFrostRisk(forecast.hourly, forecast.utc_offset_seconds)
+        ? checkFrostRiskAhead(forecast.hourly, forecast.utc_offset_seconds, now)
         : null,
-    [forecast, usingFallback],
+    [forecast, usingFallback, now],
   );
   const slug = slugProp ?? weather.location?.slug;
   const links = useLocationLinks(slug);

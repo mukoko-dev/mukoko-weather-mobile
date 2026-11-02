@@ -65,18 +65,35 @@ describe("the nowcast and the models in /v1/weather", () => {
         { temperature_2m: [1] },
         null,
         { model: "icon_global", temperature_2m: [1, null, 3] },
+        { model: "gfs_seamless", temperature_2m: [2, 2, 2] },
       ]),
     ).toEqual([
       { model: "icon_global", temperature_2m: [1, null, 3], precipitation: [] },
+      { model: "gfs_seamless", temperature_2m: [2, 2, 2], precipitation: [] },
     ]);
     expect(toModels("nope")).toBeUndefined();
+  });
+
+  it("has no comparison from a single model: one line compares nothing", () => {
+    expect(
+      toModels([{ model: "ecmwf_ifs", temperature_2m: [1, 2] }]),
+    ).toBeUndefined();
+  });
+
+  it("keeps each nowcast step with its own time when a time is missing", () => {
+    expect(
+      toMinutely({
+        time: [null, "t1", "t2", "t3"],
+        precipitation: [9, 0.1, 0.2, 0.3],
+      }),
+    ).toEqual({ time: ["t1", "t2", "t3"], precipitation: [0.1, 0.2, 0.3] });
   });
 });
 
 describe("air quality", () => {
   it("asks the Worker for the rounded point and converts the recorded answer", async () => {
     const calls = mockFetch({ body: airQualityHarare });
-    const aq = await fetchAirQuality(-17.82912, 31.05234);
+    const aq = (await fetchAirQuality(-17.82912, 31.05234))!;
     expect(calls[0].url).toBe(`${BASE}/v1/air-quality?lat=-17.829&lon=31.052`);
     expect(aq.aqi).toBe(68);
     expect(aq.level).toBe("moderate");
@@ -115,8 +132,9 @@ describe("air quality", () => {
     };
     expect(toAirQuality(none)).toBeNull();
     expect(toAirQuality({ aqi: 0 })).toBeNull();
+    // No reading for this place: a state of its own, not a retryable failure.
     mockFetch({ body: none });
-    await expect(fetchAirQuality(0, 0)).rejects.toThrow(/unavailable/);
+    await expect(fetchAirQuality(0, 0)).resolves.toBeNull();
     // A real zero, with a pollutant that was scored, is still a reading.
     expect(
       toAirQuality({
@@ -233,5 +251,13 @@ describe("climate context", () => {
     expect(days).toHaveLength(9);
     expect(days[0].date < days[8].date).toBe(true);
     expect(days.every((d) => d.highC !== null)).toBe(true);
+  });
+
+  it("reads a GPS point's recorded days by its rounded coordinate", async () => {
+    const calls = mockFetch({ body: historyHarare });
+    await fetchRecentDays({ lat: -17.82912, lon: 31.05234 });
+    expect(calls[0].url).toBe(
+      `${BASE}/v1/history?lat=-17.829&lon=31.052&days=30`,
+    );
   });
 });

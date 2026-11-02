@@ -83,6 +83,29 @@ describe("AirQualityCard states", () => {
     );
     expect(tree.queryByText("0")).toBeNull();
   });
+
+  it("says there is no reading here, with no Try again that could not help", async () => {
+    routeFetch({
+      "/v1/air-quality": {
+        body: {
+          aqi: 0,
+          level: "good",
+          dominantPollutant: null,
+          subIndexes: {},
+        },
+      },
+    });
+    const tree = await render(
+      <AirQualityCard lat={-17.8} lon={31} now={NOW} />,
+    );
+    await waitFor(() =>
+      expect(
+        tree.getByText("There is no air-quality reading for this place yet."),
+      ).toBeTruthy(),
+    );
+    expect(tree.queryByLabelText("Try again")).toBeNull();
+    expect(tree.queryByText("0")).toBeNull();
+  });
 });
 
 describe("AirQualityDetail", () => {

@@ -45,7 +45,7 @@ export type AveragesDetailProps = {
   data: WeatherData;
   lat?: number;
   lon?: number;
-  /** A catalogue place's slug: only such a place has recorded days. */
+  /** A catalogue place's slug; without one the point's recorded days are read. */
   slug?: string;
 };
 
@@ -240,11 +240,16 @@ export function AveragesDetail({ data, lat, lon, slug }: AveragesDetailProps) {
     [lat, lon],
   );
   const normals = useWorkerData(loadNormals, hasPoint);
+  // A catalogue place by its slug; a GPS point by its coordinate.
   const loadRecent = useCallback(
-    (signal: AbortSignal) => fetchRecentDays(slug as string, signal),
-    [slug],
+    (signal: AbortSignal) =>
+      fetchRecentDays(
+        slug ?? { lat: lat as number, lon: lon as number },
+        signal,
+      ),
+    [slug, lat, lon],
   );
-  const recent = useWorkerData(loadRecent, Boolean(slug));
+  const recent = useWorkerData(loadRecent, Boolean(slug) || hasPoint);
 
   if (!hasPoint || normals.status === "unavailable") {
     return (
@@ -283,7 +288,7 @@ export function AveragesDetail({ data, lat, lon, slug }: AveragesDetailProps) {
     <Ready
       data={data}
       normals={normals.data}
-      recentDays={slug && recent.status === "ready" ? recent.data : []}
+      recentDays={recent.status === "ready" ? recent.data : []}
     />
   );
 }

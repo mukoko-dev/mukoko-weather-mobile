@@ -24,10 +24,12 @@ import {
   nowcastRows,
   nowcastSpoken,
   nowcastSummary,
-  nowcastTotal,
+  RAIN_THRESHOLD_MM,
 } from "@/shared/nowcast";
+import { currentHourIndex, resolveOffsetSeconds } from "@/shared/location-time";
 import { BORDER, RADIUS, SPACE, withAlpha } from "@/theme/mzizi";
 
+import { answerKey } from "./answer-key";
 import { ChartErrorBoundary } from "./ChartErrorBoundary";
 import {
   chartProps,
@@ -87,7 +89,8 @@ export function MinutelyCard({
   const { colors, scheme } = usePageColors();
   const rows = nowcastRows(minutely);
   if (rows.length === 0) return null;
-  const hasRain = nowcastTotal(rows) > 0;
+  // The same threshold as the sentence, so the chart and the words agree.
+  const hasRain = rows.some((r) => r.precip >= RAIN_THRESHOLD_MM);
   return (
     <Card
       testID="minutely-card"
@@ -130,13 +133,23 @@ export function MinutelyCard({
 export function ModelComparisonCard({
   models,
   time,
+  utcOffsetSeconds,
+  now = new Date(),
 }: {
   models: NonNullable<WeatherResponse["models"]>;
   time: string[];
+  /** The place's offset: the chart starts at the place's current hour. */
+  utcOffsetSeconds?: number;
+  now?: Date;
 }) {
   const { colors, scheme } = usePageColors();
   const series = comparisonSeries(models);
-  const data = prepareModelComparisonData(series, time);
+  const start = currentHourIndex(
+    time,
+    resolveOffsetSeconds(utcOffsetSeconds, now),
+    now,
+  );
+  const data = prepareModelComparisonData(series, time, start);
   if (data.times.length === 0 || data.series.length === 0) return null;
   const spread = widestSpread(data);
   const names = data.series.map((s) => s.label).join(", ");
@@ -161,20 +174,27 @@ export function ModelComparisonCard({
 
 export function ForecastExtras({ weather }: { weather: WeatherResponse }) {
   const hasModels =
-    (weather.models?.length ?? 0) > 0 && (weather.modelsTime?.length ?? 0) > 0;
+    (weather.models?.length ?? 0) >= 2 && (weather.modelsTime?.length ?? 0) > 0;
   if (!weather.minutely && !hasModels) return null;
   return (
     <>
       {weather.minutely ? (
-        <ChartErrorBoundary name="the next-hour nowcast">
+        <ChartErrorBoundary
+          name="the next-hour nowcast"
+          resetKey={answerKey(weather)}
+        >
           <MinutelyCard minutely={weather.minutely} />
         </ChartErrorBoundary>
       ) : null}
       {hasModels ? (
-        <ChartErrorBoundary name="the model comparison">
+        <ChartErrorBoundary
+          name="the model comparison"
+          resetKey={answerKey(weather)}
+        >
           <ModelComparisonCard
             models={weather.models!}
             time={weather.modelsTime!}
+            utcOffsetSeconds={weather.utcOffsetSeconds}
           />
         </ChartErrorBoundary>
       ) : null}

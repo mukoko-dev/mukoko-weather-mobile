@@ -5,6 +5,7 @@
 
 import {
   checkFrostRisk,
+  checkFrostRiskAhead,
   createFallbackWeather,
   getDefaultSeason,
   uvLevel,
@@ -165,5 +166,44 @@ describe("createFallbackWeather", () => {
       checkFrostRisk({ ...base, time: ["2026-06-01T23:00"] }),
     ).not.toBeNull();
     expect(checkFrostRisk({ ...base, time: ["2026-06-01T13:00"] })).toBeNull();
+  });
+});
+
+describe("checkFrostRiskAhead (the banner's coming night)", () => {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  /** Five days of naive Harare hours from local midnight, 2026-10-08, all 15°C. */
+  const series = (cold: number[]) => {
+    const time = Array.from(
+      { length: 120 },
+      (_, i) => `2026-10-${pad(8 + Math.floor(i / 24))}T${pad(i % 24)}:00`,
+    );
+    const temperature_2m = time.map((_, i) => (cold.includes(i) ? 2 : 15));
+    return { time, temperature_2m } as unknown as Parameters<
+      typeof checkFrostRiskAhead
+    >[0];
+  };
+  const HARARE = 7200;
+  // 13:00 UTC is 15:00 in Harare on 2026-10-08.
+  const AFTERNOON = new Date(Date.UTC(2026, 9, 8, 13, 0));
+
+  it("ignores this morning's cold hour, already past", () => {
+    expect(checkFrostRiskAhead(series([5]), HARARE, AFTERNOON)).toBeNull();
+  });
+
+  it("warns of the coming night", () => {
+    const alert = checkFrostRiskAhead(series([24 + 3]), HARARE, AFTERNOON);
+    expect(alert?.lowestTemp).toBe(2);
+    expect(alert?.startTime).toBe("2026-10-09T03:00");
+  });
+
+  it("does not call a night four days away 'tonight'", () => {
+    expect(
+      checkFrostRiskAhead(series([4 * 24 + 3]), HARARE, AFTERNOON),
+    ).toBeNull();
+  });
+
+  it("says nothing from a stale series", () => {
+    const later = new Date(Date.UTC(2026, 9, 20, 13, 0));
+    expect(checkFrostRiskAhead(series([24 + 3]), HARARE, later)).toBeNull();
   });
 });
