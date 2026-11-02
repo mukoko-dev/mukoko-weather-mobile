@@ -158,7 +158,7 @@ describe("AirQualityDetail", () => {
       <AirQualityDetail open reading={reading} now={NOW} onClose={onClose} />,
     );
     expect(HAS_EMOJI.test(allText(tree.toJSON()))).toBe(false);
-    await fireEvent.press(tree.getByLabelText("Close"));
+    await fireEvent.press(tree.getByLabelText(/^Close/));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
