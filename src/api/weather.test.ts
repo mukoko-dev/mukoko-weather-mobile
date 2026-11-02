@@ -11,6 +11,7 @@ import {
   ensureUtcOffset,
   alignHourly,
   fetchWeather,
+  fetchWeatherRecord,
   toCurrent,
   toDaily,
   toForecast,
@@ -373,5 +374,23 @@ describe("the place's UTC offset, always (issue #64)", () => {
     );
     const weather = await fetchWeather({ slug: "harare" });
     expect(weather.utcOffsetSeconds).toBe(7200);
+  });
+});
+
+describe("the stored copy's offset (issue #64)", () => {
+  it("is stamped before the record is kept, so freshness reads the place's zone", async () => {
+    mockFetch({
+      body: {
+        current: { time: "2026-11-03T15:31:00Z" },
+        hourly: { time: ["2026-11-03T16:00:00Z"] },
+      },
+      headers: { "X-Weather-Provider": "fallback" },
+    });
+    const { record, weather } = await fetchWeatherRecord({
+      lat: -17.83,
+      lon: 31.05,
+    });
+    expect(record.raw.utc_offset_seconds).toBe(7200);
+    expect(weather.forecast?.utc_offset_estimated).toBe(true);
   });
 });

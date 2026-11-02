@@ -198,9 +198,9 @@ export function locationHourNow(
 
 /**
  * Solar-meridian estimate of a UTC offset from longitude (15° per hour,
- * rounded to the quarter hour), the Worker's `estimate_utc_offset`. Only for
- * answers with no provider offset at all (the seasonal fallback). `location-card.resolveUtcOffsetSeconds` adds
- * a fixed-offset country table on top of the same estimate.
+ * rounded to the quarter hour), exactly the Worker's `estimate_utc_offset`
+ * (weather-core `blend.rs`), so the app and the Worker give one answer. Only
+ * for answers with no provider offset at all (the seasonal fallback).
  */
 export function longitudeOffsetSeconds(lon: number): number {
   if (!Number.isFinite(lon)) return 0;

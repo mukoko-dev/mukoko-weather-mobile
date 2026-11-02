@@ -259,6 +259,7 @@ export function toForecast(raw: WireWeather): WeatherData | undefined {
     insights: raw.insights,
     timezone: typeof raw.timezone === "string" ? raw.timezone : undefined,
     utc_offset_seconds: offset ?? undefined,
+    utc_offset_estimated: raw.utc_offset_estimated === true || undefined,
   };
   return forecast as unknown as WeatherData;
 }
@@ -448,7 +449,9 @@ async function fetchRecordAt(
     signal,
   });
   return {
-    raw: data ?? {},
+    // Stamped before it is kept, so the stored copy's freshness and re-basing
+    // (src/shared/device-weather.ts) read the same offset the screen does.
+    raw: ensureUtcOffset(data ?? {}, place?.lon ?? lon),
     meta: {
       provider: headers.get("X-Weather-Provider"),
       fetchedAt: headers.get("X-Fetched-At"),
