@@ -104,7 +104,9 @@ export function MetricDetailSheet({
 
           {chart && series.length > 1 ? (
             <SheetSection heading="Next 24 hours">
-              <ChartErrorBoundary name={`the ${detail.title.toLowerCase()} chart`}>
+              <ChartErrorBoundary
+                name={`the ${detail.title.toLowerCase()} chart`}
+              >
                 <TimeSeriesChart
                   {...chartProps(metricChartSpec(chart, series, scheme))}
                 />

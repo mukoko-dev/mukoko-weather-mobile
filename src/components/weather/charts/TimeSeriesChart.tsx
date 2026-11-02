@@ -468,7 +468,10 @@ export function TimeSeriesChart({
                       rx={CHART.barRadius}
                       fill={
                         cfg.colorByValue
-                          ? cfg.colorByValue(drawn.spec.values[b.index], b.index)
+                          ? cfg.colorByValue(
+                              drawn.spec.values[b.index],
+                              b.index,
+                            )
                           : color
                       }
                       fillOpacity={cfg.opacity ?? CHART.barOpacity}
