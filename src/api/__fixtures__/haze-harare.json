@@ -19,13 +19,7 @@
   "season": {
     "active": false,
     "name": "Southern African burning season",
-    "typicalMonths": [
-      6,
-      7,
-      8,
-      9,
-      10
-    ],
+    "typicalMonths": [6, 7, 8, 9, 10],
     "typicalType": "smoke"
   },
   "type": "smog",
