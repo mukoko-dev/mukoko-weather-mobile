@@ -205,10 +205,10 @@ describe("opening a tile", () => {
     expect(tree.getByText("Next 24 hours")).toBeTruthy();
     expect(tree.getByText("Gusts")).toBeTruthy();
     expect(tree.getByText("Beaufort")).toBeTruthy();
-    // The chart is one image with a spoken summary.
+    // The chart is one element with a spoken summary.
     expect(
       tree.getByLabelText(
-        /^Wind, next 24 hours\. Wind speed \(km\/h\): from 9 km\/h at Now to 12 km\/h at 01:00/,
+        /^Wind, next 24 hours\. Wind speed \(km\/h\): lowest \d+ km\/h at .+, highest \d+ km\/h at /,
       ),
     ).toBeTruthy();
   });

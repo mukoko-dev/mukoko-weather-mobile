@@ -64,7 +64,8 @@ describe("MetricDetailSheet", () => {
     async (kind) => {
       const tree = await render(sheet(kind));
       const detail = metricDetail(kind, forecast, NOW, extras);
-      expect(tree.getByText(METRIC_TITLES[kind])).toBeTruthy();
+      // The chart's legend can repeat the title ("UV index").
+      expect(tree.getAllByText(METRIC_TITLES[kind]).length).toBeGreaterThan(0);
       // A headline can repeat in a related reading ("0 mm", "Last quarter").
       expect(tree.getAllByText(detail.headline).length).toBeGreaterThan(0);
       expect(tree.getByText(detail.sentence)).toBeTruthy();
@@ -83,7 +84,8 @@ describe("MetricDetailSheet", () => {
     async (kind) => {
       const tree = await render(sheet(kind));
       expect(tree.getByText("Next 24 hours")).toBeTruthy();
-      expect(tree.getAllByRole("image").length).toBeGreaterThan(0);
+      // The app's one chart: a single adjustable element with a spoken summary.
+      expect(tree.getAllByRole("adjustable").length).toBeGreaterThan(0);
     },
   );
 

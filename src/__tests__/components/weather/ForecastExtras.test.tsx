@@ -10,7 +10,7 @@ import {
   MinutelyCard,
   ModelComparisonCard,
 } from "@/components/weather/ForecastExtras";
-import { SectionBoundary } from "@/components/weather/SectionBoundary";
+import { ChartErrorBoundary } from "@/components/weather/ChartErrorBoundary";
 import { Text } from "react-native";
 import { setWindow } from "@/test-utils/mocks";
 import {
@@ -75,7 +75,9 @@ describe("MinutelyCard", () => {
     );
     expect(tree.getByText("Rain starting in ~30 min.")).toBeTruthy();
     expect(
-      tree.getByLabelText(/^Rain, next hour\. Rain \(mm\): from 0 mm at Now/),
+      tree.getByLabelText(
+        /^Rain, next hour\. Rain \(mm\): lowest 0 mm at Now, highest 0\.5 mm at /,
+      ),
     ).toBeTruthy();
   });
 });
@@ -108,7 +110,7 @@ describe("ModelComparisonCard", () => {
   });
 });
 
-describe("SectionBoundary", () => {
+describe("ChartErrorBoundary", () => {
   it("shows a compact fallback instead of taking the page down", async () => {
     const spy = jest
       .spyOn(console, "error")
@@ -121,9 +123,9 @@ describe("SectionBoundary", () => {
     }
     const tree = await render(
       <>
-        <SectionBoundary name="the thing">
+        <ChartErrorBoundary name="the thing">
           <Boom />
-        </SectionBoundary>
+        </ChartErrorBoundary>
         <Text>the rest of the page</Text>
       </>,
     );

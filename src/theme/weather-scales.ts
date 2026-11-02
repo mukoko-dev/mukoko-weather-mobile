@@ -20,6 +20,12 @@
 import { type ColorSchemeName } from "react-native";
 
 import { type AqiBand, AQI_BANDS } from "@/shared/aqi";
+import {
+  type SeriesKey,
+  WX_SERIES_DARK,
+  WX_SERIES_LIGHT,
+  seriesColors,
+} from "./wx-series";
 
 /** US EPA AQI band fills (`--wx-aqi-1..6`), identical in light and dark. */
 export const WX_AQI = [
@@ -49,54 +55,19 @@ export function frostColor(risk: FrostRisk, scheme: ColorSchemeName): string {
   return WX_FROST[scheme === "dark" ? "dark" : "light"][idx];
 }
 
-/** Chart series colours (`--wx-series-*`). */
-export type SeriesKey =
-  | "temp"
-  | "tempLow"
-  | "feels"
-  | "rain"
-  | "rainProb"
-  | "wind"
-  | "gust"
-  | "cloud"
-  | "humidity"
-  | "pressure"
-  | "dew"
-  | "visibility";
+/**
+ * Chart series colours (`--wx-series-*`): ONE table, in src/theme/wx-series.ts,
+ * which the chart itself reads. These are views of it by colour scheme.
+ */
+export type { SeriesKey };
 
 export const WX_SERIES: Record<"light" | "dark", Record<SeriesKey, string>> = {
-  light: {
-    temp: "#d73027",
-    tempLow: "#4575b4",
-    feels: "#b8570b",
-    rain: "#0b6fb8",
-    rainProb: "#08519c",
-    wind: "#2a9d8f",
-    gust: "#1b6a5f",
-    cloud: "#6b7280",
-    humidity: "#238b45",
-    pressure: "#6a51a3",
-    dew: "#0e7490",
-    visibility: "#525252",
-  },
-  dark: {
-    temp: "#f4806f",
-    tempLow: "#74add1",
-    feels: "#fdae61",
-    rain: "#4fc3f7",
-    rainProb: "#9ecae1",
-    wind: "#5fd3c4",
-    gust: "#8fe0d3",
-    cloud: "#a1a1aa",
-    humidity: "#74c476",
-    pressure: "#b2a3e0",
-    dew: "#67d1e6",
-    visibility: "#a3a3a3",
-  },
+  light: WX_SERIES_LIGHT,
+  dark: WX_SERIES_DARK,
 };
 
 export function seriesColor(key: SeriesKey, scheme: ColorSchemeName): string {
-  return WX_SERIES[scheme === "dark" ? "dark" : "light"][key];
+  return seriesColors(scheme === "dark")[key];
 }
 
 /** `--chart-1..6`, the categorical mineral lines (model comparison). */

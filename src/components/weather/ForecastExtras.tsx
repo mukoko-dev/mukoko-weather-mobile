@@ -2,13 +2,13 @@
  * The two cards that close the web's main column (Windy-style additions): the
  * next-hour rain nowcast and the multi-model temperature comparison. Each
  * exists only when `/v1/weather` carried its data (the web's rule), and each is
- * in its own `SectionBoundary`, so a crash in one never takes the page down.
+ * in its own `ChartErrorBoundary`, so a crash in one never takes the page down.
  *
  * - Next hour (`MinutelyCard`): one sentence and four 15-minute rain bars. With
  *   no rain the bars are quiet stubs and the sentence says so.
  * - Model comparison (`ModelComparisonCard`): how ECMWF IFS, ECMWF AIFS, GFS
  *   and ICON agree or diverge over the day, as four lines with a legend in
- *   words. Both draw with `SeriesChart` from the specs in `charts/chart-specs`.
+ *   words. Both draw with the one `TimeSeriesChart`, from the specs in `charts/chart-specs`.
  */
 
 import { StyleSheet, View } from "react-native";
@@ -27,11 +27,14 @@ import {
   nowcastTotal,
 } from "@/shared/nowcast";
 import { BORDER, RADIUS, SPACE, withAlpha } from "@/theme/mzizi";
-import { CHART } from "@/theme/chart";
 
-import { SectionBoundary } from "./SectionBoundary";
-import { SeriesChart } from "./charts/SeriesChart";
-import { modelChartSpec, nowcastChartSpec } from "./charts/chart-specs";
+import { ChartErrorBoundary } from "./ChartErrorBoundary";
+import {
+  chartProps,
+  modelChartSpec,
+  nowcastChartSpec,
+} from "./charts/chart-specs";
+import { TimeSeriesChart } from "./charts/TimeSeriesChart";
 import { WxText } from "./WxText";
 
 function Card({
@@ -95,9 +98,8 @@ export function MinutelyCard({
         {nowcastSummary(minutely)}
       </WxText>
       {hasRain ? (
-        <SeriesChart
-          {...nowcastChartSpec(rows, scheme)}
-          height={CHART.heightCompact}
+        <TimeSeriesChart
+          {...chartProps({ ...nowcastChartSpec(rows, scheme), aspect: 3 })}
         />
       ) : (
         <View
@@ -147,7 +149,7 @@ export function ModelComparisonCard({
       <WxText type="bodySm" color={colors.textTertiary}>
         {`How the major forecast models (${names}) agree or diverge on the day.`}
       </WxText>
-      <SeriesChart {...modelChartSpec(data, scheme)} />
+      <TimeSeriesChart {...chartProps(modelChartSpec(data, scheme))} />
       {spread !== null ? (
         <WxText type="bodySm" color={colors.textTertiary}>
           {`The models are up to ${spread}° apart at their widest.`}
@@ -164,21 +166,24 @@ export function ForecastExtras({ weather }: { weather: WeatherResponse }) {
   return (
     <>
       {weather.minutely ? (
-        <SectionBoundary name="the next-hour nowcast">
+        <ChartErrorBoundary name="the next-hour nowcast">
           <MinutelyCard minutely={weather.minutely} />
-        </SectionBoundary>
+        </ChartErrorBoundary>
       ) : null}
       {hasModels ? (
-        <SectionBoundary name="the model comparison">
+        <ChartErrorBoundary name="the model comparison">
           <ModelComparisonCard
             models={weather.models!}
             time={weather.modelsTime!}
           />
-        </SectionBoundary>
+        </ChartErrorBoundary>
       ) : null}
     </>
   );
 }
+
+/** The quiet stub standing for a dry 15-minute step, dp. */
+const STUB_HEIGHT = 32;
 
 const styles = StyleSheet.create({
   card: {
@@ -196,5 +201,5 @@ const styles = StyleSheet.create({
   },
   stubs: { flexDirection: "row", gap: SPACE.snug },
   stub: { flex: 1, alignItems: "center", gap: SPACE.hair },
-  stubBar: { width: "100%", height: CHART.stub, borderRadius: RADIUS.sm },
+  stubBar: { width: "100%", height: STUB_HEIGHT, borderRadius: RADIUS.sm },
 });

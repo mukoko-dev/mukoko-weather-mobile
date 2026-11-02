@@ -3,18 +3,55 @@
  * `ChartErrorBoundary`): if a chart or card throws while it renders, only that
  * section shows a short, quiet line, and the rest of the page keeps working.
  * The line is a real status for VoiceOver, never an empty gap.
+ *
+ * The app's ONE section boundary. Inside a card (a chart) the line takes the
+ * card's text `color`; a whole card that fails (no `color`) is replaced by a
+ * compact card of its own, so the page keeps its rhythm.
  */
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
+
+import { usePageColors } from "@/hooks/usePageColors";
+import { BORDER, RADIUS, SPACE } from "@/theme/mzizi";
 
 import { WxText } from "./WxText";
+
+function Fallback({ name, color }: { name: string; color?: string }) {
+  const { colors } = usePageColors();
+  return (
+    <View
+      testID="chart-error"
+      accessible
+      accessibilityRole="alert"
+      accessibilityLabel={`Unable to display ${name}`}
+      style={
+        color
+          ? undefined
+          : [
+              styles.card,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]
+      }
+    >
+      <WxText
+        type={color ? "body" : "bodySm"}
+        color={color ?? colors.textTertiary}
+      >
+        {`Unable to display ${name}.`}
+      </WxText>
+    </View>
+  );
+}
 
 type Props = {
   /** What failed, for the line and the log: "hourly forecast". */
   name: string;
-  /** The text colour (the section's own surface decides it). */
-  color: string;
+  /**
+   * The text colour inside a card (the section's own surface decides it).
+   * Leave it out for a whole card: the fallback is then a card itself.
+   */
+  color?: string;
   /**
    * A section that has failed draws its children again when this changes, so
    * a crash on one answer is not final: the next answer (a refresh) gets
@@ -49,17 +86,14 @@ export class ChartErrorBoundary extends Component<Props, State> {
 
   render() {
     if (!this.state.failed) return this.props.children;
-    return (
-      <View
-        testID="chart-error"
-        accessible
-        accessibilityRole="alert"
-        accessibilityLabel={`Unable to display ${this.props.name}`}
-      >
-        <WxText type="body" color={this.props.color}>
-          {`Unable to display ${this.props.name}.`}
-        </WxText>
-      </View>
-    );
+    return <Fallback name={this.props.name} color={this.props.color} />;
   }
 }
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: RADIUS.card,
+    borderWidth: BORDER.rest,
+    padding: SPACE.card,
+  },
+});

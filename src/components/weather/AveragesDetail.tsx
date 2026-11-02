@@ -29,9 +29,9 @@ import { BORDER, RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
 
 import { CardSkeleton } from "./CardSkeleton";
 import { SheetSection } from "./DetailSheet";
-import { SectionBoundary } from "./SectionBoundary";
-import { SeriesChart } from "./charts/SeriesChart";
-import { monthlyChartSpec } from "./charts/chart-specs";
+import { ChartErrorBoundary } from "./ChartErrorBoundary";
+import { chartProps, monthlyChartSpec } from "./charts/chart-specs";
+import { TimeSeriesChart } from "./charts/TimeSeriesChart";
 import { WxText } from "./WxText";
 
 type Mode = "temperature" | "precipitation";
@@ -217,9 +217,11 @@ function Ready({
       <Tabs mode={mode} onChange={setMode} />
       <Sentences items={comparisons[mode]} />
       <SheetSection heading="Monthly averages">
-        <SectionBoundary name="the averages chart">
-          <SeriesChart {...monthlyChartSpec(rows, mode, scheme)} />
-        </SectionBoundary>
+        <ChartErrorBoundary name="the averages chart">
+          <TimeSeriesChart
+            {...chartProps(monthlyChartSpec(rows, mode, scheme))}
+          />
+        </ChartErrorBoundary>
         <NormalsTable mode={mode} rows={rows} currentMonth={currentMonth} />
       </SheetSection>
       <WxText type="bodySm" color={colors.textTertiary}>

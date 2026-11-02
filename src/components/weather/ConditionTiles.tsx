@@ -58,7 +58,7 @@ import { InsightCard, InsightGrid, InsightRow } from "./InsightCard";
 import { MetricDetailSheet } from "./MetricDetailSheet";
 import { MetricValue } from "./MetricValue";
 import { SectionHeader } from "./SectionHeader";
-import { SectionBoundary } from "./SectionBoundary";
+import { ChartErrorBoundary } from "./ChartErrorBoundary";
 import {
   CompassDial,
   MiniBars,
@@ -199,21 +199,21 @@ export function ConditionTiles({
         />
         {point ? (
           <>
-            <SectionBoundary name="air quality">
+            <ChartErrorBoundary name="air quality">
               <AirQualityCard
                 lat={point.lat}
                 lon={point.lon}
                 now={now}
                 refreshKey={refreshKey}
               />
-            </SectionBoundary>
-            <SectionBoundary name="haze">
+            </ChartErrorBoundary>
+            <ChartErrorBoundary name="haze">
               <HazeCard
                 lat={point.lat}
                 lon={point.lon}
                 refreshKey={refreshKey}
               />
-            </SectionBoundary>
+            </ChartErrorBoundary>
           </>
         ) : null}
         <InsightRow>

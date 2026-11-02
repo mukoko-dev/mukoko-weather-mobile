@@ -5,13 +5,15 @@
  */
 
 import {
+  type ChartSpec,
+  chartProps,
   metricChartSpec,
   modelChartSpec,
   monthlyChartSpec,
   nowcastChartSpec,
   uvDaysChartSpec,
 } from "@/components/weather/charts/chart-specs";
-import { resolveAxis } from "@/shared/chart-geometry";
+import { resolveDomain } from "@/components/weather/charts/chart-layout";
 import { type MetricChart, metricSeries } from "@/shared/metric-details";
 import { nowcastRows } from "@/shared/nowcast";
 import { prepareModelComparisonData } from "@/shared/model-comparison";
@@ -92,8 +94,8 @@ describe("the next-24-hours charts", () => {
     const p = points.map((x) => x.pressure as number);
     expect(spec.left.min).toBe(Math.min(...p) - 2);
     expect(spec.left.max).toBe(Math.max(...p) + 2);
-    const axis = resolveAxis(spec.series[0].values, spec.left);
-    expect(axis.min).toBeGreaterThan(800);
+    const domain = resolveDomain(spec.series[0].values, spec.left, false);
+    expect(domain!.min).toBeGreaterThan(800);
   });
 
   it("leaves a gap for an hour with no reading, and never scales an axis from a zero", () => {
@@ -190,5 +192,61 @@ describe("the other charts", () => {
     expect(spec.labels).toEqual(["Now", "+15", "+30", "+45"]);
     expect(spec.series[0].kind).toBe("bar");
     expect(spec.left.min).toBe(0);
+  });
+});
+
+describe("chartProps: every spec is drawn by the one TimeSeriesChart", () => {
+  const spec: ChartSpec = {
+    title: "Rain",
+    labels: ["Now", "15:00"],
+    series: [
+      {
+        key: "mm",
+        label: "Rain (mm)",
+        unit: "mm",
+        values: [1, null],
+        color: "#123456",
+        kind: "bar",
+        barColors: ["#aa0000", "#00aa00"],
+      },
+      {
+        key: "pct",
+        label: "Chance",
+        unit: "%",
+        values: [20, 40],
+        color: "#654321",
+        kind: "area",
+        axis: "right",
+      },
+    ],
+    left: { min: 0, format: (v) => `${v} mm` },
+    right: { min: 0, max: 100, format: (v) => `${v}%` },
+    maxXLabels: 4,
+  };
+  const props = chartProps(spec, "rain-chart");
+
+  it("turns the labels and values into points, a missing reading a gap", () => {
+    expect(props.data).toEqual([
+      { label: "Now", mm: 1, pct: 20 },
+      { label: "15:00", mm: null, pct: 40 },
+    ]);
+    expect(props.labelKey).toBe("label");
+    expect(props.testID).toBe("rain-chart");
+    expect(props.maxTicksLimit).toBe(4);
+  });
+
+  it("keeps kind, axis and per-bar colours", () => {
+    const [bars, area] = props.series;
+    expect(bars).toMatchObject({ type: "bar", fill: false, yAxisID: "y" });
+    expect(bars.colorByValue?.(1, 0)).toBe("#aa0000");
+    expect(bars.colorByValue?.(null, 1)).toBe("#00aa00");
+    expect(area).toMatchObject({ type: "line", fill: true, yAxisID: "right" });
+    expect(props.yAxes?.y).toMatchObject({ min: 0, position: "left" });
+    expect(props.yAxes?.right).toMatchObject({ max: 100, position: "right" });
+  });
+
+  it("says each value with its unit", () => {
+    expect(props.valueFormat?.("Rain (mm)", 2)).toBe("2 mm");
+    expect(props.valueFormat?.("Chance", 40)).toBe("40%");
   });
 });

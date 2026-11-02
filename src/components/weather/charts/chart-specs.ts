@@ -21,9 +21,100 @@ import { type NowcastRow } from "@/shared/nowcast";
 import { WX_UV, uvBandIndex } from "@/theme/mzizi";
 import { modelLineColor, seriesColor } from "@/theme/weather-scales";
 
-import { type SeriesChartProps } from "./SeriesChart";
+import {
+  type SeriesConfig,
+  type TimeSeriesChartProps,
+} from "./TimeSeriesChart";
 
-export type ChartSpec = Omit<SeriesChartProps, "testID">;
+/** One series of a spec: its readings per label, colour and how it draws. */
+export type ChartSeries = {
+  key: string;
+  label: string;
+  /** Said and shown after a value ("km/h"); may be empty. */
+  unit: string;
+  values: (number | null)[];
+  /** A literal hex from src/theme/weather-scales.ts or the UV bands. */
+  color: string;
+  kind?: "line" | "area" | "bar";
+  dashed?: boolean;
+  axis?: "left" | "right";
+  /** Area fill or bar opacity. */
+  opacity?: number;
+  /** One colour per bar (the UV bands), else `color`. */
+  barColors?: string[];
+};
+
+export type ChartAxisSpec = {
+  min?: number;
+  max?: number;
+  /** A tick as text: "28°", "12 mm". */
+  format: (value: number) => string;
+};
+
+/**
+ * What a detail chart draws, as data. It is drawn by the app's ONE chart,
+ * `TimeSeriesChart`, through `chartProps` below: there is no second renderer.
+ */
+export type ChartSpec = {
+  /** The chart's accessible title ("Wind, next 24 hours"). */
+  title: string;
+  /** One x label per point ("Now", "15:00"). */
+  labels: string[];
+  series: ChartSeries[];
+  left: ChartAxisSpec;
+  right?: ChartAxisSpec;
+  maxXLabels?: number;
+  /** Kept for the specs' tests; the chart always shows its legend row. */
+  legend?: boolean;
+  /** Plot width over height (default 2, the web's `aspect-[2/1]`). */
+  aspect?: number;
+};
+
+/** "21°", "60%", "12 km/h": units that are symbols sit on the number. */
+export function withUnit(value: number, unit: string): string {
+  if (!unit) return String(value);
+  return /^[°%]/.test(unit) ? `${value}${unit}` : `${value} ${unit}`;
+}
+
+/** A spec as the props of the app's one chart, `TimeSeriesChart`. */
+export function chartProps(
+  spec: ChartSpec,
+  testID?: string,
+): TimeSeriesChartProps {
+  const data = spec.labels.map((label, i) => {
+    const point: Record<string, string | number | null> = { label };
+    for (const s of spec.series) point[s.key] = s.values[i] ?? null;
+    return point;
+  });
+  const series: SeriesConfig[] = spec.series.map((s) => ({
+    key: s.key,
+    label: s.label,
+    color: s.color,
+    type: s.kind === "bar" ? "bar" : "line",
+    fill: s.kind === "area",
+    dashed: s.dashed,
+    yAxisID: s.axis === "right" ? "right" : "y",
+    opacity: s.opacity,
+    colorByValue: s.barColors
+      ? (_value, index) => s.barColors?.[index] ?? s.color
+      : undefined,
+  }));
+  const units = new Map(spec.series.map((s) => [s.label, s.unit]));
+  return {
+    title: spec.title,
+    data,
+    labelKey: "label",
+    series,
+    yAxes: {
+      y: { ...spec.left, position: "left" },
+      ...(spec.right ? { right: { ...spec.right, position: "right" } } : {}),
+    },
+    valueFormat: (label, value) => withUnit(value, units.get(label) ?? ""),
+    maxTicksLimit: spec.maxXLabels,
+    aspect: spec.aspect,
+    testID,
+  };
+}
 
 /** One reading per hour; a missing one stays `null`, a gap, never a zero. */
 const pick = (

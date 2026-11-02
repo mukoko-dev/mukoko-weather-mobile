@@ -25,9 +25,13 @@ import { usePageColors } from "@/hooks/usePageColors";
 
 import { AveragesDetail } from "./AveragesDetail";
 import { DetailSheet, SheetSection, StatGrid } from "./DetailSheet";
-import { SectionBoundary } from "./SectionBoundary";
-import { SeriesChart } from "./charts/SeriesChart";
-import { metricChartSpec, uvDaysChartSpec } from "./charts/chart-specs";
+import { ChartErrorBoundary } from "./ChartErrorBoundary";
+import {
+  chartProps,
+  metricChartSpec,
+  uvDaysChartSpec,
+} from "./charts/chart-specs";
+import { TimeSeriesChart } from "./charts/TimeSeriesChart";
 import { WxText } from "./WxText";
 
 export type MetricDetailSheetProps = {
@@ -93,16 +97,18 @@ export function MetricDetailSheet({
       {detail ? (
         <>
           {shown === "averages" ? (
-            <SectionBoundary name="the averages">
+            <ChartErrorBoundary name="the averages">
               <AveragesDetail data={data} lat={lat} lon={lon} slug={slug} />
-            </SectionBoundary>
+            </ChartErrorBoundary>
           ) : null}
 
           {chart && series.length > 1 ? (
             <SheetSection heading="Next 24 hours">
-              <SectionBoundary name={`the ${detail.title.toLowerCase()} chart`}>
-                <SeriesChart {...metricChartSpec(chart, series, scheme)} />
-              </SectionBoundary>
+              <ChartErrorBoundary name={`the ${detail.title.toLowerCase()} chart`}>
+                <TimeSeriesChart
+                  {...chartProps(metricChartSpec(chart, series, scheme))}
+                />
+              </ChartErrorBoundary>
             </SheetSection>
           ) : null}
           {chart && series.length <= 1 ? (
@@ -113,9 +119,9 @@ export function MetricDetailSheet({
 
           {shown === "uv" && uvDays.length > 1 ? (
             <SheetSection heading="Peak UV, next days">
-              <SectionBoundary name="the UV by day chart">
-                <SeriesChart {...uvDaysChartSpec(uvDays)} />
-              </SectionBoundary>
+              <ChartErrorBoundary name="the UV by day chart">
+                <TimeSeriesChart {...chartProps(uvDaysChartSpec(uvDays))} />
+              </ChartErrorBoundary>
               <StatGrid
                 stats={uvDays.map((d) => ({
                   label: d.label,

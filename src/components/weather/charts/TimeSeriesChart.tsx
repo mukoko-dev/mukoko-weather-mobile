@@ -86,9 +86,10 @@ export interface SeriesConfig {
   showDots?: boolean;
   /**
    * Bars only: colour each bar from its own value (a hex from a published
-   * scale, such as the WHO UV bands) instead of one series colour.
+   * scale, such as the WHO UV bands) instead of one series colour. `index` is
+   * the bar's point, for a colour decided per point (a day's peak UV).
    */
-  colorByValue?: (value: number | null) => string;
+  colorByValue?: (value: number | null, index: number) => string;
 }
 
 export interface TimeSeriesChartProps {
@@ -467,7 +468,7 @@ export function TimeSeriesChart({
                       rx={CHART.barRadius}
                       fill={
                         cfg.colorByValue
-                          ? cfg.colorByValue(drawn.spec.values[b.index])
+                          ? cfg.colorByValue(drawn.spec.values[b.index], b.index)
                           : color
                       }
                       fillOpacity={cfg.opacity ?? CHART.barOpacity}
