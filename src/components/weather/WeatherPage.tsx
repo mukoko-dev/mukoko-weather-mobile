@@ -172,6 +172,8 @@ export type WeatherPageProps = {
    * forecast for this hour, why the refresh failed, and a way to try again.
    */
   saved?: SavedNotice;
+  /** A notice under the hero (the home's location ask). */
+  notice?: ReactNode;
 };
 
 export type SavedNotice = {
@@ -192,6 +194,7 @@ export function WeatherPage({
   refreshing,
   inTabs,
   saved,
+  notice,
 }: WeatherPageProps) {
   const now = useNow();
   const { activities } = usePreferences();
@@ -264,6 +267,7 @@ export function WeatherPage({
           onSettings={openSettings}
           activityLine={activityLine}
         />
+        {notice}
         {saved ? (
           <SavedForecastBanner
             placeName={name}

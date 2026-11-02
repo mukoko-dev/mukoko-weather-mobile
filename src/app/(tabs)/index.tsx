@@ -1,9 +1,13 @@
 /**
  * Weather (home) tab: the weather where you are.
  *
- * Flow:
- *   1. Ask for foreground location permission.
- *   2. If granted, take a fine GPS fix and name the exact place with
+ * Flow (the web's CurrentLocationHome):
+ *   1. Read the location permission WITHOUT asking. Never decided or off:
+ *      show the default city's weather at once, with the location ask over it
+ *      (`LocationPromptCard`: why it is asked, "Use my location"; when off,
+ *      why plus Settings and Search). The system prompt only ever follows a
+ *      tap on "Use my location" (issues #65, #66).
+ *   2. If already granted (or granted after the tap), take a fine GPS fix and name the exact place with
  *      GET /v1/geo (the API answers a `{name}--{geohash}` place; nothing is
  *      stored).
  *   3. Fetch /v1/weather?lat=&lon= and show it, and keep it on the phone.
@@ -14,7 +18,8 @@
  * (`saved`); with nothing kept, the error face says the cause in plain words.
  *
  * Without permission, or without a fix, it falls back to Harare, so the screen
- * always has weather to show; then the eyebrow does not say MY LOCATION.
+ * always has weather to show; then neither the eyebrow nor the bar's chip
+ * says My Location (src/state/home-status.ts).
  *
  * The page itself is `WeatherPage`, the same one a place's page uses, so the
  * two screens match each other and the web location page. This screen only
@@ -24,7 +29,9 @@
  */
 
 import * as Location from "expo-location";
+import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Linking } from "react-native";
 
 import { failureMessage } from "@/api/failure";
 import { geoLookup, type LocationSummary } from "@/api/locations";
@@ -40,6 +47,10 @@ import {
   weatherForPage,
 } from "@/api/place";
 import { MukokoLogo } from "@/components/MukokoLogo";
+import {
+  type LocationProblem,
+  LocationPromptCard,
+} from "@/components/weather/LocationPromptCard";
 import { WeatherError, WeatherPage } from "@/components/weather/WeatherPage";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
 import {
@@ -49,9 +60,12 @@ import {
   saveForecast,
   savedHomeFits,
 } from "@/state/forecast-store";
+import { setHomeStandIn } from "@/state/home-status";
+import { locationAskPutOff, putOffLocationAsk } from "@/state/location-ask";
 
 /** Harare, Mukoko's editorial default, used when there is no location fix. */
 const FALLBACK = HARARE_DEFAULT;
+const DEFAULT_PLACE_NAME = FALLBACK.label ?? "Harare";
 
 type Coords = {
   lat: number;
@@ -79,10 +93,17 @@ export default function WeatherHome() {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [refreshing, setRefreshing] = useState(false);
 
-  const resolveLocation = useCallback(async (): Promise<Coords> => {
+  // The location ask (the web's LocationPromptCard): shown over the default
+  // city, never on the first frame as a system alert.
+  const [ask, setAsk] = useState<{
+    busy: boolean;
+    problem: LocationProblem | null;
+  }>({ busy: false, problem: null });
+  const [askDismissed, setAskDismissed] = useState(true);
+
+  /** A fine fix, or null when the phone could not give one. */
+  const takeFix = useCallback(async (): Promise<Coords | null> => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") return { ...FALLBACK, fallback: true };
       // High accuracy so the API can name a road, shop or suburb rather than
       // the nearest city centre.
       const pos = await Location.getCurrentPositionAsync({
@@ -90,9 +111,38 @@ export default function WeatherHome() {
       });
       return { lat: pos.coords.latitude, lon: pos.coords.longitude };
     } catch {
-      return { ...FALLBACK, fallback: true };
+      return null;
     }
   }, []);
+
+  /**
+   * Where to start without asking anything: the fix when location is already
+   * allowed (silent, as the web refreshes when the browser already granted
+   * it), else the default city at once. The system prompt only ever follows a
+   * tap on "Use my location" (issue #65).
+   */
+  const resolveLocation = useCallback(async (): Promise<Coords> => {
+    let status: Location.PermissionStatus | undefined;
+    let canAskAgain = true;
+    try {
+      ({ status, canAskAgain } =
+        await Location.getForegroundPermissionsAsync());
+    } catch {
+      status = undefined;
+    }
+    if (status === "granted") {
+      const fix = await takeFix();
+      if (fix) return fix;
+      setAsk({ busy: false, problem: "no-location" });
+      return { ...FALLBACK, fallback: true };
+    }
+    // Denied: say so with a way forward (issue #66). Never asked: offer the
+    // ask, unless it was put off recently.
+    if (status === "denied" && !canAskAgain) {
+      setAsk({ busy: false, problem: "denied" });
+    }
+    return { ...FALLBACK, fallback: true };
+  }, [takeFix]);
 
   /**
    * Name the exact place under a GPS fix (nothing is stored). The Harare
@@ -164,10 +214,13 @@ export default function WeatherHome() {
 
   useEffect(() => () => inFlight.current?.abort(), []);
 
-  useEffect(() => {
-    void (async () => {
-      const loc = await resolveLocation();
+  /** Show the weather for `loc` and name the place alongside. */
+  const start = useCallback(
+    async (loc: Coords) => {
+      named.current = null;
+      lastRecord.current = null;
       setCoords(loc);
+      setHomeStandIn(loc.fallback ? DEFAULT_PLACE_NAME : null);
       // Start the weather at once; name the place alongside, so a slow
       // geocode never holds the first paint.
       void load(loc);
@@ -176,6 +229,8 @@ export default function WeatherHome() {
       // they ask the Worker once, for the place, not first for the bare point.
       // The Harare default keeps its own name and links.
       setCoords((prev) => {
+        // A newer start (the person tapped "Use my location") wins.
+        if (prev && (prev.lat !== loc.lat || prev.lon !== loc.lon)) return prev;
         const base = prev ?? loc;
         if (loc.fallback) {
           return { ...base, place: fallbackPlace(found), settled: true };
@@ -196,8 +251,54 @@ export default function WeatherHome() {
           slug: found.slug,
         });
       }
+    },
+    [load, resolvePlace],
+  );
+
+  useEffect(() => {
+    void (async () => {
+      const [loc, putOff] = await Promise.all([
+        resolveLocation(),
+        locationAskPutOff(),
+      ]);
+      setAskDismissed(putOff);
+      await start(loc);
     })();
-  }, [load, resolveLocation, resolvePlace]);
+  }, [resolveLocation, start]);
+
+  // Leaving home with the default city shown: the bar's My Location is not
+  // standing in for anything any more.
+  useEffect(() => () => setHomeStandIn(null), []);
+
+  /** "Use my location": the only path to the system prompt. */
+  const onUseLocation = useCallback(async () => {
+    setAsk({ busy: true, problem: null });
+    let granted = false;
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      granted = status === "granted";
+    } catch {
+      granted = false;
+    }
+    if (!granted) {
+      setAsk({ busy: false, problem: "denied" });
+      return;
+    }
+    const fix = await takeFix();
+    if (!fix) {
+      setAsk({ busy: false, problem: "no-location" });
+      return;
+    }
+    setAsk({ busy: false, problem: null });
+    setState({ kind: "loading" });
+    await start(fix);
+  }, [start, takeFix]);
+
+  const onDismissAsk = useCallback(() => {
+    setAskDismissed(true);
+    setAsk((prev) => ({ ...prev, problem: null }));
+    void putOffLocationAsk();
+  }, []);
 
   const onRefresh = useCallback(async () => {
     if (!coords) return;
@@ -235,6 +336,20 @@ export default function WeatherHome() {
   // The mark alone: the trail (Home / country / province / place) shares the
   // row, and the full wordmark would wrap it onto three lines on a phone.
   const brand = <MukokoLogo onSky showWordmark={false} testID="home-brand" />;
+  // Over the default city: say it is a stand-in, why, and the ways forward
+  // (issues #65, #66). Gone once the person's own place is on screen.
+  const showAsk = Boolean(coords?.fallback) && (!askDismissed || !!ask.problem);
+  const notice = showAsk ? (
+    <LocationPromptCard
+      placeName={standInName(coords)}
+      busy={ask.busy}
+      problem={ask.problem}
+      onUseLocation={() => void onUseLocation()}
+      onDismiss={onDismissAsk}
+      onSearch={() => router.navigate("/my")}
+      onOpenSettings={() => void Linking.openSettings()}
+    />
+  ) : undefined;
   if (state.kind === "loading") {
     // "Still trying" is about the weather service, so it waits for the fix:
     // while the GPS is still locating there is no request to retry.
@@ -257,6 +372,7 @@ export default function WeatherHome() {
         onRefresh={onRefresh}
         refreshing={refreshing}
         inTabs
+        notice={notice}
         saved={{
           fetchedAt: view.fetchedAt,
           forecastOnly: view.freshness === "forecast",
@@ -289,6 +405,12 @@ export default function WeatherHome() {
       onRefresh={onRefresh}
       refreshing={refreshing}
       inTabs
+      notice={notice}
     />
   );
+}
+
+/** The name the default city is shown under. */
+function standInName(coords: Coords | null): string {
+  return coords?.label ?? coords?.place?.name ?? DEFAULT_PLACE_NAME;
 }
