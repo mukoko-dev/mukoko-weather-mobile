@@ -6,6 +6,7 @@ import {
   WEATHER_CACHE_MAX,
   WEATHER_CACHE_TTL_MS,
   clearWeatherCache,
+  recallPlaceName,
   recallWeather,
   rememberWeather,
 } from "./weather-cache";
@@ -72,5 +73,14 @@ describe("weather cache", () => {
     rememberWeather("harare", w(1), 0);
     clearWeatherCache();
     expect(recallWeather("harare", 0)).toBeUndefined();
+  });
+
+  it("keeps the name the linking page showed, for as long as the answer", () => {
+    rememberWeather("strathaven--ksy4dd7", w(1), 0, "Strathaven");
+    expect(recallPlaceName("strathaven--ksy4dd7", 0)).toBe("Strathaven");
+    expect(
+      recallPlaceName("strathaven--ksy4dd7", WEATHER_CACHE_TTL_MS + 1),
+    ).toBeUndefined();
+    expect(recallPlaceName("unknown", 0)).toBeUndefined();
   });
 });

@@ -27,12 +27,15 @@ export type AtmosphericDetailsCardProps = {
   hourly: HourlyWeather;
   utcOffsetSeconds?: number;
   now?: Date;
+  /** A chart that crashed draws again when this changes (a new answer). */
+  resetKey?: string;
 };
 
 export function AtmosphericDetailsCard({
   hourly,
   utcOffsetSeconds,
   now,
+  resetKey,
 }: AtmosphericDetailsCardProps) {
   const { colors } = usePageColors();
   const border = useCardBorder("quiet");
@@ -74,6 +77,7 @@ export function AtmosphericDetailsCard({
             <ChartErrorBoundary
               name={s.title.toLowerCase()}
               color={colors.textTertiary}
+              resetKey={resetKey}
             >
               {s.chart}
             </ChartErrorBoundary>

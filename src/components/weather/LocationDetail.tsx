@@ -24,6 +24,7 @@ import { StyleSheet, View } from "react-native";
 
 import { type WeatherResponse } from "@/api/weather";
 import { useLocationWeather } from "@/hooks/useLocationWeather";
+import { recallPlaceName } from "@/hooks/weather-cache";
 import { useNow } from "@/hooks/useNow";
 import { skyFamily } from "@/shared/hero";
 import { weatherCodeToInfo } from "@/shared/weather";
@@ -40,6 +41,7 @@ import {
   type LocationSubRoute,
   SUB_ROUTE_TITLE,
   locationHref,
+  placeNameFromSlug,
 } from "./location-routes";
 import { SunTimesCard } from "./SunTimesCard";
 import { HeroTopRow } from "./SkyHero";
@@ -51,15 +53,6 @@ import {
   shareWeather,
 } from "./WeatherPage";
 import { WxText } from "./WxText";
-
-function titleCaseSlug(slug: string | undefined): string {
-  if (!slug) return "Location";
-  return slug
-    .split(/[-_]/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 /**
  * "Harare · 1490m": the web's subtitle without the season (that is the place
@@ -98,6 +91,22 @@ function Section({ name, color, resetKey, children }: SectionProps) {
   );
 }
 
+/**
+ * One key per answer object: a refresh brings a new object, so a section that
+ * crashed on the last answer gets another go even when the Worker served the
+ * same timestamps from its cache.
+ */
+const answerKeys = new WeakMap<object, string>();
+let nextAnswerKey = 0;
+export function answerKey(weather: WeatherResponse): string {
+  let key = answerKeys.get(weather);
+  if (key === undefined) {
+    key = String((nextAnswerKey += 1));
+    answerKeys.set(weather, key);
+  }
+  return key;
+}
+
 export type DetailPageProps = {
   weather: WeatherResponse;
   slug: string;
@@ -105,6 +114,8 @@ export type DetailPageProps = {
   name: string;
   onRefresh?: () => void | Promise<void>;
   refreshing?: boolean;
+  /** A refresh that failed: the page stays and says so. */
+  refreshError?: string;
 };
 
 export function DetailPage({
@@ -114,6 +125,7 @@ export function DetailPage({
   name,
   onRefresh,
   refreshing,
+  refreshError,
 }: DetailPageProps) {
   const now = useNow();
   const { current, forecast } = weather;
@@ -124,7 +136,7 @@ export function DetailPage({
   const subtitle = detailSubtitle(weather.location);
   const offset = weather.utcOffsetSeconds;
   // A new answer (refresh) gives a section that crashed on the last one another go.
-  const resetKey = `${weather.fetchedAt ?? ""}|${current.observedAt ?? ""}`;
+  const resetKey = answerKey(weather);
 
   return (
     <WeatherScroll
@@ -158,6 +170,16 @@ export function DetailPage({
           {subtitle ? (
             <WxText type="body" color={SKY_FG_DIM}>
               {subtitle}
+            </WxText>
+          ) : null}
+          {refreshError ? (
+            <WxText
+              type="body"
+              color={SKY_FG_DIM}
+              accessibilityRole="alert"
+              testID="detail-refresh-error"
+            >
+              {`Could not refresh: ${refreshError}`}
             </WxText>
           ) : null}
         </View>
@@ -205,6 +227,7 @@ export function DetailPage({
               resetKey={resetKey}
             >
               <AtmosphericDetailsCard
+                resetKey={resetKey}
                 hourly={forecast.hourly}
                 utcOffsetSeconds={offset}
                 now={now}
@@ -224,8 +247,12 @@ export type LocationDetailScreenProps = {
 };
 
 export function LocationDetailScreen({ slug, sub }: LocationDetailScreenProps) {
-  const { state, refreshing, onRefresh, onRetry } = useLocationWeather(slug);
-  const fallbackName = titleCaseSlug(slug);
+  const { state, refreshError, refreshing, onRefresh, onRetry } =
+    useLocationWeather(slug);
+  // The answer's own name, else what the linking page called the place (a GPS
+  // place's answer has none), else words from the slug.
+  const fallbackName =
+    (slug ? recallPlaceName(slug) : undefined) ?? placeNameFromSlug(slug);
   const name =
     state.kind === "ready"
       ? (state.weather.location?.name ?? fallbackName)
@@ -300,6 +327,7 @@ export function LocationDetailScreen({ slug, sub }: LocationDetailScreenProps) {
         name={name}
         onRefresh={onRefresh}
         refreshing={refreshing}
+        refreshError={refreshError}
       />
     </>
   );

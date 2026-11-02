@@ -10,6 +10,7 @@ import { router } from "expo-router";
 import { Share } from "react-native";
 
 import { fetchWeather } from "@/api/weather";
+import { FALLBACK_MESSAGE } from "@/hooks/useLocationWeather";
 import { ChartErrorBoundary } from "@/components/weather/ChartErrorBoundary";
 import {
   DetailPage,
@@ -467,7 +468,7 @@ describe("the screen: every state", () => {
     expect(tree.queryByText("Harare Atmosphere")).toBeNull();
   });
 
-  it("does not remember a seasonal estimate for the next page", async () => {
+  it("never draws the seasonal estimate as a forecast, nor remembers it", async () => {
     fetchMock.mockResolvedValue({
       ...harareWeather(),
       source: "fallback",
@@ -476,8 +477,71 @@ describe("the screen: every state", () => {
       <LocationDetailScreen slug="harare" sub="forecast" />,
     );
     await settle();
-    expect(tree.getByText("Harare Forecast")).toBeTruthy();
+    expect(tree.getByText(FALLBACK_MESSAGE)).toBeTruthy();
+    expect(tree.queryByTestId("hourly-chart")).toBeNull();
     expect(recallWeather("harare")).toBeUndefined();
+  });
+
+  it("a GPS place's page is titled with the name its page showed, not the slug", async () => {
+    // The tab's answer comes back by coordinates, with no `location`.
+    rememberWeather(
+      "strathaven--ksy4dd7",
+      { ...harareWeather(), location: undefined },
+      Date.now(),
+      "Strathaven",
+    );
+    const tree = await render(
+      <LocationDetailScreen slug="strathaven--ksy4dd7" sub="forecast" />,
+    );
+    expect(tree.getByText("Strathaven Forecast")).toBeTruthy();
+    expect(tree.getByLabelText("Back to Strathaven")).toBeTruthy();
+    expect(tree.queryByText(/Ksy4dd7/)).toBeNull();
+  });
+
+  it("a drawn page stays drawn after its remembered answer expires", async () => {
+    const now = jest.spyOn(Date, "now");
+    now.mockReturnValue(1_000_000);
+    const bulawayo = {
+      ...harareWeather(),
+      location: { ...harareWeather().location!, name: "Bulawayo" },
+    };
+    rememberWeather("harare", harareWeather());
+    rememberWeather("bulawayo", bulawayo);
+    const tree = await render(
+      <LocationDetailScreen slug="harare" sub="forecast" />,
+    );
+    // The route is reused for a place the app already holds...
+    await tree.rerender(
+      <LocationDetailScreen slug="bulawayo" sub="forecast" />,
+    );
+    expect(tree.getByText("Bulawayo Forecast")).toBeTruthy();
+    // ...and that memory expires while the page is on screen.
+    now.mockReturnValue(1_000_000 + 60 * 60_000);
+    await tree.rerender(
+      <LocationDetailScreen slug="bulawayo" sub="forecast" />,
+    );
+    expect(tree.getByText("Bulawayo Forecast")).toBeTruthy();
+    expect(tree.queryByTestId("detail-skeleton")).toBeNull();
+    now.mockRestore();
+  });
+
+  it("a refresh that fails keeps the page and says so", async () => {
+    fetchMock.mockResolvedValueOnce(harareWeather());
+    const tree = await render(
+      <LocationDetailScreen slug="harare" sub="forecast" />,
+    );
+    await settle();
+    fetchMock.mockRejectedValueOnce(new Error("You are offline."));
+    const control = findProp(tree.toJSON(), "refreshControl") as {
+      props: { onRefresh: () => Promise<void> };
+    };
+    await act(async () => {
+      await control.props.onRefresh();
+    });
+    expect(tree.getByText("Harare Forecast")).toBeTruthy();
+    expect(tree.queryByText("Weather unavailable")).toBeNull();
+    expect(tree.getByTestId("detail-refresh-error")).toBeTruthy();
+    expect(tree.getByText("Could not refresh: You are offline.")).toBeTruthy();
   });
 
   it("pull to refresh asks again and keeps the page", async () => {

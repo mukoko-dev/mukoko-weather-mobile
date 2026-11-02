@@ -162,9 +162,10 @@ export function WeatherPage({
   const links = useLocationLinks(slug);
 
   // The detail pages open from this answer without asking again.
+  // The name goes with it: a GPS place's answer has no `location` to name it.
   useEffect(() => {
-    if (slug) rememberWeather(slug, weather);
-  }, [slug, weather]);
+    if (slug) rememberWeather(slug, weather, Date.now(), name);
+  }, [slug, weather, name]);
 
   const onShare = () => shareWeather(name, current.temperature, info.label);
 

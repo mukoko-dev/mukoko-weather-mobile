@@ -8,7 +8,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { SUB_ROUTE_PATH } from "@/components/weather/location-routes";
+import {
+  SUB_ROUTE_PATH,
+  placeNameFromSlug,
+} from "@/components/weather/location-routes";
 
 const app = join(__dirname, "..", "app");
 
@@ -58,5 +61,24 @@ describe("the root stack", () => {
         "headerShown: true",
       );
     }
+  });
+});
+
+describe("placeNameFromSlug", () => {
+  it("turns a slug into words", () => {
+    expect(placeNameFromSlug("harare")).toBe("Harare");
+    expect(placeNameFromSlug("victoria-falls")).toBe("Victoria Falls");
+  });
+
+  it("drops a smart slug's ref, which is an identity, not words", () => {
+    expect(placeNameFromSlug("strathaven--ksy4dd7")).toBe("Strathaven");
+    expect(placeNameFromSlug("canberra-residences--osm-w890123")).toBe(
+      "Canberra Residences",
+    );
+  });
+
+  it("names nothing as 'Location'", () => {
+    expect(placeNameFromSlug(undefined)).toBe("Location");
+    expect(placeNameFromSlug("")).toBe("Location");
   });
 });

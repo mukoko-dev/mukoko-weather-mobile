@@ -194,13 +194,32 @@ describe("prepareAtmosphericData (the web's vectors)", () => {
     }
   });
 
-  it("rounds pressure and wind, and keeps humidity, cloud and UV as given", () => {
+  it("rounds pressure, wind and UV, and keeps humidity and cloud as given", () => {
     const [p] = prepareAtmosphericData(hourly, HARARE, NOW);
     expect(p.pressure).toBe(1013);
     expect(p.windSpeed).toBe(10);
     expect(p.windGusts).toBe(19);
     expect(p.humidity).toBe(60);
     expect(p.uvIndex).toBe(3);
+  });
+
+  it("rounds UV like the tiles, so the readout never says 'UV 7.85'", () => {
+    const hourly = harareHourly();
+    hourly.uv_index = hourly.uv_index!.map(() => 7.85);
+    expect(prepareAtmosphericData(hourly, HARARE, NOW)[0].uvIndex).toBe(8);
+  });
+});
+
+describe("a stale answer (every hour already past)", () => {
+  // Two days after the series ends: `currentHourIndex` falls back to index 0.
+  const LATER = new Date(Date.UTC(2026, 9, 12, 6, 30));
+
+  it("labels its first hour with its own time, never 'Now'", () => {
+    const hourly = prepareHourlyData(harareHourly(), HARARE, LATER);
+    const atmos = prepareAtmosphericData(harareHourly(), HARARE, LATER);
+    expect(hourly[0].label).toBe("00:00");
+    expect(atmos[0].label).toBe("00:00");
+    expect(hourly.some((p) => p.label === "Now")).toBe(false);
   });
 });
 

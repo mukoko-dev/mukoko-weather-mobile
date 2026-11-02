@@ -14,7 +14,8 @@ export const WEATHER_CACHE_TTL_MS = 5 * 60_000;
 /** Most places remembered; the oldest is dropped first. */
 export const WEATHER_CACHE_MAX = 12;
 
-type Entry = { weather: WeatherResponse; at: number };
+/** `name`: what the linking page called the place, when the answer has none. */
+type Entry = { weather: WeatherResponse; at: number; name?: string };
 
 const entries = new Map<string, Entry>();
 
@@ -22,6 +23,7 @@ export function rememberWeather(
   slug: string,
   weather: WeatherResponse,
   at: number = Date.now(),
+  name?: string,
 ): void {
   // The seasonal estimate is a stand-in for a forecast, not one: remembering
   // it would draw it as a real hourly forecast on the detail pages and keep
@@ -31,7 +33,7 @@ export function rememberWeather(
     return;
   }
   entries.delete(slug);
-  entries.set(slug, { weather, at });
+  entries.set(slug, { weather, at, name });
   while (entries.size > WEATHER_CACHE_MAX) {
     const oldest = entries.keys().next().value;
     if (oldest === undefined) break;
@@ -50,6 +52,18 @@ export function recallWeather(
     return undefined;
   }
   return hit.weather;
+}
+
+/**
+ * The name the page that linked here showed for the place. A GPS place's
+ * answer comes back by coordinates with no `location`, so without this its
+ * detail pages would title themselves from the slug ("Strathaven Ksy4dd7").
+ */
+export function recallPlaceName(
+  slug: string,
+  now: number = Date.now(),
+): string | undefined {
+  return recallWeather(slug, now) ? entries.get(slug)?.name : undefined;
 }
 
 export function clearWeatherCache(): void {

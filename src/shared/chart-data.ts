@@ -18,8 +18,10 @@
 
 import {
   currentHourIndex,
+  currentWallHourMs,
   locationClockLabel,
   resolveOffsetSeconds,
+  wallClockMs,
 } from "./location-time";
 import type { DailyWeather, HourlyWeather } from "./weather";
 
@@ -31,6 +33,23 @@ export type Reading = number | null;
 
 function reading(v: unknown): Reading {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+/**
+ * "Now" only for the slot that IS the place's current hour. A stale answer
+ * whose hours are all past starts at index 0 (`currentHourIndex`), and that
+ * hour is labelled with its own time, never passed off as now.
+ */
+function isNowSlot(
+  times: readonly string[],
+  idx: number,
+  offset: number,
+  now: Date,
+): boolean {
+  const wall = wallClockMs(times[idx], offset);
+  if (wall === null) return false;
+  const HOUR = 3_600_000;
+  return Math.floor(wall / HOUR) * HOUR === currentWallHourMs(offset, now);
 }
 
 function rounded(v: unknown): Reading {
@@ -63,7 +82,9 @@ export function prepareHourlyData(
   for (let i = 0; i < CHART_HOURS && start + i < hourly.time.length; i++) {
     const idx = start + i;
     points.push({
-      label: i === 0 ? "Now" : locationClockLabel(hourly.time[idx], offset),
+      label: isNowSlot(hourly.time, idx, offset, now)
+        ? "Now"
+        : locationClockLabel(hourly.time[idx], offset),
       temp: rounded(hourly.temperature_2m?.[idx]),
       feelsLike: rounded(hourly.apparent_temperature?.[idx]),
       rain: reading(hourly.precipitation_probability?.[idx]),
@@ -145,13 +166,15 @@ export function prepareAtmosphericData(
   for (let i = 0; i < CHART_HOURS && start + i < hourly.time.length; i++) {
     const idx = start + i;
     points.push({
-      label: i === 0 ? "Now" : locationClockLabel(hourly.time[idx], offset),
+      label: isNowSlot(hourly.time, idx, offset, now)
+        ? "Now"
+        : locationClockLabel(hourly.time[idx], offset),
       humidity: reading(hourly.relative_humidity_2m?.[idx]),
       cloudCover: reading(hourly.cloud_cover?.[idx]),
       pressure: rounded(hourly.surface_pressure?.[idx]),
       windSpeed: rounded(hourly.wind_speed_10m?.[idx]),
       windGusts: rounded(hourly.wind_gusts_10m?.[idx]),
-      uvIndex: reading(hourly.uv_index?.[idx]),
+      uvIndex: rounded(hourly.uv_index?.[idx]),
     });
   }
   return points;
