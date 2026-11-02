@@ -10,6 +10,7 @@ import { Text, type TextProps } from "react-native";
 import {
   FONT_FILE,
   type Family,
+  TEXT_SCALE_MAX,
   type TypeToken,
   type Weight,
   TYPE,
@@ -48,8 +49,10 @@ export function WxText({
   ...rest
 }: WxTextProps) {
   const { size } = TYPE[type];
+  const cap = (TEXT_SCALE_MAX as Partial<Record<TypeToken, number>>)[type];
   return (
     <Text
+      maxFontSizeMultiplier={cap}
       {...rest}
       style={[
         {

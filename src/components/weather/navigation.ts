@@ -13,6 +13,14 @@ export function goHome() {
   router.dismissTo("/");
 }
 
+/**
+ * The ⋯ menu as a native sheet (src/app/menu.tsx): Use my location, the map,
+ * Locations, Explore and My Weather.
+ */
+export function openSettings() {
+  router.push("/menu");
+}
+
 /** A place's agriculture page. */
 export function openAgriculture(slug: string) {
   router.push(`/location/${encodeURIComponent(slug)}/agriculture`);

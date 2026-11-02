@@ -85,7 +85,7 @@ describe("Full forecast (the Conditions card)", () => {
   it("is not drawn without a handler (no dead link)", async () => {
     const tree = await render(<ConditionsCard forecast={forecast} now={NOW} />);
     expect(tree.queryByTestId("full-forecast-link")).toBeNull();
-    expect(tree.getByText("Conditions")).toBeTruthy();
+    expect(tree.getByText("Hourly forecast")).toBeTruthy();
   });
 });
 

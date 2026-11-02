@@ -50,7 +50,7 @@ import { ConditionsCard } from "./ConditionsCard";
 import { EnsoCard } from "./EnsoCard";
 import { ForecastExtras } from "./ForecastExtras";
 import { MapPreviewCard } from "./MapPreviewCard";
-import { goHome, openAgriculture } from "./navigation";
+import { goHome, openAgriculture, openSettings } from "./navigation";
 
 import { RoundControl } from "./RoundControl";
 import { RecentReports } from "./RecentReports";
@@ -64,9 +64,7 @@ import { WxText } from "./WxText";
  * the web's phone menu: Use my location, the map, Locations, Explore and My
  * Weather (settings, saved places, sign in).
  */
-export function openSettings() {
-  router.push("/menu");
-}
+export { openSettings };
 
 /**
  * Go back, or to `fallback` (home by default) when this page is the first

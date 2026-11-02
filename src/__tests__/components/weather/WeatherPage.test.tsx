@@ -63,8 +63,10 @@ describe("WeatherPage", () => {
     ).toBeTruthy();
     expect(tree.getByTestId("sky-hero")).toBeTruthy();
     expect(tree.getByText("My Location")).toBeTruthy();
-    // The Conditions card on the sky and the Conditions section of tiles.
-    expect(tree.getAllByText("Conditions")).toHaveLength(2);
+    // The hourly card on the sky and the Conditions section of tiles: one
+    // name each (issue #61).
+    expect(tree.getByText("Hourly forecast")).toBeTruthy();
+    expect(tree.getAllByText("Conditions")).toHaveLength(1);
     expect(tree.getByText("Wind")).toBeTruthy();
     expect(tree.queryByText("7-Day Forecast")).toBeNull();
     // The cards under the tiles: farm weather and the El Niño outlook (loading

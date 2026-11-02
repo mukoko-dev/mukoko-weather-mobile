@@ -18,7 +18,14 @@
 
 import { setStatusBarStyle } from "expo-status-bar";
 import { useFocusEffect } from "expo-router";
-import { type ReactNode, useCallback, useState } from "react";
+import {
+  type ComponentRef,
+  type ReactNode,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Animated,
   type NativeScrollEvent,
@@ -34,8 +41,9 @@ import { useShell } from "@/components/shell/ShellContext";
 import { usePageColors } from "@/hooks/usePageColors";
 import { type SkyFamily } from "@/shared/hero";
 import { SIZE, SPACE } from "@/theme/mzizi";
-import { SKY_FG, skyStops } from "@/theme/sky";
+import { SKY_FG, SKY_REACH, skyStops } from "@/theme/sky";
 
+import { SkyExtentContext } from "./SkyExtent";
 import { WeatherSky } from "./WeatherSky";
 
 /**
@@ -86,6 +94,32 @@ export function WeatherScroll({
   const [scrollY] = useState(() => new Animated.Value(0));
   const [onSky, setOnSky] = useState(true);
   const stops = skyStops(family, dark);
+  // How far the sky must reach for the headings drawn on it (SkyExtent).
+  const content = useRef<ComponentRef<typeof View>>(null);
+  const [minReach, setMinReach] = useState(0);
+  const [version, setVersion] = useState(0);
+  const extendTo = useCallback((bottom: number) => {
+    // The latest measurement wins, so the sky also shrinks back when the
+    // heading moves up or goes away.
+    const reach = bottom > 0 ? Math.ceil(bottom + SKY_REACH.fade) : 0;
+    setMinReach((prev) => (prev === reach ? prev : reach));
+  }, []);
+  const sky = useMemo(
+    () => ({ content, version, extendTo }),
+    [version, extendTo],
+  );
+  // Any change in the content's height (a card above loaded, a banner went
+  // away) asks the headings on the sky to measure again.
+  const lastHeight = useRef(0);
+  const onContentLayout = useCallback(
+    (e: { nativeEvent: { layout: { height: number } } }) => {
+      const h = Math.round(e.nativeEvent.layout.height);
+      if (h === lastHeight.current) return;
+      lastHeight.current = h;
+      setVersion((v) => v + 1);
+    },
+    [],
+  );
 
   const onScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -135,9 +169,15 @@ export function WeatherScroll({
         style={[styles.cap, { backgroundColor: stops.top }]}
         pointerEvents="none"
       />
-      <WeatherSky family={family} />
-      <View style={pagePadding(insets, inTabs, clearance)}>
-        <View style={styles.column}>{children}</View>
+      <WeatherSky family={family} minReach={minReach} />
+      <View
+        ref={content}
+        onLayout={onContentLayout}
+        style={pagePadding(insets, inTabs, clearance)}
+      >
+        <SkyExtentContext.Provider value={sky}>
+          <View style={styles.column}>{children}</View>
+        </SkyExtentContext.Provider>
       </View>
     </Animated.ScrollView>
   );

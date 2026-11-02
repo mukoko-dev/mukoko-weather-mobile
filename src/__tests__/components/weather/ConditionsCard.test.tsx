@@ -61,9 +61,24 @@ describe("hourTiles", () => {
   });
 
   it("gives every hour a spoken label with the time, degrees and condition", () => {
+    // "Now" is the current reading (15.6), as the hero; the 02:00 hour's
+    // forecast is 17 (issue #62).
     expect(hourTiles(forecast, NOW)[0].spoken).toBe(
-      "Now: 17 degrees, Clear sky",
+      "Now: 16 degrees, Clear sky",
     );
+  });
+
+  it("agrees with the hero: Now is the current reading, later hours the forecast (#62)", () => {
+    const tiles = hourTiles(
+      {
+        ...forecast,
+        current: { ...forecast.current, temperature_2m: 28.1, weather_code: 3 },
+      },
+      NOW,
+    );
+    expect(tiles[0].temp).toBe(28);
+    expect(tiles[0].code).toBe(3);
+    expect(tiles[1].temp).toBe(Math.round(forecast.hourly.temperature_2m[3]));
   });
 
   it("is empty for a forecast with no hours", () => {
@@ -79,7 +94,8 @@ describe("ConditionsCard", () => {
     const { getByText, getAllByLabelText, getByLabelText } = await render(
       <ConditionsCard forecast={forecast} now={NOW} />,
     );
-    expect(getByText("Conditions")).toBeTruthy();
+    // Not a second "Conditions" beside the tile grid (issue #61).
+    expect(getByText("Hourly forecast")).toBeTruthy();
     expect(
       getByText(/Clear conditions will continue for the next 12 hours/),
     ).toBeTruthy();

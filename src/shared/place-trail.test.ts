@@ -1,4 +1,4 @@
-import { placeTrail, trailText } from "./place-trail";
+import { placeTrail, subPageTrail, trailText } from "./place-trail";
 
 describe("placeTrail (the web's breadcrumb rules)", () => {
   it("is Home / Country / Province / Place for a town inside a province", () => {
@@ -68,5 +68,22 @@ describe("placeTrail (the web's breadcrumb rules)", () => {
     });
     expect(items.filter((i) => i.kind === "home")).toHaveLength(1);
     expect(items[items.length - 1].kind).toBe("current");
+  });
+});
+
+describe("subPageTrail (issue #79)", () => {
+  it("gives every sub-page Home / Country / Province / Place / Page", () => {
+    const items = subPageTrail(
+      { name: "Bulawayo", countryName: "Zimbabwe", province: "Bulawayo" },
+      "Agriculture",
+    );
+    expect(items.map((i) => i.label)).toEqual([
+      "Home",
+      "Zimbabwe",
+      "Bulawayo",
+      "Agriculture",
+    ]);
+    expect(items.at(-1)?.kind).toBe("current");
+    expect(items.filter((i) => i.kind === "current")).toHaveLength(1);
   });
 });
