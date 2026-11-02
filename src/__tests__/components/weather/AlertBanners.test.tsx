@@ -182,4 +182,46 @@ describe("in the page", () => {
     const tree = await render(<WeatherPage weather={cold} name="Harare" />);
     expect(tree.getByText("Frost Warning — SEVERE")).toBeTruthy();
   });
+
+  it("raises no frost notice from the seasonal estimate, as the web does not", async () => {
+    const weather = harareWeather();
+    const hourly = weather.forecast!.hourly;
+    const coldEstimate = {
+      ...weather,
+      source: "fallback" as const,
+      forecast: {
+        ...weather.forecast!,
+        hourly: {
+          ...hourly,
+          temperature_2m: hourly.temperature_2m.map((t, i) =>
+            i === 3 ? -1 : t,
+          ),
+        },
+      },
+    };
+    const tree = await render(
+      <WeatherPage weather={coldEstimate} name="Harare" />,
+    );
+    expect(tree.getByTestId("unavailable-banner")).toBeTruthy();
+    expect(tree.queryByTestId("frost-banner")).toBeNull();
+  });
+
+  it("raises no frost notice for an overnight hour the forecast left blank", async () => {
+    const weather = harareWeather();
+    const hourly = weather.forecast!.hourly;
+    const blank = {
+      ...weather,
+      forecast: {
+        ...weather.forecast!,
+        hourly: {
+          ...hourly,
+          temperature_2m: hourly.temperature_2m.map((t, i) =>
+            i === 3 ? null : t,
+          ) as unknown as number[],
+        },
+      },
+    };
+    const tree = await render(<WeatherPage weather={blank} name="Harare" />);
+    expect(tree.queryByTestId("frost-banner")).toBeNull();
+  });
 });

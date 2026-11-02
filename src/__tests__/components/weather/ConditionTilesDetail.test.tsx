@@ -71,12 +71,43 @@ describe("the cards that ask the Worker", () => {
       <ConditionTiles forecast={forecast} now={NOW} point={POINT} />,
     );
     await waitFor(() => expect(getByText("68")).toBeTruthy());
+    // Written with the symbol, as the web does...
     expect(getByText("Moderate, mainly PM2.5.")).toBeTruthy();
+    // ...spoken in words, so VoiceOver never has to say "PM2.5" or "O3".
     expect(
       getByLabelText(
-        "Air quality. US AQI 68, Moderate. Moderate, mainly PM2.5.",
+        "Air quality. US AQI 68, Moderate. Moderate, mainly fine particles.",
       ),
     ).toBeTruthy();
+  });
+
+  it("asks the cards again when the page pulls a new forecast, keeping the numbers meanwhile", async () => {
+    const calls = routeFetch(ALL_ROUTES);
+    const props = { forecast, now: NOW, point: POINT, slug: "harare" };
+    const tree = await render(<ConditionTiles {...props} refreshKey="a" />);
+    await waitFor(() => expect(tree.getByText("68")).toBeTruthy());
+    const airCalls = () =>
+      calls.filter((c) => new URL(c.url).pathname === "/v1/air-quality").length;
+    const hazeCalls = () =>
+      calls.filter((c) => new URL(c.url).pathname === "/v1/haze").length;
+    expect(airCalls()).toBe(1);
+    expect(hazeCalls()).toBe(1);
+
+    await tree.rerender(<ConditionTiles {...props} refreshKey="b" />);
+    await waitFor(() => expect(airCalls()).toBe(2));
+    expect(hazeCalls()).toBe(2);
+    // No skeleton flash: the index never left the screen.
+    expect(tree.getByText("68")).toBeTruthy();
+
+    // A re-render for any other reason (the minute tick) asks nothing.
+    await tree.rerender(
+      <ConditionTiles
+        {...props}
+        now={new Date(NOW.getTime() + 60_000)}
+        refreshKey="b"
+      />,
+    );
+    expect(airCalls()).toBe(2);
   });
 
   it("makes no request for the cards without a point", async () => {

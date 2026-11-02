@@ -31,15 +31,22 @@ export type AirQualityCardProps = {
   lat: number;
   lon: number;
   now: Date;
+  /** Changes when the page pulls a new forecast: the card asks again. */
+  refreshKey?: unknown;
 };
 
-export function AirQualityCard({ lat, lon, now }: AirQualityCardProps) {
+export function AirQualityCard({
+  lat,
+  lon,
+  now,
+  refreshKey,
+}: AirQualityCardProps) {
   const { colors, scheme } = usePageColors();
   const load = useCallback(
     (signal: AbortSignal) => fetchAirQuality(lat, lon, signal),
     [lat, lon],
   );
-  const state = useWorkerData<AirQuality>(load, true);
+  const state = useWorkerData<AirQuality>(load, true, refreshKey);
   const [open, setOpen] = useState(false);
 
   if (state.status === "loading") {
@@ -112,6 +119,12 @@ export function AirQualityCard({ lat, lon, now }: AirQualityCardProps) {
         icon={(c) => <CloudIcon size={SIZE.iconSm} color={c} />}
         summary={`US AQI ${Math.round(reading.aqi)}, ${bandLabel}`}
         sentence={aqiSentence(band, reading.dominantPollutant, reading.trend)}
+        spokenSentence={aqiSentence(
+          band,
+          reading.dominantPollutant,
+          reading.trend,
+          true,
+        )}
         onPress={() => setOpen(true)}
       >
         <View style={styles.body}>

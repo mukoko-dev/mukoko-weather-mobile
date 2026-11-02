@@ -202,14 +202,19 @@ export function HazeBody({ data }: { data: HazeResponse }) {
   );
 }
 
-export type HazeCardProps = { lat: number; lon: number };
+export type HazeCardProps = {
+  lat: number;
+  lon: number;
+  /** Changes when the page pulls a new forecast: the card asks again. */
+  refreshKey?: unknown;
+};
 
-export function HazeCard({ lat, lon }: HazeCardProps) {
+export function HazeCard({ lat, lon, refreshKey }: HazeCardProps) {
   const load = useCallback(
     (signal: AbortSignal) => fetchHaze(lat, lon, signal),
     [lat, lon],
   );
-  const state = useWorkerData<HazeResponse>(load, true);
+  const state = useWorkerData<HazeResponse>(load, true, refreshKey);
   if (state.status !== "ready") return null;
   const data = state.data;
   if (!data.available || !data.level || !data.type) return null;

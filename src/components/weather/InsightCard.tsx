@@ -29,6 +29,12 @@ export type InsightCardProps = {
   icon: (color: string) => ReactNode;
   mineral: Mineral;
   sentence?: string;
+  /**
+   * What VoiceOver reads in place of `sentence` when the written one holds
+   * symbols a screen reader says badly ("PM2.5", "O₃"): the same sentence in
+   * words. Shown text is always `sentence`.
+   */
+  spokenSentence?: string;
   /** What VoiceOver reads for the visual, before the sentence. */
   summary?: string;
   /** A wide tile spans the row and takes its natural height. */
@@ -47,13 +53,16 @@ export function InsightCard({
   icon,
   mineral,
   sentence,
+  spokenSentence,
   summary,
   wide = false,
   onPress,
   children,
 }: InsightCardProps) {
   const { colors, scheme } = usePageColors();
-  const spoken = [label, summary, sentence].filter(Boolean).join(". ");
+  const spoken = [label, summary, spokenSentence ?? sentence]
+    .filter(Boolean)
+    .join(". ");
   const body = (
     <>
       <View style={styles.header}>

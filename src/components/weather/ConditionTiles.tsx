@@ -76,6 +76,12 @@ export type ConditionTilesProps = {
   point?: { lat: number; lon: number };
   /** A catalogue place's slug, for the Averages detail's recorded days. */
   slug?: string;
+  /**
+   * Changes when the page pulls a new forecast (pull to refresh, "Refresh
+   * now"): the Worker-backed cards below ask again and keep what they show
+   * until the new answer lands.
+   */
+  refreshKey?: unknown;
 };
 
 /** Moonrise is a few hundred altitude evaluations: recompute every 10 minutes. */
@@ -86,6 +92,7 @@ export function ConditionTiles({
   now,
   point,
   slug,
+  refreshKey,
 }: ConditionTilesProps) {
   const { colors } = usePageColors();
   const [open, setOpen] = useState<MetricKind | null>(null);
@@ -129,7 +136,11 @@ export function ConditionTiles({
       fetchNormalHigh(lat as number, lon as number, date, signal),
     [lat, lon, date],
   );
-  const normals = useWorkerData<number | null>(loadNormal, Boolean(point));
+  const normals = useWorkerData<number | null>(
+    loadNormal,
+    Boolean(point),
+    refreshKey,
+  );
   const normalHigh = normals.status === "ready" ? normals.data : null;
   const averages = temperatureAverageInsight(todayHigh, normalHigh);
   const averagesLoading = Boolean(point) && normals.status === "loading";
@@ -179,10 +190,19 @@ export function ConditionTiles({
         {point ? (
           <>
             <SectionBoundary name="air quality">
-              <AirQualityCard lat={point.lat} lon={point.lon} now={now} />
+              <AirQualityCard
+                lat={point.lat}
+                lon={point.lon}
+                now={now}
+                refreshKey={refreshKey}
+              />
             </SectionBoundary>
             <SectionBoundary name="haze">
-              <HazeCard lat={point.lat} lon={point.lon} />
+              <HazeCard
+                lat={point.lat}
+                lon={point.lon}
+                refreshKey={refreshKey}
+              />
             </SectionBoundary>
           </>
         ) : null}

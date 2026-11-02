@@ -134,12 +134,14 @@ export function WeatherPage({
   const point = pointOf(weather);
   // The web's two notices above the page: every provider failed, and frost.
   const usingFallback = weather.source === "fallback";
+  // No frost alert from the seasonal estimate: its temperatures are not a
+  // forecast, and the web shows none either (`usingFallback ? null : ...`).
   const frost = useMemo(
     () =>
-      forecast
+      forecast && !usingFallback
         ? checkFrostRisk(forecast.hourly, forecast.utc_offset_seconds)
         : null,
-    [forecast],
+    [forecast, usingFallback],
   );
 
   const onShare = () => {
@@ -185,6 +187,7 @@ export function WeatherPage({
             now={now}
             point={point}
             slug={weather.location?.slug}
+            refreshKey={weather}
           />
           <DailyCard forecast={forecast} />
           <ForecastExtras weather={weather} />
