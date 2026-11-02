@@ -37,7 +37,7 @@ and a ⋯ menu sheet. Shamwari AI chat is paused, as on the web.
 
 | Fact              | Value                                                                                    |
 | ----------------- | ---------------------------------------------------------------------------------------- |
-| Display name      | Mukoko Weather                                                                           |
+| Display name      | mukoko weather (the brand's lower-case form; `expo.name`)                                |
 | npm package name  | `mukoko-mobile` (the repo and app are `mukoko-weather-mobile` / Mukoko Weather)          |
 | Bundle ID (iOS)   | `africa.nyuchi.mukoko.weather`                                                           |
 | Package (Android) | `africa.nyuchi.mukoko.weather`                                                           |
@@ -46,9 +46,13 @@ and a ⋯ menu sheet. Shamwari AI chat is paused, as on the web.
 | API base          | `https://weather-api.mukoko.com`; `EXPO_PUBLIC_API_URL` may name another Cloudflare host |
 
 **Not yet released.** `eas.json` defines `development`, `preview` and
-`production` build profiles, but the only submit target is Android → Play
-Console **internal track, `draft` status**. There is no iOS submit
-configuration, and the app is in neither store. EAS Update is set up
+`production` build profiles; `production` is the store build on both
+platforms (an iOS device build that can go to TestFlight). Android submits to
+the Play Console **internal track, `draft` status**; the iOS submit profile
+waits on two owner-fill values (`ascAppId`, `appleTeamId`). The app is in
+neither store: [`docs/store/`](docs/store/README.md) has the readiness notes,
+listing text, privacy answers and the owner's checklist, and
+[`docs/payments.md`](docs/payments.md) the payments design. EAS Update is set up
 (`expo-updates`, `runtimeVersion` policy `appVersion`, `updates.url`), and a
 workflow publishes the JavaScript of every push to `staging` (see "See it in
 Expo Go").
