@@ -170,6 +170,8 @@ export type WeatherPageProps = {
    * forecast for this hour, why the refresh failed, and a way to try again.
    */
   saved?: SavedNotice;
+  /** A notice under the hero (the home's location ask). */
+  notice?: ReactNode;
 };
 
 export type SavedNotice = {
@@ -190,6 +192,7 @@ export function WeatherPage({
   refreshing,
   inTabs,
   saved,
+  notice,
 }: WeatherPageProps) {
   const now = useNow();
   const { activities } = usePreferences();
@@ -262,6 +265,7 @@ export function WeatherPage({
           onSettings={openSettings}
           activityLine={activityLine}
         />
+        {notice}
         {saved ? (
           <SavedForecastBanner
             placeName={name}
@@ -366,6 +370,8 @@ export type WeatherErrorProps = {
   onRetry: () => void;
   leading?: ReactNode;
   inTabs?: boolean;
+  /** A notice under the message (the home's location ask). */
+  notice?: ReactNode;
 };
 
 /**
@@ -379,6 +385,7 @@ export function WeatherError({
   onRetry,
   leading,
   inTabs,
+  notice,
 }: WeatherErrorProps) {
   const { dark } = usePageColors();
   const stops = skyStops(NEUTRAL_SKY, dark);
@@ -417,6 +424,7 @@ export function WeatherError({
           </WxText>
         </Pressable>
       </View>
+      {notice}
     </WeatherScroll>
   );
 }

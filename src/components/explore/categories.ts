@@ -13,6 +13,7 @@
  * `src/theme/colors.ts`, so no colours are invented here.
  */
 
+import { countryLabel } from "@/shared/place-info";
 import { LOCATIONS, type WeatherLocation } from "@/shared";
 
 /**
@@ -153,15 +154,13 @@ export function countryFlag(code: string): string {
   );
 }
 
-/** ISO code -> English display name, falling back to the code itself. */
+/**
+ * ISO code -> English display name, falling back to the code itself. The
+ * static table (src/shared/countries.ts), since Hermes has no
+ * `Intl.DisplayNames` (issue #72).
+ */
 export function countryName(code: string): string {
-  const cc = code.toUpperCase();
-  try {
-    const display = new Intl.DisplayNames(["en"], { type: "region" });
-    return display.of(cc) ?? cc;
-  } catch {
-    return cc;
-  }
+  return countryLabel(code) ?? code.toUpperCase();
 }
 
 /** Countries present in the catalog, sorted by location count then name. */

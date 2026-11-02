@@ -21,6 +21,7 @@ import { NavigationIcon } from "@/components/icons/Icon";
 import { WxText } from "@/components/weather/WxText";
 import { usePageColors } from "@/hooks/usePageColors";
 import { useReduceMotion } from "@/hooks/useReduceMotion";
+import { useHomeStandIn } from "@/state/home-status";
 import {
   MY_LOCATION_NAME,
   homeChipShowsLabel,
@@ -54,6 +55,9 @@ export function PlaceLane({ chips, activeIndex, onChipPress }: PlaceLaneProps) {
     {},
   );
   const home = chips.find((c) => c.kind === "home");
+  // With no fix of the person's own, home shows the default city: the chip
+  // names that city, never "My Location" (issue #66).
+  const standIn = useHomeStandIn();
   const places = chips.filter((c) => c.kind === "place");
   const showHomeLabel = homeChipShowsLabel(chips.length);
   const active = activeIndex >= 0 ? chips[activeIndex] : undefined;
@@ -93,7 +97,10 @@ export function PlaceLane({ chips, activeIndex, onChipPress }: PlaceLaneProps) {
         <Chip
           chip={home}
           current={chips.indexOf(home) === activeIndex}
-          label={showHomeLabel ? home.name : undefined}
+          // A stand-in is always named: the glyph alone would still read as
+          // "My Location" over a place that is not theirs.
+          label={standIn ?? (showHomeLabel ? home.name : undefined)}
+          standIn={standIn}
           scheme={scheme}
           onPress={onChipPress}
         />
@@ -129,11 +136,14 @@ function Chip({
   chip,
   current,
   label,
+  standIn,
   scheme,
   onPress,
 }: {
   chip: LaneChip;
   current: boolean;
+  /** Home's stand-in city while it has no fix (home chip only). */
+  standIn?: string | null;
   /** Visible text; My Location is the glyph alone beside places. */
   label?: string;
   scheme: "light" | "dark";
@@ -145,7 +155,13 @@ function Chip({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={chip.kind === "home" ? MY_LOCATION_NAME : chip.name}
+      accessibilityLabel={
+        chip.kind !== "home"
+          ? chip.name
+          : standIn
+            ? `${standIn}, not your location`
+            : MY_LOCATION_NAME
+      }
       accessibilityState={{ selected: current }}
       accessibilityHint={current ? undefined : "Shows the weather here"}
       onPress={() => onPress(chip)}
