@@ -6,6 +6,7 @@
  */
 
 import {
+  act,
   fireEvent,
   render,
   waitFor,
@@ -21,12 +22,11 @@ import { ActivityCard } from "@/components/weather/ActivityCard";
 import {
   FeasibilityChart,
   TREND_TICKS,
-  X_LABEL_STEP,
-  trendGeometry,
+  X_LABELS,
   trendSummary,
 } from "@/components/weather/FeasibilityChart";
 import { ACTIVITIES } from "@/shared/activities";
-import { feasibilitySeries } from "@/shared/activity-feasibility";
+import { feasibilitySeries, scoreLabel } from "@/shared/activity-feasibility";
 import { getActivityTips } from "@/shared/activity-tips";
 import { evaluateSuitability } from "@/shared/suitability";
 import { toggleActivity } from "@/state/preferences";
@@ -40,7 +40,6 @@ import {
   harareWeather,
   withCondition,
 } from "@/test-utils/weather-fixtures";
-import { LANE } from "@/theme/ratings";
 
 jest.mock("react-native-safe-area-context", () =>
   require("@/test-utils/mocks").safeAreaMock(),
@@ -176,34 +175,15 @@ describe("FeasibilityChart", () => {
     }
   });
 
-  it("builds a line across the width and an area closed at the bottom", () => {
-    const geo = trendGeometry(points, 230, 100)!;
-    expect(geo.xs[0]).toBe(0);
-    expect(geo.xs[23]).toBe(230);
-    expect(geo.line.startsWith("M0 ")).toBe(true);
-    expect(geo.line.split("L")).toHaveLength(24);
-    expect(geo.area.endsWith("L230 100 L0 100 Z")).toBe(true);
-    // Higher scores are higher on the screen (a smaller y).
-    expect(geo.ticks).toEqual([0, 25, 50, 75]);
+  it("is drawn by the one chart with the rating scale's four ticks", () => {
+    // Higher is better: Excellent at the top, Poor at the bottom.
     expect(TREND_TICKS).toEqual([100, 75, 50, 25]);
-  });
-
-  it("is null for fewer than two points or no width", () => {
-    expect(trendGeometry(points.slice(0, 1), 200, 100)).toBeNull();
-    expect(trendGeometry(points, 0, 100)).toBeNull();
-    expect(trendGeometry(points, 200, 0)).toBeNull();
-  });
-
-  it("clamps a score outside 0 to 100 to the edge", () => {
-    const geo = trendGeometry(
-      [
-        { time: "a", score: 150, level: "excellent" },
-        { time: "b", score: -20, level: "poor" },
-      ],
-      100,
-      80,
-    )!;
-    expect(geo.line).toBe("M0 0 L100 80");
+    expect(TREND_TICKS.map(scoreLabel)).toEqual([
+      "Excellent",
+      "Good",
+      "Fair",
+      "Poor",
+    ]);
   });
 
   it("is one item for the screen reader with a sentence, and draws after it is measured", async () => {
@@ -215,17 +195,20 @@ describe("FeasibilityChart", () => {
       `${crop.label}, next 24 hours. ${trendSummary(points)}`,
     );
     expect(chart.props.accessible).toBe(true);
-    // Rating words down the side, no raw numbers.
-    for (const word of ["Poor", "Fair", "Good", "Excellent"]) {
-      expect(
-        tree.getByText(word, { includeHiddenElements: true }),
-      ).toBeTruthy();
+    // The app's one chart: adjustable, so swiping steps through the hours.
+    expect(chart.props.accessibilityRole).toBe("adjustable");
+    // Once measured: rating words down the side, no raw numbers, and "Now".
+    await act(async () => {
+      fireEvent(tree.getByTestId("feasibility-chart-plot"), "layout", {
+        nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 100 } },
+      });
+    });
+    const drawn = JSON.stringify(tree.toJSON());
+    for (const word of ["Poor", "Fair", "Good", "Excellent", "Now"]) {
+      expect(drawn).toContain(`"${word}"`);
     }
-    expect(
-      tree.getAllByText("Now", { includeHiddenElements: true }),
-    ).toHaveLength(1);
-    expect(LANE.trendHeight).toBeGreaterThan(0);
-    expect(X_LABEL_STEP).toBe(6);
+    expect(drawn).not.toMatch(/"(25|50|75|100)"/);
+    expect(X_LABELS).toBe(4);
   });
 
   it("draws nothing for fewer than two points", async () => {

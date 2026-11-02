@@ -121,7 +121,11 @@ export function buildChartModel(input: ChartInput): ChartModel {
       id,
       config,
       domain,
-      ticks: domain ? niceTicks(domain.min, domain.max) : [],
+      ticks: !domain
+        ? []
+        : config.ticks
+          ? config.ticks.filter((t) => t >= domain.min && t <= domain.max)
+          : niceTicks(domain.min, domain.max),
     };
   });
   const shown = (a: ResolvedAxis) => a.config.display !== false;

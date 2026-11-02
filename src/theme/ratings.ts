@@ -232,14 +232,6 @@ export const LANE = {
   ring: 2,
   /** An activity icon disc in the advice card (`h-9 w-9`). */
   iconDisc: 36,
-  /** The feasibility chart's plot height (`aspect-[16/5]` at card width). */
-  trendHeight: 96,
-  /** The width of the chart's rating-word column (Poor to Excellent). */
-  yAxis: 64,
-  /** The chart line's width (`borderWidth: 2` in the web's Chart.js line). */
-  trendStroke: 2,
-  /** A gridline's width. */
-  gridStroke: 1,
   /** The picker tile's minimum height (`min-h-[88px]`). */
   pickerTile: 88,
   /** The selected-check disc on a picker tile (`h-5 w-5`). */

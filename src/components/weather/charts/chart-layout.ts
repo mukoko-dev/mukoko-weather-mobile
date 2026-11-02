@@ -27,6 +27,8 @@ export type AxisConfig = {
   position?: "left" | "right";
   display?: boolean;
   format?: (v: number) => string;
+  /** Fixed tick values (a rating scale), instead of round numbers. */
+  ticks?: readonly number[];
 };
 
 export type Domain = { min: number; max: number };
