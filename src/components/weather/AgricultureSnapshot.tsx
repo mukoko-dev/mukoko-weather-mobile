@@ -21,15 +21,15 @@
  * card's accent only.
  */
 
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
-import { type AgricultureResult, fetchAgriculture } from "@/api/agriculture";
+import { type AgricultureResult } from "@/api/agriculture";
 import { SparklesIcon } from "@/components/icons/Icon";
 import { CropIcon } from "@/components/icons/PlaceIcons";
 import { useFarmColors } from "@/hooks/useFarmColors";
 import { usePageColors } from "@/hooks/usePageColors";
-import { useWorkerData } from "@/hooks/useWorkerData";
+import { type AgricultureState, useAgriculture } from "@/hooks/useAgriculture";
 import {
   type AgricultureResponse,
   MOISTURE_LABELS,
@@ -49,10 +49,10 @@ import { type PlaceInfo } from "@/shared/place-info";
 import { FARM_SIZE } from "@/theme/farm";
 import { RADIUS, SIZE, SPACE, withAlpha } from "@/theme/mzizi";
 
-import { InsightRow } from "./InsightCard";
 import { PillButton } from "./PillButton";
 import { CardBody, CardHeading, CardNote, PlaceCard } from "./PlaceCard";
 import { CardFailed, CardLoading } from "./RemoteStates";
+import { StatTile, TilePairs, tileStyle } from "./StatTiles";
 import { WxText } from "./WxText";
 
 /** Why Shamwari's farm advice is not here: said once, in the same words everywhere. */
@@ -60,10 +60,9 @@ export function advicePending(placeName: string): string {
   return `Shamwari's farm advice for ${placeName} needs an account, and sign-in is not available in the app yet.`;
 }
 
-export type AgricultureSnapshotProps = {
+export type AgricultureSnapshotViewProps = {
   place: PlaceInfo;
-  /** The user's farming crops (activity ids), possibly none. */
-  crops: readonly string[];
+  state: AgricultureState;
   /**
    * "card" (the location page): the advice line and a link to the insights
    * page. "page" (top of the insights page): neither, the page has its own
@@ -71,6 +70,11 @@ export type AgricultureSnapshotProps = {
    */
   variant?: "card" | "page";
   onOpenInsights?: () => void;
+};
+
+export type AgricultureSnapshotProps = Omit<AgricultureSnapshotViewProps, "state"> & {
+  /** The user's farming crops (activity ids), possibly none. */
+  crops: readonly string[];
 };
 
 type Ready = Extract<AgricultureResult, { kind: "ready" }>["data"];
@@ -90,7 +94,7 @@ function windowTile(
       accessible
       accessibilityLabel={`${WINDOW_TITLES[key]}: ${STATUS_LABELS[w.status]}. ${w.label}`}
       accessibilityHint={w.detail}
-      style={[styles.tile, { backgroundColor: surface }]}
+      style={[tileStyle(), { backgroundColor: surface }]}
     >
       <View style={styles.tileHead}>
         <View
@@ -108,46 +112,6 @@ function windowTile(
       <WxText type="body" weight={600} color={textPrimary}>
         {w.label}
       </WxText>
-    </View>
-  );
-}
-
-function StatTile({
-  label,
-  value,
-  valueColor,
-}: {
-  label: string;
-  value: string;
-  valueColor?: string;
-}) {
-  const { colors } = usePageColors();
-  const farm = useFarmColors();
-  return (
-    <View
-      accessible
-      accessibilityLabel={`${label}: ${value}`}
-      style={[styles.tile, { backgroundColor: farm.surfaceDim }]}
-    >
-      <WxText type="bodySm" color={colors.textTertiary}>
-        {label}
-      </WxText>
-      <WxText type="body" weight={600} color={valueColor ?? colors.textPrimary}>
-        {value}
-      </WxText>
-    </View>
-  );
-}
-
-/** Rows of two tiles (one column at the largest text sizes). */
-function Pairs({ tiles }: { tiles: React.ReactElement[] }) {
-  const rows: React.ReactElement[][] = [];
-  for (let i = 0; i < tiles.length; i += 2) rows.push(tiles.slice(i, i + 2));
-  return (
-    <View style={styles.pairs}>
-      {rows.map((row, i) => (
-        <InsightRow key={i}>{row}</InsightRow>
-      ))}
     </View>
   );
 }
@@ -256,11 +220,11 @@ export function AgricultureSnapshotBody({
       </View>
 
       <View accessibilityLabel="Farm work windows" style={styles.group}>
-        <Pairs tiles={windows} />
+        <TilePairs tiles={windows} />
       </View>
 
       <View accessibilityLabel="Farm figures" style={styles.group}>
-        <Pairs tiles={statTiles} />
+        <TilePairs tiles={statTiles} />
       </View>
 
       {risks.length > 0 ? (
@@ -335,24 +299,13 @@ export function AgricultureUnavailable({
   );
 }
 
-export function AgricultureSnapshot({
+/** The card for a state that is already loaded (or loading). */
+export function AgricultureSnapshotView({
   place,
-  crops,
+  state,
   variant = "card",
   onOpenInsights,
-}: AgricultureSnapshotProps) {
-  const cropKey = crops.join(",");
-  const { slug, lat, lon, country } = place;
-  const load = useCallback(
-    (signal: AbortSignal) =>
-      fetchAgriculture(
-        { slug, lat, lon, country },
-        cropKey ? cropKey.split(",") : [],
-        signal,
-      ),
-    [slug, lat, lon, country, cropKey],
-  );
-  const state = useWorkerData(load, true);
+}: AgricultureSnapshotViewProps) {
   const body = useMemo(() => {
     if (state.status === "loading") return <CardLoading what="farm weather" />;
     if (state.status === "unavailable") {
@@ -389,6 +342,15 @@ export function AgricultureSnapshot({
   );
 }
 
+/** The card that loads its own data (the location page). */
+export function AgricultureSnapshot({
+  crops,
+  ...rest
+}: AgricultureSnapshotProps) {
+  const state = useAgriculture(rest.place, crops);
+  return <AgricultureSnapshotView {...rest} state={state} />;
+}
+
 export type { AgricultureResponse };
 
 const styles = StyleSheet.create({
@@ -407,13 +369,6 @@ const styles = StyleSheet.create({
     paddingVertical: SPACE.hair,
   },
   group: { gap: SPACE.snug },
-  pairs: { gap: SPACE.snug },
-  tile: {
-    flex: 1,
-    borderRadius: RADIUS.card,
-    padding: SPACE.stack,
-    gap: SPACE.hair,
-  },
   tileHead: { flexDirection: "row", alignItems: "center", gap: SPACE.tight },
   dot: {
     width: FARM_SIZE.dot,

@@ -112,6 +112,8 @@ export const FARM_SIZE = {
   legendSwatch: 12,
   /** The line and bar widths in a chart. */
   chartLine: 2,
+  /** Dash and gap of a dashed series line. */
+  dash: "6 4",
   /** The gap a bar leaves beside its neighbour, as a share of its slot. */
   barGap: 0.3,
 } as const;

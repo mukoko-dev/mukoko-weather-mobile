@@ -28,6 +28,25 @@ export interface PlaceInfo {
   address?: string;
 }
 
+/**
+ * A country's English name from its ISO 3166-1 alpha-2 code ("ZW" is
+ * "Zimbabwe"), as the web's breadcrumb and About card say it. Where the runtime
+ * has no region names the code itself is shown, never nothing.
+ */
+export function countryLabel(code: string | undefined): string | undefined {
+  if (!code) return undefined;
+  if (!/^[A-Za-z]{2}$/.test(code)) return code;
+  try {
+    return (
+      new Intl.DisplayNames(["en"], { type: "region" }).of(
+        code.toUpperCase(),
+      ) ?? code
+    );
+  } catch {
+    return code;
+  }
+}
+
 /** "17.8300°S, 31.0500°E", the web's `formatCoords`. */
 export function formatCoords(lat: number, lon: number): string {
   const ns = lat >= 0 ? "N" : "S";
