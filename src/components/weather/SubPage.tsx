@@ -196,7 +196,7 @@ export function SubPageError({
             </View>
             <CardHeading>{title}</CardHeading>
             <CardBody>{message}</CardBody>
-            <PillButton label="Try again" variant="primary" onPress={onRetry} />
+            <PillButton label="Try again" onPress={onRetry} />
           </View>
         </View>
       </ScrollView>

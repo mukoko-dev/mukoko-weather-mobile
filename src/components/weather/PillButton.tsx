@@ -1,83 +1,123 @@
 /**
- * The buttons on a card (the web's `.kudu-sm`, `.impala-sm` and the prose link
- * `.sunbird`): a pill at least 48 dp tall, a spoken label, a press that scales
- * a little (skipped under Reduce Motion). `primary` is filled, `outline` has
- * the border colour, `link` is text in the primary colour with the same 48 dp
- * target. Borders, no shadows.
+ * The pill button on the weather page's cards and sheets (the web's `.kudu`
+ * filled pill, `.kudu-sm`, `.impala` outline pill). Filled uses the app's
+ * primary; outline is a 0.5 dp border. Both are at least `TOUCH.min` (48 dp)
+ * tall, `TOUCH.default` (56 dp) for the large size, with a visible label, a
+ * disabled state that says so to the screen reader, and no shadow.
+ *
+ * Presses lift the fill; the scale a press adds is skipped under Reduce Motion.
  */
 
-import { Pressable, StyleSheet } from "react-native";
+import { type ReactNode } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 
-import { useFarmColors } from "@/hooks/useFarmColors";
 import { usePageColors } from "@/hooks/usePageColors";
 import { useReduceMotion } from "@/hooks/useReduceMotion";
-import { BORDER, RADIUS, SIZE, TOUCH } from "@/theme/mzizi";
+import { BORDER, RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
+import { inkOn } from "@/theme/ratings";
 
 import { WxText } from "./WxText";
 
 /** `active:scale-95` on the web. */
-const PRESS_SCALE = 0.95;
+const PRESS_SCALE = 0.97;
+const DISABLED_OPACITY = 0.5;
 
 export type PillButtonProps = {
   label: string;
   onPress: () => void;
-  variant?: "primary" | "outline" | "link";
-  /** What VoiceOver reads after the label. */
+  /**
+   * `filled` (`.kudu`), `outline` (`.impala`), or `link`: text in the primary
+   * colour with the same 48 dp target and the link role (`.sunbird`).
+   */
+  variant?: "filled" | "outline" | "link";
+  /** `md` is 56 dp tall (the web's `.kudu`), `sm` 48 dp (`.kudu-sm`). */
+  size?: "sm" | "md";
+  /** A drawn icon before the label; it receives the text colour. */
+  icon?: (color: string) => ReactNode;
+  disabled?: boolean;
+  /** Tell the screen reader why a disabled button is disabled. */
   hint?: string;
   testID?: string;
+  /** Stretch to the full width of the row. */
+  stretch?: boolean;
 };
 
 export function PillButton({
   label,
   onPress,
-  variant = "outline",
+  variant = "filled",
+  size = "sm",
+  icon,
+  disabled = false,
   hint,
   testID,
+  stretch = false,
 }: PillButtonProps) {
   const { colors } = usePageColors();
-  const farm = useFarmColors();
   const reduceMotion = useReduceMotion();
-  const filled = variant === "primary";
+  const filled = variant === "filled";
   const link = variant === "link";
+  const ink = filled
+    ? inkOn(colors.primary)
+    : link
+      ? colors.primary
+      : colors.textPrimary;
   return (
     <Pressable
       accessibilityRole={link ? "link" : "button"}
       accessibilityLabel={label}
       accessibilityHint={hint}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
       testID={testID}
       style={({ pressed }) => [
         styles.base,
-        link ? styles.link : styles.pill,
-        {
-          backgroundColor: filled ? colors.primary : "transparent",
-          borderColor: filled ? colors.primary : colors.border,
-          borderWidth: link ? 0 : BORDER.rest,
-          opacity: pressed && reduceMotion ? 0.7 : 1,
-          transform: pressed && !reduceMotion ? [{ scale: PRESS_SCALE }] : [],
-        },
+        { minHeight: size === "md" ? TOUCH.default : TOUCH.min },
+        stretch ? styles.stretch : styles.hug,
+        link
+          ? styles.link
+          : filled
+            ? {
+                backgroundColor: pressed
+                  ? withAlpha(colors.primary, 0.85)
+                  : colors.primary,
+                borderColor: colors.primary,
+              }
+            : {
+                backgroundColor: pressed
+                  ? withAlpha(colors.textPrimary, 0.08)
+                  : "transparent",
+                borderColor: colors.border,
+              },
+        disabled ? { opacity: DISABLED_OPACITY } : null,
+        { transform: pressed && !reduceMotion ? [{ scale: PRESS_SCALE }] : [] },
       ]}
     >
-      <WxText
-        type="body"
-        weight={600}
-        color={
-          filled ? farm.onPrimary : link ? colors.primary : colors.textPrimary
-        }
-      >
-        {label}
-      </WxText>
+      <View style={styles.row}>
+        {icon ? icon(ink) : null}
+        <WxText type="body" weight={600} color={ink}>
+          {label}
+        </WxText>
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: TOUCH.min,
+    borderRadius: RADIUS.pill,
+    borderWidth: BORDER.rest,
+    paddingHorizontal: SIZE.pillPadX,
     alignItems: "center",
     justifyContent: "center",
-    alignSelf: "flex-start",
   },
-  pill: { borderRadius: RADIUS.pill, paddingHorizontal: SIZE.pillPadX },
-  link: { justifyContent: "center" },
+  hug: { alignSelf: "flex-start" },
+  stretch: { alignSelf: "stretch" },
+  row: { flexDirection: "row", alignItems: "center", gap: SPACE.snug },
+  link: {
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    backgroundColor: "transparent",
+  },
 });

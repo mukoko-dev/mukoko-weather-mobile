@@ -114,7 +114,11 @@ export function AboutPlaceCard({
           <CardNote>
             Climate and crop details for this place did not load.
           </CardNote>
-          <PillButton label="Try again" onPress={profile.reload} />
+          <PillButton
+            label="Try again"
+            variant="outline"
+            onPress={profile.reload}
+          />
         </View>
       ) : null}
     </PlaceCard>

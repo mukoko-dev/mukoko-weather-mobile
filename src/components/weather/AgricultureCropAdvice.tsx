@@ -43,7 +43,11 @@ export function AgricultureCropAdvice({
           <CardBody>
             Tell us what you farm to see advice for your crops and livestock.
           </CardBody>
-          <PillButton label="Pick your crops" onPress={onPickCrops} />
+          <PillButton
+            label="Pick your crops"
+            variant="outline"
+            onPress={onPickCrops}
+          />
         </>
       ) : (
         <View style={styles.crops}>

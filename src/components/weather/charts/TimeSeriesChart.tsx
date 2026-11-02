@@ -118,6 +118,11 @@ export interface TimeSeriesChartProps {
   /** Plot width over height. The web's `aspect-[2/1]` is 2. Default 2. */
   aspect?: number;
   showDots?: boolean;
+  /**
+   * What VoiceOver says after the title, when a sentence says it better than
+   * each series' lowest and highest ("Good until 15:00. Best around 09:00.").
+   */
+  summary?: string;
   testID?: string;
 }
 
@@ -194,6 +199,7 @@ export function TimeSeriesChart({
   maxTicksLimit = 8,
   aspect = 2,
   showDots = false,
+  summary: summaryOverride,
   testID = "time-series-chart",
 }: TimeSeriesChartProps) {
   const { colors, dark } = usePageColors();
@@ -263,7 +269,9 @@ export function TimeSeriesChart({
   const usable = data.length >= 2;
   const hasData = usable && specs.some((s) => s.values.some((v) => v !== null));
   const index = selected !== null && selected < data.length ? selected : null;
-  const summary = hasData ? describeChart(textSeries, labels, valueFormat) : "";
+  const summary = hasData
+    ? (summaryOverride ?? describeChart(textSeries, labels, valueFormat))
+    : "";
 
   const colorOf = (s: SeriesConfig) =>
     (palette as Record<string, string>)[s.color] ?? s.color;

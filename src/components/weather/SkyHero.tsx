@@ -34,7 +34,8 @@ import {
 } from "@/shared/hero";
 import { type TrailItem } from "@/shared/place-trail";
 import { weatherCodeToInfo } from "@/shared/weather";
-import { SIZE, SPACE, lineHeightOf } from "@/theme/mzizi";
+import { SIZE, SPACE, RADIUS, lineHeightOf } from "@/theme/mzizi";
+import { LANE } from "@/theme/ratings";
 import { SKY_FG, SKY_FG_DIM } from "@/theme/sky";
 
 import { PlaceTrail } from "./PlaceTrail";
@@ -61,6 +62,19 @@ export type SkyHeroProps = {
   leading?: ReactNode;
   onShare: () => void;
   onSettings: () => void;
+  /**
+   * The quiet "for your activities" line under High and Low: the first picked
+   * activity with a readable day, for example "Football: good until 15:00".
+   * Absent when nothing is picked or its rules have not loaded.
+   */
+  activityLine?: HeroActivityLine | null;
+};
+
+export type HeroActivityLine = {
+  label: string;
+  clause: string;
+  /** The category's lane mineral (a colour for the dot). */
+  dot: string;
 };
 
 const noop = () => undefined;
@@ -145,6 +159,7 @@ export function SkyHero({
   leading,
   onShare,
   onSettings,
+  activityLine,
 }: SkyHeroProps) {
   const info = weatherCodeToInfo(weatherCode);
   const badges = heroEyebrowBadges(isCurrentLocation, isHome);
@@ -248,6 +263,26 @@ export function SkyHero({
             ))}
           </View>
         ) : null}
+
+        {activityLine ? (
+          <View
+            style={styles.activity}
+            accessible
+            accessibilityLabel={`${activityLine.label}: ${activityLine.clause}`}
+            testID="hero-activity-line"
+          >
+            <View
+              importantForAccessibility="no-hide-descendants"
+              style={[
+                styles.dot,
+                { backgroundColor: activityLine.dot, borderColor: SKY_FG },
+              ]}
+            />
+            <WxText type="h6" weight={600} color={SKY_FG}>
+              {activityLine.label}: {activityLine.clause}
+            </WxText>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -296,5 +331,18 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "center",
     columnGap: SPACE.stack,
+  },
+  activity: {
+    marginTop: SPACE.stack,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACE.snug,
+  },
+  dot: {
+    width: LANE.dot,
+    height: LANE.dot,
+    borderRadius: RADIUS.pill,
+    borderWidth: LANE.ring,
   },
 });

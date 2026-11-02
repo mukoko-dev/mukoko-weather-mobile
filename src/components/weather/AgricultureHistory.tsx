@@ -136,7 +136,7 @@ export function AgricultureHistory({
       {failed || answer?.degraded ? (
         <View style={styles.trouble} testID="agriculture-history-trouble">
           <CardBody>{failed ? HISTORY_FAILED_NOTE : DEGRADED_NOTE}</CardBody>
-          <PillButton label="Try again" onPress={retry} />
+          <PillButton label="Try again" variant="outline" onPress={retry} />
         </View>
       ) : null}
     </PlaceCard>

@@ -12,12 +12,13 @@
  */
 
 import { type Href, router } from "expo-router";
-import { type ReactNode, useEffect, useMemo } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Pressable, Share, StyleSheet, View } from "react-native";
 
 import { placeOf } from "@/api/place";
 import { type WeatherResponse } from "@/api/weather";
 import { ChevronLeftIcon } from "@/components/icons/Icon";
+import { useHeroActivityLine } from "@/hooks/useHeroActivityLine";
 import { useLocationLinks } from "@/hooks/useLocationLinks";
 import { useNow } from "@/hooks/useNow";
 import { rememberWeather } from "@/hooks/weather-cache";
@@ -32,8 +33,13 @@ import { RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
 import { NEUTRAL_SKY, SKY_FG, SKY_FG_DIM, skyStops } from "@/theme/sky";
 
 import { AboutPlaceCard } from "./AboutPlaceCard";
-import { FrostAlertBanner, WeatherUnavailableBanner } from "./AlertBanners";
+import { ActivityInvite } from "./ActivityInvite";
+import { ActivitySheetsProvider } from "./ActivitySheets";
+import { AiFollowup } from "./AiFollowup";
+import { AiSummary } from "./AiSummary";
 import { AgricultureSnapshot } from "./AgricultureSnapshot";
+import { FrostAlertBanner, WeatherUnavailableBanner } from "./AlertBanners";
+import { CommunityLane } from "./CommunityLane";
 import { ConditionTiles } from "./ConditionTiles";
 import { ConditionsCard } from "./ConditionsCard";
 import { EnsoCard } from "./EnsoCard";
@@ -42,6 +48,7 @@ import { MapPreviewCard } from "./MapPreviewCard";
 import { goHome, openAgriculture } from "./navigation";
 
 import { RoundControl } from "./RoundControl";
+import { RecentReports } from "./RecentReports";
 import { SeasonFooter } from "./SeasonBadge";
 import { HeroTopRow, SkyHero } from "./SkyHero";
 import { WeatherScroll } from "./WeatherScroll";
@@ -166,12 +173,25 @@ export function WeatherPage({
   const now = useNow();
   const { activities } = usePreferences();
   const crops = useMemo(() => cropsFromPreferences(activities), [activities]);
-  const place = placeOf(weather, name);
+  // The place the farm and place cards take (also a GPS point the API named).
+  const farmPlace = placeOf(weather, name);
   const { current, daily, forecast } = weather;
   const code = current.weatherCode ?? 0;
   const isDay = current.isDay ?? true;
   const family = skyFamily(code, isDay);
   const info = weatherCodeToInfo(code);
+  const activityLine = useHeroActivityLine(forecast, now);
+  const place = weather.location;
+  // The AI insight, once loaded, is what the follow-up chat starts from. It is
+  // kept with the place it was written for, so the page reused for another
+  // place (GPS moved, a new route param) never hands the follow-up the last
+  // place's summary, and a failed summary for the new place leaves none.
+  const placeKey = place ? (place.slug ?? `${place.lat},${place.lon}`) : "";
+  const [insightFor, setInsightFor] = useState<{
+    placeKey: string;
+    text: string;
+  } | null>(null);
+  const insight = insightFor?.placeKey === placeKey ? insightFor.text : null;
   const point = pointOf(weather);
   // The web's two notices above the page: every provider failed, and frost.
   const usingFallback = weather.source === "fallback";
@@ -196,86 +216,113 @@ export function WeatherPage({
   const onShare = () => shareWeather(name, current.temperature, info.label);
 
   return (
-    <WeatherScroll
-      family={family}
-      onRefresh={onRefresh}
-      refreshing={refreshing}
-      inTabs={inTabs}
-    >
-      <SkyHero
-        name={name}
-        temperature={current.temperature}
-        weatherCode={code}
-        isDay={isDay}
-        high={daily[0]?.tempMax}
-        low={daily[0]?.tempMin}
-        utcOffsetSeconds={weather.utcOffsetSeconds}
-        now={now}
-        isCurrentLocation={isCurrentLocation}
-        isHome={isHome}
-        trail={trailOf(weather.location, name)}
-        onHome={goHome}
-        leading={leading}
-        onShare={onShare}
-        onSettings={openSettings}
-      />
-      {usingFallback ? (
-        <WeatherUnavailableBanner onRefresh={onRefresh} />
-      ) : null}
-      {frost ? <FrostAlertBanner alert={frost} /> : null}
-      {forecast ? (
-        <>
-          <ConditionsCard
-            forecast={forecast}
-            now={now}
-            onOpenForecast={links?.openForecast}
-            footer={
-              place ? (
-                <SeasonFooter
-                  place={place}
-                  now={now}
-                  utcOffsetSeconds={weather.utcOffsetSeconds}
+    <ActivitySheetsProvider forecast={forecast} now={now}>
+      <WeatherScroll
+        family={family}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+        inTabs={inTabs}
+      >
+        <SkyHero
+          name={name}
+          temperature={current.temperature}
+          weatherCode={code}
+          isDay={isDay}
+          high={daily[0]?.tempMax}
+          low={daily[0]?.tempMin}
+          utcOffsetSeconds={weather.utcOffsetSeconds}
+          now={now}
+          isCurrentLocation={isCurrentLocation}
+          isHome={isHome}
+          trail={trailOf(weather.location, name)}
+          onHome={goHome}
+          leading={leading}
+          onShare={onShare}
+          onSettings={openSettings}
+          activityLine={activityLine}
+        />
+        {usingFallback ? (
+          <WeatherUnavailableBanner onRefresh={onRefresh} />
+        ) : null}
+        {frost ? <FrostAlertBanner alert={frost} /> : null}
+        {forecast ? (
+          <>
+            <ConditionsCard
+              forecast={forecast}
+              now={now}
+              onOpenForecast={links?.openForecast}
+              footer={
+                farmPlace ? (
+                  <SeasonFooter
+                    place={farmPlace}
+                    now={now}
+                    utcOffsetSeconds={weather.utcOffsetSeconds}
+                  />
+                ) : undefined
+              }
+            />
+            <CommunityLane slug={place?.slug} forecast={forecast} now={now} />
+            <ConditionTiles
+              forecast={forecast}
+              now={now}
+              point={point}
+              slug={weather.location?.slug}
+              refreshKey={weather}
+              onOpenTrends={links?.openAtmosphere}
+            />
+            <ForecastExtras weather={weather} />
+            <RecentReports slug={place?.slug} name={name} now={now} />
+            <ActivityInvite />
+            {place ? (
+              <>
+                <AiSummary
+                  key={`summary:${placeKey}`}
+                  place={{
+                    slug: place.slug,
+                    name,
+                    lat: place.lat,
+                    lon: place.lon,
+                    country: place.country,
+                  }}
+                  onLoaded={(text) => setInsightFor({ placeKey, text })}
                 />
-              ) : undefined
-            }
-          />
-          <ConditionTiles
-            forecast={forecast}
-            now={now}
-            point={point}
-            slug={weather.location?.slug}
-            refreshKey={weather}
-            onOpenTrends={links?.openAtmosphere}
-          />
-          <ForecastExtras weather={weather} />
-        </>
-      ) : null}
-      {place ? (
-        <>
-          <AgricultureSnapshot
-            place={place}
-            crops={crops}
-            onOpenInsights={
-              place.slug
-                ? () => openAgriculture(place.slug as string)
-                : undefined
-            }
-          />
-          <EnsoCard
-            lat={place.lat}
-            lon={place.lon}
-            countryCode={place.country}
-          />
-          <MapPreviewCard placeName={place.name} />
-          <AboutPlaceCard
-            place={place}
-            forecastElevation={weather.forecastElevation}
-            now={now}
-            utcOffsetSeconds={weather.utcOffsetSeconds}
-          />
-        </>
-      ) : null}
-    </WeatherScroll>
+                <AiFollowup
+                  key={`followup:${placeKey}`}
+                  name={name}
+                  slug={place.slug ?? ""}
+                  insight={insight}
+                />
+              </>
+            ) : null}
+          </>
+        ) : null}
+        {farmPlace ? (
+          <>
+            <AgricultureSnapshot
+              place={farmPlace}
+              crops={crops}
+              onOpenInsights={
+                farmPlace.slug
+                  ? () => openAgriculture(farmPlace.slug as string)
+                  : undefined
+              }
+            />
+            <EnsoCard
+              lat={farmPlace.lat}
+              lon={farmPlace.lon}
+              countryCode={farmPlace.country}
+            />
+            <MapPreviewCard placeName={farmPlace.name} />
+            <AboutPlaceCard
+              place={farmPlace}
+              forecastElevation={weather.forecastElevation}
+              now={now}
+              utcOffsetSeconds={weather.utcOffsetSeconds}
+            />
+          </>
+        ) : null}
+      </WeatherScroll>
+    </ActivitySheetsProvider>
   );
 }
 

@@ -87,13 +87,62 @@ describe("DetailSheet", () => {
         <Text>inside</Text>
       </DetailSheet>,
     );
-    const close = tree.getByLabelText("Close");
+    const close = tree.getByLabelText(/^Close/);
     const style = StyleSheet.flatten(close.props.style) as {
       minHeight: number;
     };
     expect(style.minHeight).toBeGreaterThanOrEqual(TOUCH.min);
     await fireEvent.press(close);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("DetailSheet for a task (the activity and report sheets)", () => {
+  it("says what it is for under the title, and pins a footer under the body", async () => {
+    const tree = await render(
+      <DetailSheet
+        open
+        title="Choose activities"
+        description="Pick what you follow the weather for."
+        onClose={jest.fn()}
+        footer={<Text>Done now</Text>}
+      >
+        <Text>list</Text>
+      </DetailSheet>,
+    );
+    expect(
+      tree.getByText("Pick what you follow the weather for."),
+    ).toBeTruthy();
+    expect(tree.getByText("Done now")).toBeTruthy();
+    expect(tree.getByText("list")).toBeTruthy();
+  });
+
+  it("hands a sheet a way to scroll its body, and takes it back on close", async () => {
+    const scrollToRef: {
+      current: ((y: number, animated: boolean) => void) | null;
+    } = { current: null };
+    const tree = await render(
+      <DetailSheet
+        open
+        title="My activities"
+        onClose={jest.fn()}
+        scrollToRef={scrollToRef}
+      >
+        <Text>cards</Text>
+      </DetailSheet>,
+    );
+    expect(typeof scrollToRef.current).toBe("function");
+    await tree.rerender(
+      <DetailSheet
+        open={false}
+        title="My activities"
+        onClose={jest.fn()}
+        scrollToRef={scrollToRef}
+      >
+        <Text>cards</Text>
+      </DetailSheet>,
+    );
+    expect(scrollToRef.current).toBeNull();
   });
 });
 

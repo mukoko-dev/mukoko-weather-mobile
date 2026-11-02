@@ -94,7 +94,11 @@ export function EnsoCard({ lat, lon, countryCode }: EnsoCardProps) {
           The latest reading from NOAA is not available right now. This is a
           seasonal outlook, so the weather above is not affected.
         </CardBody>
-        <PillButton label="Try again" onPress={state.reload} />
+        <PillButton
+          label="Try again"
+          variant="outline"
+          onPress={state.reload}
+        />
       </View>
     );
   } else {

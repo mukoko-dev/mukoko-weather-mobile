@@ -302,7 +302,9 @@ export function AgricultureUnavailable({
       </View>
       <CardHeading>{words.title}</CardHeading>
       <CardBody>{words.body}</CardBody>
-      {words.retry ? <PillButton label="Try again" onPress={onRetry} /> : null}
+      {words.retry ? (
+        <PillButton label="Try again" variant="outline" onPress={onRetry} />
+      ) : null}
     </View>
   );
 }

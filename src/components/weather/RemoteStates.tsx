@@ -61,7 +61,9 @@ export function CardFailed({
     <View style={styles.failed} testID="card-failed">
       <CardHeading>{title}</CardHeading>
       <CardBody>{body}</CardBody>
-      {onRetry ? <PillButton label="Try again" onPress={onRetry} /> : null}
+      {onRetry ? (
+        <PillButton label="Try again" variant="outline" onPress={onRetry} />
+      ) : null}
     </View>
   );
 }
