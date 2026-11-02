@@ -19,6 +19,13 @@
 import { type ColorSchemeName } from "react-native";
 
 import { type SeverityTone } from "@/shared/agriculture";
+import { ON_FILL, SEVERITY } from "./ratings";
+
+/** The farm cards' three tones, from the app's one severity scale. */
+function pickSeverity(scheme: "light" | "dark") {
+  const { low, moderate, severe } = SEVERITY[scheme];
+  return { low, moderate, severe };
+}
 
 export type FarmColors = {
   /** `--color-severity-low|moderate|severe`: text and dots on a card. */
@@ -51,8 +58,8 @@ export type FarmColors = {
 };
 
 export const FARM_LIGHT: FarmColors = {
-  severity: { low: "#004d40", moderate: "#5d4037", severe: "#b3261e" },
-  severityFg: "#ffffff",
+  severity: pickSeverity("light"),
+  severityFg: ON_FILL.light,
   onPrimary: "#ffffff",
   surfaceDim: "#f3f2ee",
   malachite: "#004d40",
@@ -73,8 +80,8 @@ export const FARM_LIGHT: FarmColors = {
 };
 
 export const FARM_DARK: FarmColors = {
-  severity: { low: "#64ffda", moderate: "#ffd740", severe: "#ff5252" },
-  severityFg: "#0a0a0a",
+  severity: pickSeverity("dark"),
+  severityFg: ON_FILL.dark,
   onPrimary: "#0a0a0a",
   surfaceDim: "#141414",
   malachite: "#64ffda",

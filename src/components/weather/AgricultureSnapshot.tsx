@@ -52,7 +52,7 @@ import { RADIUS, SIZE, SPACE, withAlpha } from "@/theme/mzizi";
 import { PillButton } from "./PillButton";
 import { CardBody, CardHeading, CardNote, PlaceCard } from "./PlaceCard";
 import { CardFailed, CardLoading } from "./RemoteStates";
-import { StatTile, TilePairs, tileStyle } from "./StatTiles";
+import { StatTile, TilePairs, statTileSurface } from "./StatTiles";
 import { WxText } from "./WxText";
 
 /** Why Shamwari's farm advice is not here: said once, in the same words everywhere. */
@@ -97,7 +97,11 @@ function windowTile(
       accessible
       accessibilityLabel={`${WINDOW_TITLES[key]}: ${STATUS_LABELS[w.status]}. ${w.label}`}
       accessibilityHint={w.detail}
-      style={[tileStyle(), { backgroundColor: surface }]}
+      style={statTileSurface(
+        "card",
+        { card: surface, border: surface },
+        surface,
+      )}
     >
       <View style={styles.tileHead}>
         <View
@@ -189,6 +193,7 @@ export function AgricultureSnapshotBody({
   );
   const statTiles = stats.map((s) => (
     <StatTile
+      on="card"
       key={s.label}
       label={s.label}
       value={s.value}

@@ -90,6 +90,7 @@ export function AgricultureHistory({
 
   const tiles = [
     <StatTile
+      on="card"
       key="rain-file"
       label="Rain on file"
       value={
@@ -102,17 +103,20 @@ export function AgricultureHistory({
       }
     />,
     <StatTile
+      on="card"
       key="rain-model"
       label="Rain (forecast model)"
       value={formatMm(modelRain30dMm)}
     />,
     <StatTile
+      on="card"
       key="high"
       label="Mean high"
       value={recorded ? formatTempC(summary.meanHigh) : "—"}
       hint={`Normal ${normalText(normal?.normalHigh)}${highAnomaly ? ` · ${highAnomaly}` : ""}`}
     />,
     <StatTile
+      on="card"
       key="low"
       label="Mean low"
       value={recorded ? formatTempC(summary.meanLow) : "—"}
