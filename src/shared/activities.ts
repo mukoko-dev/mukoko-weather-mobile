@@ -12,6 +12,7 @@
  */
 
 import type { LocationTag } from "./locations";
+import { own } from "./own";
 
 /** Activity categories — includes location tags plus sports/casual */
 export type ActivityCategory = LocationTag | "sports" | "casual";
@@ -101,12 +102,12 @@ export const LANE_MINERAL: Record<string, LaneMineral> = {
 
 /** The category mineral for an id the app may not know; casual is the default. */
 export function categoryMineral(category: string): CategoryMineral {
-  return CATEGORY_MINERAL[category] ?? "primary";
+  return own(CATEGORY_MINERAL, category) ?? "primary";
 }
 
 /** The lane mineral for a category; copper for an unknown one (as the web). */
 export function laneMineral(category: string): LaneMineral {
-  return LANE_MINERAL[category] ?? "copper";
+  return own(LANE_MINERAL, category) ?? "copper";
 }
 
 export const ACTIVITIES: Activity[] = [

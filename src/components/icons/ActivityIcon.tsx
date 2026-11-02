@@ -14,6 +14,8 @@
 import { type ReactNode } from "react";
 import { Circle, Path } from "react-native-svg";
 
+import { own } from "@/shared/own";
+
 import {
   CloudDrizzleIcon,
   CloudFogIcon,
@@ -364,7 +366,7 @@ const BY_NAME: Record<string, string> = {
 
 /** The glyph name for a Worker icon name; the plain ring when unknown. */
 export function glyphFor(icon: string | undefined): string {
-  return (icon && BY_NAME[icon]) || "ring";
+  return (icon && own(BY_NAME, icon)) || "ring";
 }
 
 export type ActivityIconProps = IconProps & {
@@ -410,7 +412,7 @@ const REPORT_ICON: Record<string, IconComponent> = {
 };
 
 export function ReportTypeIcon({ type, ...p }: IconProps & { type: string }) {
-  const Icon = REPORT_ICON[type] ?? CloudIcon;
+  const Icon = own(REPORT_ICON, type) ?? CloudIcon;
   return <>{Icon(p)}</>;
 }
 

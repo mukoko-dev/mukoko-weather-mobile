@@ -60,6 +60,23 @@ describe("getReportTypeInfo", () => {
   it("returns undefined for an unknown id", () => {
     expect(getReportTypeInfo("unknown-type")).toBeUndefined();
   });
+
+  it("never answers for an inherited object key", () => {
+    expect(getReportTypeInfo("constructor")).toBeUndefined();
+    expect(getReportTypeInfo("toString")).toBeUndefined();
+    expect(getReportTypeInfo("__proto__")).toBeUndefined();
+    expect(
+      parseReports({
+        reports: [
+          {
+            id: "1",
+            reportType: "constructor",
+            reportedAt: "2026-11-01T10:00:00Z",
+          },
+        ],
+      }),
+    ).toEqual([]);
+  });
 });
 
 describe("SEVERITIES", () => {

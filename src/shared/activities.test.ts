@@ -451,6 +451,8 @@ describe("LANE_MINERAL (the web's LANE_FILL and ACTIVITY_DOT_CLASS)", () => {
 
   it("falls back to copper for a category it does not know", () => {
     expect(laneMineral("not-a-category")).toBe("copper");
+    expect(laneMineral("constructor")).toBe("copper");
+    expect(categoryMineral("constructor")).toBe("primary");
   });
 });
 

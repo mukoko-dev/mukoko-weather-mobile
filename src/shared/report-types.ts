@@ -17,6 +17,8 @@
  * Pure: no React, no network.
  */
 
+import { own } from "./own";
+
 export type ReportTypeInfo = {
   id: string;
   label: string;
@@ -45,7 +47,7 @@ const BY_ID: Record<string, ReportTypeInfo> = Object.fromEntries(
 
 /** The matching entry for a known id, else `undefined`. */
 export function getReportTypeInfo(id: string): ReportTypeInfo | undefined {
-  return BY_ID[id];
+  return own(BY_ID, id);
 }
 
 export type ReportSeverity = "mild" | "moderate" | "severe";
@@ -161,7 +163,7 @@ export function checkReportDraft(draft: ReportDraft): string | null {
   if ([...draft.description].length > MAX_DESCRIPTION) {
     return `Description too long (max ${MAX_DESCRIPTION} characters)`;
   }
-  if (!draft.reportType || !BY_ID[draft.reportType]) {
+  if (!draft.reportType || !own(BY_ID, draft.reportType)) {
     return "Choose what you are seeing first.";
   }
   return null;
@@ -218,7 +220,7 @@ export function parseReports(body: unknown): CommunityReport[] {
     if (!raw || typeof raw !== "object") continue;
     const r = raw as Record<string, unknown>;
     if (typeof r.id !== "string" || typeof r.reportType !== "string") continue;
-    if (!BY_ID[r.reportType]) continue;
+    if (!own(BY_ID, r.reportType)) continue;
     if (typeof r.reportedAt !== "string") continue;
     if (Number.isNaN(new Date(r.reportedAt).getTime())) continue;
     out.push({

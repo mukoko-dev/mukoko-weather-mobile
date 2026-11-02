@@ -43,6 +43,16 @@ describe("activity icons", () => {
     expect(glyphFor(undefined)).toBe("ring");
   });
 
+  it("never takes an inherited object key for a glyph, so an odd name cannot crash a tile", async () => {
+    // `table["constructor"]` is a function on every plain object.
+    expect(glyphFor("constructor")).toBe("ring");
+    expect(glyphFor("__proto__")).toBe("ring");
+    const tree = await render(
+      <ActivityIcon icon="constructor" color="#000000" label="Odd" />,
+    );
+    expect(tree.getByLabelText("Odd")).toBeTruthy();
+  });
+
   it("renders as a decorative image hidden from the screen reader", async () => {
     const tree = await render(<ActivityIcon icon="football" color="#000000" />);
     const json = JSON.stringify(tree.toJSON());
@@ -66,6 +76,13 @@ describe("report type icons", () => {
       );
       expect(tree.getByLabelText(t.label)).toBeTruthy();
     }
+  });
+
+  it("falls back to a cloud for an inherited object key too", async () => {
+    const tree = await render(
+      <ReportTypeIcon type="constructor" color="#000000" label="Odd" />,
+    );
+    expect(tree.getByLabelText("Odd")).toBeTruthy();
   });
 
   it("falls back to a cloud for an unknown type", async () => {
