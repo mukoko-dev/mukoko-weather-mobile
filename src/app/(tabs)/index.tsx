@@ -29,6 +29,7 @@ import {
   fallbackPlace,
   weatherForPage,
 } from "@/api/place";
+import { MukokoLogo } from "@/components/MukokoLogo";
 import { WeatherError, WeatherPage } from "@/components/weather/WeatherPage";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
 
@@ -169,9 +170,22 @@ export default function WeatherHome() {
     void load(coords);
   }, [coords, load]);
 
-  if (state.kind === "loading") return <WeatherSkeleton inTabs />;
+  // The brand mark sits where a place page has Back, as the web header does.
+  // The mark alone: the trail (Home / country / province / place) shares the
+  // row, and the full wordmark would wrap it onto three lines on a phone.
+  const brand = <MukokoLogo onSky showWordmark={false} testID="home-brand" />;
+  if (state.kind === "loading") {
+    return <WeatherSkeleton leading={brand} inTabs />;
+  }
   if (state.kind === "error") {
-    return <WeatherError message={state.message} onRetry={onRetry} inTabs />;
+    return (
+      <WeatherError
+        message={state.message}
+        onRetry={onRetry}
+        leading={brand}
+        inTabs
+      />
+    );
   }
 
   const name =
@@ -182,6 +196,7 @@ export default function WeatherHome() {
       name={name}
       slug={coords?.slug}
       isCurrentLocation={Boolean(coords && !coords.fallback)}
+      leading={brand}
       onRefresh={onRefresh}
       refreshing={refreshing}
       inTabs

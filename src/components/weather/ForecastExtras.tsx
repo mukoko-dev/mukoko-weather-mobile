@@ -14,6 +14,7 @@
 import { StyleSheet, View } from "react-native";
 
 import { type WeatherResponse } from "@/api/weather";
+import { NoSwipeZone } from "@/components/shell/NoSwipeZone";
 import { usePageColors } from "@/hooks/usePageColors";
 import {
   comparisonSeries,
@@ -101,9 +102,11 @@ export function MinutelyCard({
         {nowcastSummary(minutely)}
       </WxText>
       {hasRain ? (
-        <TimeSeriesChart
-          {...chartProps({ ...nowcastChartSpec(rows, scheme), aspect: 3 })}
-        />
+        <NoSwipeZone>
+          <TimeSeriesChart
+            {...chartProps({ ...nowcastChartSpec(rows, scheme), aspect: 3 })}
+          />
+        </NoSwipeZone>
       ) : (
         <View
           accessible
@@ -162,7 +165,9 @@ export function ModelComparisonCard({
       <WxText type="bodySm" color={colors.textTertiary}>
         {`How the major forecast models (${names}) agree or diverge on the day.`}
       </WxText>
-      <TimeSeriesChart {...chartProps(modelChartSpec(data, scheme))} />
+      <NoSwipeZone>
+        <TimeSeriesChart {...chartProps(modelChartSpec(data, scheme))} />
+      </NoSwipeZone>
       {spread !== null ? (
         <WxText type="bodySm" color={colors.textTertiary}>
           {`The models are up to ${spread}° apart at their widest.`}

@@ -29,8 +29,11 @@ consumer API (`api.mukoko.com`) is a change to that file. `npm test` runs
 URL or client package, or direct provider call (see
 [One backend only](#one-backend-only)).
 
-Five surfaces: the weather home (GPS plus a 7-day forecast), explore/search,
-Shamwari AI chat, a preferences tab, and a per-location detail route.
+The weather home (GPS plus a 7-day forecast), a per-location page, the
+Locations list, explore/search and My Weather (preferences), held together by
+the web's shell: the mukoko weather mark on the home sky, one floating bottom
+bar (Map, My Location and the saved places, Locations), swipe between places,
+and a ⋯ menu sheet. Shamwari AI chat is paused, as on the web.
 
 | Fact              | Value                                                                                    |
 | ----------------- | ---------------------------------------------------------------------------------------- |
@@ -120,13 +123,16 @@ mukoko-weather-mobile/
   app.json                       # Expo config — bundle IDs, plugins, scheme
   src/
     app/                         # Expo Router (file-based)
-      _layout.tsx                # Root Stack — fonts, auth init, device register
-      (tabs)/                    # Bottom tab group
-        _layout.tsx              # NativeTabs config
-        index.tsx                # Weather (home) — GPS, then the shared WeatherPage
+      _layout.tsx                # Root Stack — fonts, auth init, device register, AppChrome (the shell)
+      (tabs)/                    # Home group (tab navigator, its own bar not drawn)
+        _layout.tsx              # Screens + the bar's clearance on the lists
+        index.tsx                # My Location (home) — GPS, then the shared WeatherPage, brand mark
+        locations.tsx            # Locations — My Location + saved places as weather cards, Home / Remove
         explore.tsx              # Search / add a location
-        shamwari.tsx             # AI chat placeholder
-        my.tsx                   # Account, device id, sign-in
+        shamwari.tsx             # AI chat — paused behind FLAGS.shamwari_chat (redirects home)
+        my.tsx                   # My Weather: account, saved places, theme, activities
+      menu.tsx                   # The ⋯ menu as a native sheet
+      map.tsx                    # Weather map placeholder until the API serves tiles (#55)
       location/[slug].tsx        # /location/harare etc. — the same WeatherPage, with Back
       location/[slug]/agriculture.tsx  # /location/harare/agriculture — farm windows, advice, charts, calendar
       location/[slug]/forecast.tsx    # the 24-hour chart, the week chart and rows, sun times
@@ -144,7 +150,11 @@ mukoko-weather-mobile/
       sky.ts                     # The eight page skies (light + dark), stars, rain streaks
       colors.ts                  # Light + dark palette for the other tabs (mineral-derived)
       typography.ts              # Type scale for the other tabs: hero/display/title/body/mono
-    shared/                      # Pure logic ported from the web (hero, hourly outlook, place-time, tile insights, chart data, sun times, air quality, haze, moon, averages, tile details, nowcast, model comparison, activities, suitability rules, feasibility, tips, community lane, report types), with the web's tests
+    shared/                      # Pure logic ported from the web (hero, hourly outlook, place-time, tile insights, chart data, sun times, air quality, haze, moon, averages, tile details, nowcast, model comparison, activities, suitability rules, feasibility, tips, community lane, report types, location pager, swipe, feature flags), with the web's tests
+    shell/                       # The shell's pure rules: web page keys ↔ app routes, page moves, menu rows, Locations cards
+    state/
+      preferences.ts             # Saved places, theme, activities (SecureStore)
+      home-location.ts           # The Home location (device-local, as on the web)
     api/
       client.ts                  # base URL, ROUTES table, fetch wrapper, error parsing
       weather.ts                 # GET /v1/weather (+ /v1/locations for a slug), converted to the screens' model (nowcast and model series included)
@@ -168,7 +178,9 @@ mukoko-weather-mobile/
       register.ts                # POST /v1/devices with the install id (switched off)
     components/
       BrandText.tsx              # Typography + tone variants
-      Header.tsx                 # Wordmark + 7-mineral stripe
+      Header.tsx                 # Mark + "weather" wordmark
+      MukokoLogo.tsx             # Seed of Life mark + "weather", on the page or on the sky
+      shell/                     # AppChrome, the floating BottomBar, PlaceLane, swipe, Locations card, shell icons
       icons/Icon.tsx             # Drawn weather + interface icons (react-native-svg); no emoji
       icons/ActivityIcon.tsx     # Drawn activity glyphs, report-type icons and the sheet/report action icons
       icons/CardIcons.tsx        # Factory (smog), alert triangle, chevron
@@ -232,7 +244,7 @@ mukoko-weather-mobile/
       weather-cache.ts           # the last answer per place, in memory for 5 minutes
     test-utils/                  # Mocks and recorded-answer fixtures for the tests
   assets/
-    images/                      # Icons, splash, tab glyphs
+    images/                      # Icons, splash, the mukoko mark
 ```
 
 ## What's wired vs. switched off
@@ -247,10 +259,10 @@ mukoko-weather-mobile/
 | Atmosphere (`/location/[slug]/atmosphere`)                 | Live             | The same two routes. The tiles, then humidity and cloud, wind and gusts, pressure and UV over 24 hours. Air quality on this page comes with the air-quality card                                                                                                                                                                              |
 | Agriculture card and page (`/location/[slug]/agriculture`) | Live             | `GET /v1/agriculture` (windows, rain, soil, water balance, GDD, 16-day charts, crop calendar), `/v1/history` + `/v1/normals` (30 days against normal), `/v1/enso`. When the Worker answers `available: false` the card says why from its `reason`. Shamwari's briefing and advice line need an account: the cards say so while sign-in is off |
 | Season line and "About {place}" rows                       | Live             | `GET /v1/locations/profile`: the season in the place's month (local names), climate zone, typical month, next season, crop calendar. A place with no crop calendar names no crops; derived values say "estimated"                                                                                                                             |
-| Weather map card                                           | **Placeholder**  | Says the map is coming. The map needs tile routes on the Cloudflare backend first (see "Needs a Cloudflare route first")                                                                                                                                                                                                                      |
+| Weather map card and the bar's Map button                  | **Placeholder**  | Say the map is coming (`src/app/map.tsx`). The map needs tile routes on the Cloudflare backend first (#55; see "Needs a Cloudflare route first")                                                                                                                                                                                              |
 | Explore / search                                           | Live             | `GET /v1/search?q=`                                                                                                                                                                                                                                                                                                                           |
 | Use my location                                            | Live             | `GET /v1/geo?lat&lon&autoCreate=true` names the exact place under the fix. Nothing is stored; the app has no route that creates a place                                                                                                                                                                                                       |
-| Shamwari AI tab                                            | Live             | Full-viewport chat screen (`src/app/(tabs)/shamwari.tsx`) against `POST /v1/ai/chat`; mirrors the Worker's message-length, history and rate limits                                                                                                                                                                                            |
+| Shamwari AI chat                                           | **Paused**       | Paused as on the web (`FLAGS.shamwari_chat` in `src/shared/feature-flags.ts`): the route redirects home and nothing links to it. When on: the full-viewport chat screen (`src/app/(tabs)/shamwari.tsx`) against `POST /v1/ai/chat`                                                                                                            |
 | Activities: picker, advice, Community lane, hero line      | Live             | Activities from `GET /v1/activities`, ratings from the Worker's rules at `GET /v1/suitability`, evaluated on the device. The picks are stored on this device only and are never sent anywhere (not to the API, a device profile or an AI route). With the rules unreachable the screens say so and show no rating                             |
 | Community reports (list, upvote, report wizard)            | **Switched off** | Built against the Worker's contract (mukoko-weather PR #401); `GET /v1/reports` answers 404 on production today. Behind `COMMUNITY_REPORTS_ENABLED` in `src/api/reports.ts`, pinned off by a test: with it off no request is made, the card says reports are not live, and the wizard cannot send                                             |
 | Shamwari insight and follow-up on the location page        | **Switched off** | Signed-in only on the web. With sign-in off (below) the page shows the signed-out card, which says why. The signed-in cards (`POST /v1/ai/summary`, `/v1/ai/followup`) are built behind the same switch and send no activities                                                                                                                |

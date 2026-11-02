@@ -1,5 +1,5 @@
 /**
- * Header — renders the Seed of Life mark + "mukoko" wordmark, plus
+ * Header — renders the Seed of Life mark + "weather" wordmark, plus
  * optional page title and subtitle. The BrandStripe is intentionally NOT
  * mounted inside the Header (it lives on the root layout as a fixed
  * vertical left-edge accent).
@@ -20,9 +20,9 @@ function findImages(node: JsonNode | null): { type: string }[] {
 }
 
 describe("Header", () => {
-  it('renders the wordmark "mukoko" in lowercase', async () => {
+  it('renders the "weather" wordmark in lowercase', async () => {
     const { getByText } = await render(<Header />);
-    expect(getByText("mukoko")).toBeTruthy();
+    expect(getByText("weather")).toBeTruthy();
   });
 
   it("renders the Seed of Life mark image", async () => {
@@ -34,7 +34,7 @@ describe("Header", () => {
   it("renders a page title when supplied", async () => {
     const { getByText } = await render(<Header title="Explore" />);
     expect(getByText("Explore")).toBeTruthy();
-    expect(getByText("mukoko")).toBeTruthy();
+    expect(getByText("weather")).toBeTruthy();
   });
 
   it("renders a subtitle when supplied", async () => {
@@ -44,6 +44,6 @@ describe("Header", () => {
 
   it("honours markOnly by hiding the wordmark", async () => {
     const { queryByText } = await render(<Header markOnly />);
-    expect(queryByText("mukoko")).toBeNull();
+    expect(queryByText("weather")).toBeNull();
   });
 });
