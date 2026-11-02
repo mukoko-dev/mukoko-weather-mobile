@@ -127,7 +127,7 @@ describe("MetricDetailSheet", () => {
     }
     const tree = await render(<Harness />);
     expect(tree.getByText("Beaufort")).toBeTruthy();
-    await fireEvent.press(tree.getByLabelText("Close"));
+    await fireEvent.press(tree.getByLabelText(/^Close/));
     expect(tree.queryByText("Beaufort")).toBeNull();
   });
 

@@ -6,7 +6,7 @@
  *   - Saved locations: pin up to 10 places, jump to a forecast, add by search
  *     or from GPS ("Use my current location").
  *   - Theme: light / dark / system.
- *   - Activities: mineral-coloured interest chips.
+ *   - Activities: the picked activities and a button to the shared picker.
  *   - Device: install id + app version (support / debugging).
  *
  * Preferences persist locally via src/state/preferences.ts (expo-secure-store).
@@ -145,7 +145,7 @@ export default function MyScreen() {
 
         <SectionCard
           title="Activities"
-          hint="Pick what you follow the weather for — we tune advice to match."
+          hint="Pick what you follow the weather for. The advice on each place's page is made for these, and your picks stay on this device."
         >
           <ActivitySelector />
         </SectionCard>

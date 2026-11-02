@@ -3,7 +3,8 @@
  * headline and sentence, the content, an optional plain explanation and a
  * Close button. On iOS it is the system page sheet (swipe down to dismiss); on
  * Android a full-screen modal that the back gesture closes. Used by the
- * Conditions tiles' details, the air-quality detail and the averages.
+ * Conditions tiles' details, the air-quality detail, the averages, the
+ * activity picker and advice, and the report wizard: the app's ONE sheet.
  *
  * Why the core `Modal` and not a native bottom sheet: it is the long-stable,
  * Expo Go-safe sheet on both platforms and it needs no native module.
@@ -12,7 +13,13 @@
  * (`accessibilityViewIsModal`).
  */
 
-import { type ReactNode } from "react";
+import {
+  type ComponentRef,
+  type MutableRefObject,
+  type ReactNode,
+  useEffect,
+  useRef,
+} from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -33,7 +40,18 @@ export type DetailSheetProps = {
   sentence?: string;
   /** A plain explanation of the thing, after the content. */
   about?: string;
+  /** One sentence under the title saying what the sheet is for. */
+  description?: string;
   children?: ReactNode;
+  /** Pinned under the scrolling body (a primary action, such as Done). */
+  footer?: ReactNode;
+  /**
+   * Filled in with a function that scrolls the body to `y`, for a sheet that
+   * scrolls to one of its items.
+   */
+  scrollToRef?: MutableRefObject<
+    ((y: number, animated: boolean) => void) | null
+  >;
   testID?: string;
 };
 
@@ -47,23 +65,37 @@ function SheetBody({
   headline,
   sentence,
   about,
+  description,
   children,
+  footer,
+  scrollToRef,
 }: Omit<DetailSheetProps, "open" | "testID">) {
   const { colors } = usePageColors();
   const insets = useSafeAreaInsets();
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  useEffect(() => {
+    if (!scrollToRef) return;
+    scrollToRef.current = (y, animated) =>
+      scroll.current?.scrollTo({ y, animated });
+    return () => {
+      scrollToRef.current = null;
+    };
+  }, [scrollToRef]);
+  const sidePadding = {
+    paddingLeft: Math.max(SPACE.gutter, insets.left),
+    paddingRight: Math.max(SPACE.gutter, insets.right),
+  };
   return (
     <View
       style={[styles.root, { backgroundColor: colors.background }]}
       accessibilityViewIsModal
     >
       <ScrollView
+        ref={scroll}
         contentContainerStyle={[
           styles.content,
-          {
-            paddingLeft: Math.max(SPACE.gutter, insets.left),
-            paddingRight: Math.max(SPACE.gutter, insets.right),
-            paddingBottom: SPACE.section + insets.bottom,
-          },
+          sidePadding,
+          { paddingBottom: SPACE.section + (footer ? 0 : insets.bottom) },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -94,6 +126,11 @@ function SheetBody({
               {sentence}
             </WxText>
           ) : null}
+          {description ? (
+            <WxText type="body" color={colors.textSecondary}>
+              {description}
+            </WxText>
+          ) : null}
         </View>
 
         {children}
@@ -106,7 +143,7 @@ function SheetBody({
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Close"
+          accessibilityLabel={`Close ${title}`}
           onPress={onClose}
           style={({ pressed }) => [
             styles.close,
@@ -121,6 +158,20 @@ function SheetBody({
           </WxText>
         </Pressable>
       </ScrollView>
+      {footer ? (
+        <View
+          style={[
+            styles.footer,
+            sidePadding,
+            {
+              paddingBottom: SPACE.stack + insets.bottom,
+              borderTopColor: colors.border,
+            },
+          ]}
+        >
+          {footer}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -211,6 +262,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { paddingTop: SPACE.section, gap: SPACE.section },
   header: { gap: SPACE.hair },
+  footer: { paddingTop: SPACE.stack, borderTopWidth: BORDER.rest },
   section: { gap: SPACE.stack },
   close: {
     minHeight: TOUCH.default,

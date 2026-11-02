@@ -220,7 +220,7 @@ describe("opening a tile", () => {
     );
     await fireEvent.press(tree.getByLabelText(/^Humidity\./));
     expect(tree.getByText("Dew point")).toBeTruthy();
-    await fireEvent.press(tree.getByLabelText("Close"));
+    await fireEvent.press(tree.getByLabelText(/^Close/));
     expect(tree.queryByText("Dew point")).toBeNull();
   });
 
@@ -246,7 +246,7 @@ describe("opening a tile", () => {
     expect(tree.getAllByText(label, { exact: false }).length).toBeGreaterThan(
       0,
     );
-    expect(tree.getByLabelText("Close")).toBeTruthy();
+    expect(tree.getByLabelText(/^Close/)).toBeTruthy();
   });
 
   it("opens the air-quality detail from its card", async () => {

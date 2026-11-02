@@ -50,6 +50,22 @@ export const ROUTES = {
   search: "/v1/search",
   /** GET ?slug -> one place. */
   locations: "/v1/locations",
+  /** GET [?id|category|q|mode=categories] -> the activities (or categories). */
+  activities: "/v1/activities",
+  /** GET [?key] -> the suitability rules the activity ratings are read from. */
+  suitability: "/v1/suitability",
+  /** GET ?location&hours -> recent community reports; POST -> file one. Not live yet. */
+  reports: "/v1/reports",
+  /** POST {reportId} -> upvote a report. Not live yet. */
+  reportsUpvote: "/v1/reports/upvote",
+  /**
+   * POST {location} -> {insight}: the AI weather summary. Not verified live,
+   * and the web serves it only as an internal route: see `src/api/ai.ts`
+   * before turning sign-in on.
+   */
+  aiSummary: "/v1/ai/summary",
+  /** POST {message, locationName, ...} -> {response}: the inline follow-up. Same caveat. */
+  aiFollowup: "/v1/ai/followup",
   /** POST {deviceId, preferences?} -> a device preference profile. */
   devices: "/v1/devices",
   /** POST {message, history, activities?} -> Shamwari's reply. */
