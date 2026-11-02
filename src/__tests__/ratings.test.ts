@@ -6,7 +6,11 @@
  */
 
 import suitability from "@/api/__fixtures__/suitability.json";
-import { ACTIVITY_CATEGORIES, laneMineral } from "@/shared/activities";
+import {
+  ACTIVITY_CATEGORIES,
+  categoryMineral,
+  laneMineral,
+} from "@/shared/activities";
 import { DARK, LIGHT, contrastRatio, pageColorsFor } from "@/theme/mzizi";
 import {
   LANE_ALPHA,
@@ -131,6 +135,17 @@ describe("category minerals", () => {
         expect(contrastRatio(mineral, colors.card)).toBeGreaterThanOrEqual(
           FLOOR,
         );
+      }
+    },
+  );
+
+  it.each(SCHEMES)(
+    "a selected picker label (the mineral on its own 10%% tint over the %s card) reads at 4.5:1",
+    (scheme, colors) => {
+      for (const c of ACTIVITY_CATEGORIES) {
+        const mineral = mineralColor(categoryMineral(c.id), colors, scheme);
+        const tint = blend(mineral, colors.card, SEVERITY_TINT);
+        expect(contrastRatio(mineral, tint)).toBeGreaterThanOrEqual(FLOOR);
       }
     },
   );

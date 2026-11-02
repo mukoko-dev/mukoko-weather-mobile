@@ -98,7 +98,7 @@ export function RecentReports({
                 { backgroundColor: withAlpha(copper, SEVERITY_TINT) },
               ]}
             >
-              <WxText type="body" weight={600} color={copper}>
+              <WxText type="body" weight={600} color={colors.textPrimary}>
                 {reports.length}
               </WxText>
             </View>
@@ -252,7 +252,9 @@ export function RecentReports({
                       <WxText
                         type="bodySm"
                         weight={600}
-                        color={hasVoted ? copper : colors.textTertiary}
+                        color={
+                          hasVoted ? colors.textPrimary : colors.textTertiary
+                        }
                       >
                         {r.upvotes}
                       </WxText>
