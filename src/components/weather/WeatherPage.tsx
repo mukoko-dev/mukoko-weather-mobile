@@ -372,6 +372,8 @@ export type WeatherErrorProps = {
   onRetry: () => void;
   leading?: ReactNode;
   inTabs?: boolean;
+  /** A notice under the message (the home's location ask). */
+  notice?: ReactNode;
 };
 
 /**
@@ -385,6 +387,7 @@ export function WeatherError({
   onRetry,
   leading,
   inTabs,
+  notice,
 }: WeatherErrorProps) {
   const { dark } = usePageColors();
   const stops = skyStops(NEUTRAL_SKY, dark);
@@ -423,6 +426,7 @@ export function WeatherError({
           </WxText>
         </Pressable>
       </View>
+      {notice}
     </WeatherScroll>
   );
 }

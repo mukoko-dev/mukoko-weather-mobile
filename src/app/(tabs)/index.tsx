@@ -31,7 +31,7 @@
 import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Linking } from "react-native";
+import { AppState, Linking } from "react-native";
 
 import { failureMessage } from "@/api/failure";
 import { geoLookup, type LocationSummary } from "@/api/locations";
@@ -80,6 +80,9 @@ type Coords = {
   /** True for the Harare default: not the person's own location. */
   fallback?: boolean;
 };
+
+/** How a weather load ended. */
+type LoadOutcome = "ready" | "saved" | "error" | "aborted";
 
 type LoadState =
   | { kind: "loading" }
@@ -178,7 +181,7 @@ export default function WeatherHome() {
   // The place the fix was named as, whichever of the two answers came first.
   const named = useRef<LocationSummary | null>(null);
 
-  const load = useCallback(async (loc: Coords) => {
+  const load = useCallback(async (loc: Coords): Promise<LoadOutcome> => {
     inFlight.current?.abort();
     const controller = new AbortController();
     inFlight.current = controller;
@@ -188,25 +191,27 @@ export default function WeatherHome() {
         { lat: loc.lat, lon: loc.lon },
         signal,
       );
-      if (signal.aborted) return;
+      if (signal.aborted) return "aborted";
       setState({ kind: "ready", weather });
       lastRecord.current = record;
       void saveForecast(HOME_KEY, record, {
         name: named.current?.name ?? loc.label ?? record.place?.name,
         slug: named.current?.slug ?? loc.slug,
       });
+      return "ready";
     } catch (err) {
-      if (signal.aborted) return;
+      if (signal.aborted) return "aborted";
       // The Worker could not be reached: the forecast this phone kept from
       // the last good load, with its age, beats an error.
       const kept = await loadForecast(HOME_KEY);
-      if (signal.aborted) return;
+      if (signal.aborted) return "aborted";
       const view = kept && savedHomeFits(kept, loc) ? kept : null;
       setState(
         view
           ? { kind: "saved", view, reason: failureMessage(err) }
           : { kind: "error", message: failureMessage(err) },
       );
+      return view ? "saved" : "error";
     } finally {
       if (inFlight.current === controller) inFlight.current = null;
     }
@@ -214,23 +219,30 @@ export default function WeatherHome() {
 
   useEffect(() => () => inFlight.current?.abort(), []);
 
-  /** Show the weather for `loc` and name the place alongside. */
+  // Which start is the latest: an older start's place lookup never writes
+  // over a newer one (the person tapped "Use my location" meanwhile).
+  const startToken = useRef(0);
+
+  /**
+   * Show the weather for `loc` and name the place alongside. Resolves with
+   * how the weather load ended.
+   */
   const start = useCallback(
-    async (loc: Coords) => {
+    async (loc: Coords): Promise<LoadOutcome> => {
+      const token = ++startToken.current;
       named.current = null;
       lastRecord.current = null;
       setCoords(loc);
       setHomeStandIn(loc.fallback ? DEFAULT_PLACE_NAME : null);
       // Start the weather at once; name the place alongside, so a slow
       // geocode never holds the first paint.
-      void load(loc);
+      const loaded = load(loc);
       const found = await resolvePlace(loc);
+      if (token !== startToken.current) return loaded;
       // Settled whether or not it was named: the place cards wait for this, so
       // they ask the Worker once, for the place, not first for the bare point.
       // The Harare default keeps its own name and links.
       setCoords((prev) => {
-        // A newer start (the person tapped "Use my location") wins.
-        if (prev && (prev.lat !== loc.lat || prev.lon !== loc.lon)) return prev;
         const base = prev ?? loc;
         if (loc.fallback) {
           return { ...base, place: fallbackPlace(found), settled: true };
@@ -251,6 +263,7 @@ export default function WeatherHome() {
           slug: found.slug,
         });
       }
+      return loaded;
     },
     [load, resolvePlace],
   );
@@ -273,15 +286,19 @@ export default function WeatherHome() {
   /** "Use my location": the only path to the system prompt. */
   const onUseLocation = useCallback(async () => {
     setAsk({ busy: true, problem: null });
-    let granted = false;
+    let answer: { status?: string; canAskAgain?: boolean } = {};
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      granted = status === "granted";
+      answer = await Location.requestForegroundPermissionsAsync();
     } catch {
-      granted = false;
+      answer = {};
     }
-    if (!granted) {
-      setAsk({ busy: false, problem: "denied" });
+    if (answer.status !== "granted") {
+      // Blocked for good (iOS after one "Don't Allow"): only Settings can
+      // change it. Declined but askable again (Android): offer the ask again.
+      setAsk({
+        busy: false,
+        problem: answer.canAskAgain === false ? "denied" : "declined",
+      });
       return;
     }
     const fix = await takeFix();
@@ -291,8 +308,39 @@ export default function WeatherHome() {
     }
     setAsk({ busy: false, problem: null });
     setState({ kind: "loading" });
-    await start(fix);
+    // The person's place did not load and nothing is kept for it: back to
+    // the default city's weather, saying why, rather than an error face.
+    if ((await start(fix)) === "error") {
+      setAsk({ busy: false, problem: "no-weather" });
+      await start({ ...FALLBACK, fallback: true });
+    }
   }, [start, takeFix]);
+
+  // Back from Settings (or anywhere): read the permission again, so turning
+  // location on there takes effect at once.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next !== "active" || !coords?.fallback || ask.busy) return;
+      void (async () => {
+        try {
+          const { status, canAskAgain } =
+            await Location.getForegroundPermissionsAsync();
+          if (status === "granted") {
+            const fix = await takeFix();
+            if (fix) {
+              setAsk({ busy: false, problem: null });
+              await start(fix);
+            }
+          } else if (status === "denied" && !canAskAgain) {
+            setAsk({ busy: false, problem: "denied" });
+          }
+        } catch {
+          /* nothing changes */
+        }
+      })();
+    });
+    return () => sub.remove();
+  }, [coords?.fallback, ask.busy, start, takeFix]);
 
   const onDismissAsk = useCallback(() => {
     setAskDismissed(true);
@@ -338,7 +386,7 @@ export default function WeatherHome() {
   const brand = <MukokoLogo onSky showWordmark={false} testID="home-brand" />;
   // Over the default city: say it is a stand-in, why, and the ways forward
   // (issues #65, #66). Gone once the person's own place is on screen.
-  const showAsk = Boolean(coords?.fallback) && (!askDismissed || !!ask.problem);
+  const showAsk = Boolean(coords?.fallback) && !askDismissed;
   const notice = showAsk ? (
     <LocationPromptCard
       placeName={standInName(coords)}
@@ -389,6 +437,7 @@ export default function WeatherHome() {
         onRetry={onRetry}
         leading={brand}
         inTabs
+        notice={notice}
       />
     );
   }

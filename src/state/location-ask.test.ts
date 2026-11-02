@@ -1,22 +1,18 @@
 /** "Not now" on the location ask lasts a week, then the ask may come back. */
 
-import * as SecureStore from "expo-secure-store";
-
 import {
   LOCATION_ASK_PUT_OFF_MS,
   locationAskPutOff,
   putOffLocationAsk,
 } from "@/state/location-ask";
 
-jest.mock("expo-secure-store", () => {
-  const data = new Map<string, string>();
-  return {
-    getItemAsync: jest.fn(async (k: string) => data.get(k) ?? null),
-    setItemAsync: jest.fn(async (k: string, v: string) => {
-      data.set(k, v);
-    }),
-  };
-});
+const mockFiles = new Map<string, string>();
+jest.mock("@/state/device-file", () => ({
+  readDeviceText: jest.fn(async (k: string) => mockFiles.get(k) ?? null),
+  writeDeviceText: jest.fn(async (k: string, v: string) => {
+    mockFiles.set(k, v);
+  }),
+}));
 
 it("is off until put off, stays off for a week, then may ask again", async () => {
   const now = 1_000_000_000_000;
@@ -26,9 +22,7 @@ it("is off until put off, stays off for a week, then may ask again", async () =>
   expect(await locationAskPutOff(now + LOCATION_ASK_PUT_OFF_MS)).toBe(false);
 });
 
-it("never throws when storage fails", async () => {
-  (SecureStore.getItemAsync as jest.Mock).mockRejectedValueOnce(new Error("x"));
+it("reads a corrupt value as no put-off", async () => {
+  mockFiles.set("location-ask-put-off-at", "garbage");
   expect(await locationAskPutOff()).toBe(false);
-  (SecureStore.setItemAsync as jest.Mock).mockRejectedValueOnce(new Error("x"));
-  await expect(putOffLocationAsk()).resolves.toBeUndefined();
 });

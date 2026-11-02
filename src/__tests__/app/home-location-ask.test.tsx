@@ -144,3 +144,39 @@ it("uses the fix silently when location is already allowed", async () => {
   expect(tree.queryByTestId("location-prompt")).toBeNull();
   expect(tree.getByText("My Location")).toBeTruthy();
 });
+
+it("keeps the ask askable when the system may ask again (Android's Deny)", async () => {
+  loc.getForegroundPermissionsAsync.mockResolvedValue(
+    permission("undetermined") as never,
+  );
+  loc.requestForegroundPermissionsAsync.mockResolvedValue(
+    permission("denied", true) as never,
+  );
+  const tree = await render(<WeatherHome />);
+  await settle();
+  await fireEvent.press(tree.getByRole("button", { name: "Use my location" }));
+  await settle();
+  expect(tree.getByText(LOCATION_PROBLEM_COPY.declined)).toBeTruthy();
+  expect(tree.getByRole("button", { name: "Use my location" })).toBeTruthy();
+  expect(tree.queryByRole("button", { name: "Open Settings" })).toBeNull();
+});
+
+it("goes back to the default city, saying why, when the person's place does not load", async () => {
+  loc.getForegroundPermissionsAsync.mockResolvedValue(
+    permission("undetermined") as never,
+  );
+  loc.requestForegroundPermissionsAsync.mockResolvedValue(
+    permission("granted") as never,
+  );
+  loc.getCurrentPositionAsync.mockResolvedValue({
+    coords: { latitude: -17.83, longitude: 31.05 },
+  } as never);
+  const tree = await render(<WeatherHome />);
+  await settle();
+  weatherMock.mockRejectedValueOnce(new Error("down"));
+  await fireEvent.press(tree.getByRole("button", { name: "Use my location" }));
+  await settle();
+  expect(tree.getByText(LOCATION_PROBLEM_COPY["no-weather"])).toBeTruthy();
+  expect(tree.getByText("Showing weather for Harare")).toBeTruthy();
+  expect(tree.queryByTestId("weather-error")).toBeNull();
+});

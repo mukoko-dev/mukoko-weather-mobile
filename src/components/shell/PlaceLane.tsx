@@ -90,7 +90,9 @@ export function PlaceLane({ chips, activeIndex, onChipPress }: PlaceLaneProps) {
         <Chip
           chip={home}
           current={chips.indexOf(home) === activeIndex}
-          label={showHomeLabel ? (standIn ?? home.name) : undefined}
+          // A stand-in is always named: the glyph alone would still read as
+          // "My Location" over a place that is not theirs.
+          label={standIn ?? (showHomeLabel ? home.name : undefined)}
           standIn={standIn}
           scheme={scheme}
           onPress={onChipPress}

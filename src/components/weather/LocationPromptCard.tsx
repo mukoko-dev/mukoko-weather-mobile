@@ -21,12 +21,19 @@ import { BORDER, RADIUS, SIZE, SPACE, TOUCH } from "@/theme/mzizi";
 import { PillButton } from "./PillButton";
 import { WxText } from "./WxText";
 
-export type LocationProblem = "denied" | "no-location";
+export type LocationProblem =
+  | "denied"
+  | "declined"
+  | "no-location"
+  | "no-weather";
 
 /** Why the last attempt did not land, in words a person can act on. */
 export const LOCATION_PROBLEM_COPY: Record<LocationProblem, string> = {
   denied:
     "Location is off for Mukoko. Turn it on in Settings, or search for your place.",
+  declined: "Location was not allowed. Ask again, or search for your place.",
+  "no-weather":
+    "Found you, but the weather didn't load. Try again shortly, or search for your place.",
   "no-location":
     "We couldn't find where you are. Try again, or search for your place.",
 };
@@ -56,7 +63,6 @@ export function LocationPromptCard({
   return (
     <View
       testID="location-prompt"
-      accessibilityLabel="Use your location"
       style={[
         styles.card,
         { backgroundColor: colors.card, borderColor: colors.border },
