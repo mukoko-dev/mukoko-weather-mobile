@@ -31,14 +31,9 @@ import {
 
 export * from "@/analytics/events";
 
-/** The proposed ingest routes, from the API route table. */
-export const EVENTS_ROUTE = ROUTES.events;
-/** POST {installId}: delete what the API holds for an install id. */
-export const EVENTS_FORGET_ROUTE = ROUTES.eventsForget;
-
 /**
  * Off: the route does not exist yet. Turn on only when the API serves
- * `EVENTS_ROUTE` and the app shows the opt-out switch.
+ * `ROUTES.events` and the app shows the opt-out switch.
  */
 export const EVENTS_UPLOAD_ENABLED: boolean = false;
 
@@ -51,7 +46,7 @@ export function createApiUploader(): Uploader {
     async send(batch: EventBatch): Promise<SendResult> {
       try {
         // An empty token tells the client not to attach the session.
-        await apiRequest(EVENTS_ROUTE, {
+        await apiRequest(ROUTES.events, {
           method: "POST",
           json: batch,
           token: "",
@@ -64,7 +59,7 @@ export function createApiUploader(): Uploader {
     },
     async forget(installId: string): Promise<"ok" | "retry"> {
       try {
-        await apiRequest(EVENTS_FORGET_ROUTE, {
+        await apiRequest(ROUTES.eventsForget, {
           method: "POST",
           json: { installId },
           token: "",

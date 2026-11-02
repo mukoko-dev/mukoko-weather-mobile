@@ -11,7 +11,7 @@
  * (`EVENTS_UPLOAD_ENABLED` in src/analytics/index.ts).
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Switch, View } from "react-native";
 
 import {
@@ -25,45 +25,65 @@ import { usePalette } from "@/hooks/usePalette";
 
 export function AnalyticsSection() {
   const palette = usePalette();
-  /** Null until the stored choice is read. */
-  const [sharing, setSharing] = useState<boolean | null>(null);
+  /** Null until the stored choice is read; "unavailable" if it cannot be. */
+  const [sharing, setSharing] = useState<boolean | "unavailable" | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const mounted = useRef(true);
+
+  /** What the queue holds now: never "off" for a choice it could not read. */
+  const readChoice = useCallback(() => {
+    const queue = getEventQueue();
+    return queue.available() ? !queue.snapshot().optOut : "unavailable";
+  }, []);
 
   useEffect(() => {
-    let active = true;
-    const queue = getEventQueue();
-    void queue.load().then(() => {
-      if (active) setSharing(!queue.snapshot().optOut);
-    });
+    mounted.current = true;
+    void getEventQueue()
+      .load()
+      .then(() => {
+        if (mounted.current) setSharing(readChoice());
+      });
     return () => {
-      active = false;
+      mounted.current = false;
     };
-  }, []);
+  }, [readChoice]);
 
-  const onToggle = useCallback(async (next: boolean) => {
-    setBusy(true);
-    setNotice(null);
-    try {
-      await setAnalyticsOptOut(!next);
-    } catch {
-      setNotice("Could not save that choice. Please try again.");
-    } finally {
-      setSharing(!getEventQueue().snapshot().optOut);
+  const onToggle = useCallback(
+    async (next: boolean) => {
+      setBusy(true);
+      setNotice(null);
+      let failed = false;
+      try {
+        await setAnalyticsOptOut(!next);
+      } catch {
+        failed = true;
+      }
+      if (!mounted.current) return;
+      if (failed) {
+        setNotice(
+          "Could not save that choice. Nothing is recorded meanwhile; please try again.",
+        );
+      }
+      setSharing(readChoice());
       setBusy(false);
-    }
-  }, []);
+    },
+    [readChoice],
+  );
 
   const onReset = useCallback(async () => {
     setBusy(true);
+    setNotice(null);
+    let message: string;
     try {
       await resetAnalyticsId();
-      setNotice("Your anonymous id is new. Nothing links it to the old one.");
+      message = "Your anonymous id is new. Nothing links it to the old one.";
     } catch {
-      setNotice("Could not reset the id. Please try again.");
-    } finally {
-      setBusy(false);
+      message = "Could not reset the id. Please try again.";
     }
+    if (!mounted.current) return;
+    setNotice(message);
+    setBusy(false);
   }, []);
 
   return (
@@ -79,14 +99,20 @@ export function AnalyticsSection() {
           </BrandText>
         </View>
         <Switch
-          value={sharing ?? false}
-          disabled={sharing === null || busy}
+          value={sharing === true}
+          disabled={typeof sharing !== "boolean" || busy}
           onValueChange={(next) => void onToggle(next)}
           accessibilityLabel="Share anonymous usage"
           trackColor={{ true: palette.primary, false: palette.surfaceDim }}
         />
       </View>
-      {sharing ? (
+      {sharing === "unavailable" ? (
+        <BrandText variant="caption" tone="textSecondary">
+          Your choice cannot be read right now, so nothing is being recorded.
+          Open this screen again in a moment.
+        </BrandText>
+      ) : null}
+      {sharing === true ? (
         <Pressable
           onPress={() => void onReset()}
           disabled={busy}

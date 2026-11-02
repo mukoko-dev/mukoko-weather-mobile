@@ -106,10 +106,17 @@ export default function WeatherHome() {
     try {
       const weather = await fetchWeather({ lat: loc.lat, lon: loc.lon });
       setState({ kind: "ready", weather });
-      // Coarse place only: a ~39 x 20 km cell and the country code.
+      // Coarse place only: the fix's ~39 x 20 km cell and the country code.
       track("forecast_shown", {
         surface: "home",
-        place: coarsePlace(weather.location ?? loc),
+        place: coarsePlace({
+          lat: loc.lat,
+          lon: loc.lon,
+          country:
+            weather.location?.country ??
+            loc.place?.country ??
+            (loc.fallback ? FALLBACK.country : undefined),
+        }),
       });
     } catch (err) {
       const message =

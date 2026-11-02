@@ -177,11 +177,12 @@ function recoverState(raw: string, newId: () => string): QueueState {
 function shownKey(event: AppEvent): string {
   const props = event.props as EventProps["forecast_shown"];
   const place = props.place ?? {};
+  // The cell alone when there is one: whether the country came along with
+  // it (it depends on the payload) must not make it a different place.
   return [
     event.at.slice(0, 10),
     props.surface,
-    place.country ?? "",
-    place.cell ?? "",
+    place.cell ?? place.country ?? "",
   ].join("|");
 }
 
@@ -221,7 +222,10 @@ export class EventQueue {
     this.cap = Math.max(1, opts.cap ?? DEFAULT_QUEUE_CAP);
   }
 
-  /** Read the stored queue (once; later calls await the same read). */
+  /**
+   * Read the stored queue (once it succeeds; later calls await the same read).
+   * A failed read is tried again on the next call.
+   */
   load(): Promise<void> {
     if (!this.loading) {
       this.loading = (async () => {
@@ -230,11 +234,14 @@ export class EventQueue {
           raw = await this.storage.read();
         } catch {
           // Unreadable this time (locked, busy): record nothing and write
-          // nothing for this session, so a stored opt-out is never overwritten.
+          // nothing until a read works, so a stored opt-out is never
+          // overwritten.
           this.state = { ...emptyState(null), optOut: true };
           this.readOnly = true;
+          this.loading = null;
           return;
         }
+        this.readOnly = false;
         const stored = parseState(raw);
         this.state =
           stored ??
@@ -244,6 +251,14 @@ export class EventQueue {
       })();
     }
     return this.loading;
+  }
+
+  /**
+   * Whether the stored choice could be read. When false, nothing is recorded
+   * and a settings screen should say the choice is unavailable, not "off".
+   */
+  available(): boolean {
+    return !this.readOnly;
   }
 
   /** A copy of the current state (for tests and a settings screen). */
@@ -260,7 +275,11 @@ export class EventQueue {
     props: EventProps[K],
   ): Promise<boolean> {
     await this.load();
-    if (this.state.optOut || !this.state.installId) return false;
+    if (this.state.optOut || !this.state.installId) {
+      // An opt-out whose write failed is written again at the next chance.
+      if (this.pending !== null) void this.persist().catch(() => {});
+      return false;
+    }
     const checked = validateEvent(name, props);
     if (!checked) {
       if (__DEV__) {

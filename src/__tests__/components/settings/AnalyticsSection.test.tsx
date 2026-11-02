@@ -4,7 +4,7 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { fireEvent, render } from "@testing-library/react-native";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { EventQueue } from "@/analytics/queue";
 import { AnalyticsSection } from "@/components/settings/AnalyticsSection";
@@ -43,9 +43,11 @@ describe("AnalyticsSection", () => {
 
     await fireEvent(toggle, "valueChange", false);
 
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Reset anonymous id")).toBeNull(),
+    );
     expect(mockQueue.snapshot()).toMatchObject({ optOut: true, events: [] });
     expect(await mockQueue.track("share", { surface: "app" })).toBe(false);
-    expect(screen.queryByLabelText("Reset anonymous id")).toBeNull();
   });
 
   it("turning it back on starts a new id", async () => {
@@ -56,6 +58,7 @@ describe("AnalyticsSection", () => {
     const toggle = await screen.findByLabelText("Share anonymous usage");
 
     await fireEvent(toggle, "valueChange", true);
+    await screen.findByLabelText("Reset anonymous id"); // sharing is on again
 
     const after = mockQueue.snapshot();
     expect(after.optOut).toBe(false);
@@ -67,7 +70,25 @@ describe("AnalyticsSection", () => {
     const before = mockQueue.snapshot().installId;
     const screen = await render(<AnalyticsSection />);
     await fireEvent.press(await screen.findByLabelText("Reset anonymous id"));
+    await screen.findByText(/anonymous id is new/);
     expect(mockQueue.snapshot().installId).not.toBe(before);
-    expect(screen.getByText(/anonymous id is new/)).toBeTruthy();
+  });
+
+  it("says the choice is unavailable, never 'off', when it cannot be read", async () => {
+    mockQueue = new EventQueue({
+      storage: {
+        read: async () => {
+          throw new Error("locked");
+        },
+        write: async () => {},
+      },
+      newId: () => randomUUID(),
+      client: { app: "mukoko-weather", platform: "ios", version: "1.0.0" },
+    });
+    const screen = await render(<AnalyticsSection />);
+    await screen.findByText(/cannot be read right now/);
+    expect(screen.getByLabelText("Share anonymous usage").props.disabled).toBe(
+      true,
+    );
   });
 });

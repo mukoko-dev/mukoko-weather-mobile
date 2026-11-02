@@ -282,6 +282,53 @@ describe("EventQueue", () => {
     expect(q.snapshot()).toMatchObject({ optOut: true, events: [] });
   });
 
+  it("tries a failed read again, and is unavailable until one works", async () => {
+    let locked = true;
+    const { box, storage } = memoryStorage();
+    const q = makeQueue({
+      read: async () => {
+        if (locked) throw new Error("locked");
+        return storage.read();
+      },
+      write: (value) => storage.write(value),
+    });
+    expect(await q.track("share", { surface: "app" })).toBe(false);
+    expect(q.available()).toBe(false);
+    locked = false;
+    expect(await q.track("share", { surface: "app" })).toBe(true);
+    expect(q.available()).toBe(true);
+    await q.settled();
+    expect(box.value).toMatch(/"share"/);
+  });
+
+  it("writes a failed opt-out again at the next event", async () => {
+    let fail = true;
+    let stored: string | null = null;
+    const q = makeQueue({
+      read: async () => null,
+      write: async (value) => {
+        if (fail) throw new Error("disk full");
+        stored = value;
+      },
+    });
+    await expect(q.setOptOut(true)).rejects.toThrow();
+    fail = false;
+    expect(await q.track("share", { surface: "app" })).toBe(false);
+    await q.settled();
+    expect(stored).toMatch(/"optOut":true/);
+  });
+
+  it("treats a cell with or without its country as the same place", async () => {
+    const q = makeQueue(memoryStorage().storage);
+    const cellOnly = coarsePlace({ lat: -17.83, lon: 31.05 });
+    expect(
+      await q.track("forecast_shown", { surface: "home", place: cellOnly }),
+    ).toBe(true);
+    expect(
+      await q.track("forecast_shown", { surface: "home", place: HARARE }),
+    ).toBe(false);
+  });
+
   it("drops stored events that no longer validate", async () => {
     const stored = JSON.stringify({
       v: 1,
