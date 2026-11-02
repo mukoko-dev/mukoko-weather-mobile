@@ -12,7 +12,7 @@
  */
 
 import { type Href, router } from "expo-router";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useMemo } from "react";
 import { Pressable, Share, StyleSheet, View } from "react-native";
 
 import { type WeatherResponse } from "@/api/weather";
@@ -22,12 +22,14 @@ import { useNow } from "@/hooks/useNow";
 import { rememberWeather } from "@/hooks/weather-cache";
 import { usePageColors } from "@/hooks/usePageColors";
 import { skyFamily } from "@/shared/hero";
-import { weatherCodeToInfo } from "@/shared/weather";
+import { checkFrostRiskAhead, weatherCodeToInfo } from "@/shared/weather";
 import { RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
 import { NEUTRAL_SKY, SKY_FG, SKY_FG_DIM, skyStops } from "@/theme/sky";
 
+import { FrostAlertBanner, WeatherUnavailableBanner } from "./AlertBanners";
 import { ConditionTiles } from "./ConditionTiles";
 import { ConditionsCard } from "./ConditionsCard";
+import { ForecastExtras } from "./ForecastExtras";
 import { RoundControl } from "./RoundControl";
 import { HeroTopRow, SkyHero } from "./SkyHero";
 import { WeatherScroll } from "./WeatherScroll";
@@ -98,6 +100,16 @@ export function breadcrumbOf(
   return parts.length > 0 ? parts.join(" / ") : undefined;
 }
 
+/**
+ * The point the cards below the hero ask the Worker about: the place's own
+ * coordinate when the page was loaded by place, else the (rounded) GPS fix.
+ */
+export function pointOf(
+  weather: WeatherResponse,
+): { lat: number; lon: number } | undefined {
+  return weather.location ?? weather.coordinates;
+}
+
 /** What a share says. No link: the app talks to one backend and names no site. */
 export function shareMessage(
   name: string,
@@ -158,6 +170,18 @@ export function WeatherPage({
   const isDay = current.isDay ?? true;
   const family = skyFamily(code, isDay);
   const info = weatherCodeToInfo(code);
+  const point = pointOf(weather);
+  // The web's two notices above the page: every provider failed, and frost.
+  const usingFallback = weather.source === "fallback";
+  // No frost alert from the seasonal estimate: its temperatures are not a
+  // forecast, and the web shows none either (`usingFallback ? null : ...`).
+  const frost = useMemo(
+    () =>
+      forecast && !usingFallback
+        ? checkFrostRiskAhead(forecast.hourly, forecast.utc_offset_seconds, now)
+        : null,
+    [forecast, usingFallback, now],
+  );
   const slug = slugProp ?? weather.location?.slug;
   const links = useLocationLinks(slug);
 
@@ -192,6 +216,10 @@ export function WeatherPage({
         onShare={onShare}
         onSettings={openSettings}
       />
+      {usingFallback ? (
+        <WeatherUnavailableBanner onRefresh={onRefresh} />
+      ) : null}
+      {frost ? <FrostAlertBanner alert={frost} /> : null}
       {forecast ? (
         <>
           <ConditionsCard
@@ -202,8 +230,12 @@ export function WeatherPage({
           <ConditionTiles
             forecast={forecast}
             now={now}
+            point={point}
+            slug={weather.location?.slug}
+            refreshKey={weather}
             onOpenTrends={links?.openAtmosphere}
           />
+          <ForecastExtras weather={weather} />
         </>
       ) : null}
     </WeatherScroll>

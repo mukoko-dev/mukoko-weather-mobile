@@ -32,6 +32,7 @@ import { SPACE } from "@/theme/mzizi";
 import { SKY_FG, SKY_FG_DIM } from "@/theme/sky";
 
 import { AtmosphericDetailsCard } from "./AtmosphericDetailsCard";
+import { answerKey } from "./answer-key";
 import { ChartErrorBoundary } from "./ChartErrorBoundary";
 import { ConditionTiles } from "./ConditionTiles";
 import { DailyCard } from "./DailyCard";
@@ -89,22 +90,6 @@ function Section({ name, color, resetKey, children }: SectionProps) {
       {children}
     </ChartErrorBoundary>
   );
-}
-
-/**
- * One key per answer object: a refresh brings a new object, so a section that
- * crashed on the last answer gets another go even when the Worker served the
- * same timestamps from its cache.
- */
-const answerKeys = new WeakMap<object, string>();
-let nextAnswerKey = 0;
-export function answerKey(weather: WeatherResponse): string {
-  let key = answerKeys.get(weather);
-  if (key === undefined) {
-    key = String((nextAnswerKey += 1));
-    answerKeys.set(weather, key);
-  }
-  return key;
 }
 
 export type DetailPageProps = {
