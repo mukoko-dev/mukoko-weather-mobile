@@ -15,6 +15,7 @@ import { type Href, router } from "expo-router";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Pressable, Share, StyleSheet, View } from "react-native";
 
+import { placeOf } from "@/api/place";
 import { type WeatherResponse } from "@/api/weather";
 import { ChevronLeftIcon } from "@/components/icons/Icon";
 import { useHeroActivityLine } from "@/hooks/useHeroActivityLine";
@@ -22,22 +23,33 @@ import { useLocationLinks } from "@/hooks/useLocationLinks";
 import { useNow } from "@/hooks/useNow";
 import { rememberWeather } from "@/hooks/weather-cache";
 import { usePageColors } from "@/hooks/usePageColors";
+import { cropsFromPreferences } from "@/shared/agriculture";
 import { skyFamily } from "@/shared/hero";
+import { countryLabel } from "@/shared/place-info";
+import { type TrailItem, placeTrail } from "@/shared/place-trail";
 import { checkFrostRiskAhead, weatherCodeToInfo } from "@/shared/weather";
+import { usePreferences } from "@/state/preferences";
 import { RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
 import { NEUTRAL_SKY, SKY_FG, SKY_FG_DIM, skyStops } from "@/theme/sky";
 
+import { AboutPlaceCard } from "./AboutPlaceCard";
 import { ActivityInvite } from "./ActivityInvite";
 import { ActivitySheetsProvider } from "./ActivitySheets";
 import { AiFollowup } from "./AiFollowup";
 import { AiSummary } from "./AiSummary";
+import { AgricultureSnapshot } from "./AgricultureSnapshot";
 import { FrostAlertBanner, WeatherUnavailableBanner } from "./AlertBanners";
 import { CommunityLane } from "./CommunityLane";
 import { ConditionTiles } from "./ConditionTiles";
 import { ConditionsCard } from "./ConditionsCard";
+import { EnsoCard } from "./EnsoCard";
 import { ForecastExtras } from "./ForecastExtras";
+import { MapPreviewCard } from "./MapPreviewCard";
+import { goHome, openAgriculture } from "./navigation";
+
 import { RoundControl } from "./RoundControl";
 import { RecentReports } from "./RecentReports";
+import { SeasonFooter } from "./SeasonBadge";
 import { HeroTopRow, SkyHero } from "./SkyHero";
 import { WeatherScroll } from "./WeatherScroll";
 import { WxText } from "./WxText";
@@ -79,32 +91,19 @@ export function BackControl({
 }
 
 /**
- * A country's English name from its ISO 3166-1 alpha-2 code ("ZW" is
- * "Zimbabwe"), as the web's breadcrumb says it. Where the runtime has no region
- * names the code itself is shown, never nothing.
+ * The trail under the top row, the web's rules: Home / Country / Province /
+ * Place, the province left out when it is the place's own name, the country by
+ * name and never its ISO code.
  */
-export function countryLabel(code: string | undefined): string | undefined {
-  if (!code) return undefined;
-  if (!/^[A-Za-z]{2}$/.test(code)) return code;
-  try {
-    return (
-      new Intl.DisplayNames(["en"], { type: "region" }).of(
-        code.toUpperCase(),
-      ) ?? code
-    );
-  } catch {
-    return code;
-  }
-}
-
-/** The trail under the top row: country, then province. */
-export function breadcrumbOf(
+export function trailOf(
   location: WeatherResponse["location"],
-): string | undefined {
-  const parts = [countryLabel(location?.country), location?.province].filter(
-    (p): p is string => typeof p === "string" && p.length > 0,
-  );
-  return parts.length > 0 ? parts.join(" / ") : undefined;
+  name: string,
+): TrailItem[] {
+  return placeTrail({
+    name,
+    countryName: countryLabel(location?.country),
+    province: location?.province,
+  });
 }
 
 /**
@@ -172,6 +171,10 @@ export function WeatherPage({
   inTabs,
 }: WeatherPageProps) {
   const now = useNow();
+  const { activities } = usePreferences();
+  const crops = useMemo(() => cropsFromPreferences(activities), [activities]);
+  // The place the farm and place cards take (also a GPS point the API named).
+  const farmPlace = placeOf(weather, name);
   const { current, daily, forecast } = weather;
   const code = current.weatherCode ?? 0;
   const isDay = current.isDay ?? true;
@@ -231,7 +234,8 @@ export function WeatherPage({
           now={now}
           isCurrentLocation={isCurrentLocation}
           isHome={isHome}
-          breadcrumb={breadcrumbOf(weather.location)}
+          trail={trailOf(weather.location, name)}
+          onHome={goHome}
           leading={leading}
           onShare={onShare}
           onSettings={openSettings}
@@ -247,6 +251,15 @@ export function WeatherPage({
               forecast={forecast}
               now={now}
               onOpenForecast={links?.openForecast}
+              footer={
+                farmPlace ? (
+                  <SeasonFooter
+                    place={farmPlace}
+                    now={now}
+                    utcOffsetSeconds={weather.utcOffsetSeconds}
+                  />
+                ) : undefined
+              }
             />
             <CommunityLane slug={place?.slug} forecast={forecast} now={now} />
             <ConditionTiles
@@ -281,6 +294,32 @@ export function WeatherPage({
                 />
               </>
             ) : null}
+          </>
+        ) : null}
+        {farmPlace ? (
+          <>
+            <AgricultureSnapshot
+              place={farmPlace}
+              crops={crops}
+              refreshKey={weather}
+              onOpenInsights={
+                farmPlace.slug
+                  ? () => openAgriculture(farmPlace.slug as string)
+                  : undefined
+              }
+            />
+            <EnsoCard
+              lat={farmPlace.lat}
+              lon={farmPlace.lon}
+              countryCode={farmPlace.country}
+            />
+            <MapPreviewCard placeName={farmPlace.name} />
+            <AboutPlaceCard
+              place={farmPlace}
+              forecastElevation={weather.forecastElevation}
+              now={now}
+              utcOffsetSeconds={weather.utcOffsetSeconds}
+            />
           </>
         ) : null}
       </WeatherScroll>

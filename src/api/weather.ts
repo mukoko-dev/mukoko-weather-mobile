@@ -59,6 +59,8 @@ export type WeatherResponse = {
     lon: number;
     /** Metres above sea level, when the API knows it. */
     elevation?: number;
+    source?: string;
+    address?: string;
   };
   current: CurrentConditions;
   daily: DailyForecast[];
@@ -70,6 +72,8 @@ export type WeatherResponse = {
    * to start at the current hour.
    */
   forecast?: WeatherData;
+  /** The terrain height in metres the forecast used for this exact point. */
+  forecastElevation?: number;
   /**
    * The next hour in 15-minute steps (`minutely`), for the Next hour card.
    * Absent when the Worker sent none.
@@ -106,6 +110,7 @@ type WireWeather = {
   daily?: Record<string, unknown>;
   timezone?: unknown;
   utc_offset_seconds?: unknown;
+  elevation?: unknown;
   minutely?: unknown;
   models?: unknown;
   models_time?: unknown;
@@ -344,11 +349,14 @@ export function toWeatherResponse(
       lat: place.lat,
       lon: place.lon,
       elevation: place.elevation,
+      source: place.source,
+      address: place.address,
     },
     current,
     daily: toDaily(raw.daily),
     hourly: alignHourly(raw.hourly, current.observedAt),
     forecast: toForecast(raw),
+    forecastElevation: num(raw.elevation) ?? undefined,
     minutely: toMinutely(raw.minutely),
     models: toModels(raw.models),
     modelsTime: Array.isArray(raw.models_time)

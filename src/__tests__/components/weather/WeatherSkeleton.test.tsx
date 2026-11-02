@@ -65,6 +65,11 @@ describe("WeatherSkeleton", () => {
     expect(
       getByTestId("skeleton-tiles", { includeHiddenElements: true }),
     ).toBeTruthy();
+    // The season line's place in the Conditions card, so it does not grow when
+    // the line arrives.
+    expect(
+      getByTestId("skeleton-season", { includeHiddenElements: true }),
+    ).toBeTruthy();
     expect(SKELETON.hours).toBeGreaterThanOrEqual(6);
   });
 

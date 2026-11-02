@@ -6,6 +6,7 @@
 import { render } from "@testing-library/react-native";
 
 import { SkyHero } from "@/components/weather/SkyHero";
+import { placeTrail } from "@/shared/place-trail";
 import { lineHeightOf, TOUCH, TYPE } from "@/theme/mzizi";
 
 import { PHONE_WIDTHS, setInsets, setWindow } from "@/test-utils/mocks";
@@ -135,7 +136,11 @@ describe("SkyHero", () => {
         {...props}
         isCurrentLocation
         isHome
-        breadcrumb="Zimbabwe / Harare"
+        trail={placeTrail({
+          name: "Harare",
+          countryName: "Zimbabwe",
+          province: "Harare",
+        })}
       />,
     );
     expect(HAS_EMOJI.test(allText(tree.toJSON()))).toBe(false);
@@ -156,13 +161,18 @@ describe("SkyHero", () => {
       setInsets({ top: 47, bottom: 34, left: 0, right: 0 });
       setWindow(width, 852, 2);
       const { getByText, toJSON } = await render(
-        <SkyHero {...props} breadcrumb="Zimbabwe / Mashonaland East" />,
+        <SkyHero
+          {...props}
+          trail={placeTrail({
+            name: "Marondera",
+            countryName: "Zimbabwe",
+            province: "Mashonaland East",
+          })}
+        />,
       );
       expect(getByText("28°")).toBeTruthy();
       // No text is clipped to a line count except the numeral, and the trail wraps.
-      expect(
-        getByText("Zimbabwe / Mashonaland East").props.numberOfLines,
-      ).toBeUndefined();
+      expect(getByText("Mashonaland East").props.numberOfLines).toBeUndefined();
       const json = JSON.stringify(toJSON());
       expect(json).not.toMatch(/"width":\s*(3[2-9]\d|4\d\d)/); // nothing as wide as a phone
     },

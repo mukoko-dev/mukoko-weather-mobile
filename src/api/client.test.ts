@@ -126,6 +126,9 @@ describe("ROUTES", () => {
       normals: "/v1/normals",
       normalsMonthly: "/v1/normals/monthly",
       history: "/v1/history",
+      agriculture: "/v1/agriculture",
+      enso: "/v1/enso",
+      profile: "/v1/locations/profile",
     });
   });
 });

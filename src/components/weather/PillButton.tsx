@@ -25,7 +25,11 @@ const DISABLED_OPACITY = 0.5;
 export type PillButtonProps = {
   label: string;
   onPress: () => void;
-  variant?: "filled" | "outline";
+  /**
+   * `filled` (`.kudu`), `outline` (`.impala`), or `link`: text in the primary
+   * colour with the same 48 dp target and the link role (`.sunbird`).
+   */
+  variant?: "filled" | "outline" | "link";
   /** `md` is 56 dp tall (the web's `.kudu`), `sm` 48 dp (`.kudu-sm`). */
   size?: "sm" | "md";
   /** A drawn icon before the label; it receives the text colour. */
@@ -52,10 +56,15 @@ export function PillButton({
   const { colors } = usePageColors();
   const reduceMotion = useReduceMotion();
   const filled = variant === "filled";
-  const ink = filled ? inkOn(colors.primary) : colors.textPrimary;
+  const link = variant === "link";
+  const ink = filled
+    ? inkOn(colors.primary)
+    : link
+      ? colors.primary
+      : colors.textPrimary;
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={link ? "link" : "button"}
       accessibilityLabel={label}
       accessibilityHint={hint}
       accessibilityState={{ disabled }}
@@ -66,19 +75,21 @@ export function PillButton({
         styles.base,
         { minHeight: size === "md" ? TOUCH.default : TOUCH.min },
         stretch ? styles.stretch : styles.hug,
-        filled
-          ? {
-              backgroundColor: pressed
-                ? withAlpha(colors.primary, 0.85)
-                : colors.primary,
-              borderColor: colors.primary,
-            }
-          : {
-              backgroundColor: pressed
-                ? withAlpha(colors.textPrimary, 0.08)
-                : "transparent",
-              borderColor: colors.border,
-            },
+        link
+          ? styles.link
+          : filled
+            ? {
+                backgroundColor: pressed
+                  ? withAlpha(colors.primary, 0.85)
+                  : colors.primary,
+                borderColor: colors.primary,
+              }
+            : {
+                backgroundColor: pressed
+                  ? withAlpha(colors.textPrimary, 0.08)
+                  : "transparent",
+                borderColor: colors.border,
+              },
         disabled ? { opacity: DISABLED_OPACITY } : null,
         { transform: pressed && !reduceMotion ? [{ scale: PRESS_SCALE }] : [] },
       ]}
@@ -104,4 +115,9 @@ const styles = StyleSheet.create({
   hug: { alignSelf: "flex-start" },
   stretch: { alignSelf: "stretch" },
   row: { flexDirection: "row", alignItems: "center", gap: SPACE.snug },
+  link: {
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    backgroundColor: "transparent",
+  },
 });
