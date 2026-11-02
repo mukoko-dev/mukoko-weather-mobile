@@ -271,7 +271,7 @@ families are not used here.
 npm test
 ```
 
-52 test files, covering the API client (URL building, base-URL rules, all three
+53 test files, covering the API client (URL building, base-URL rules, all three
 error formats), each route against answers recorded from the weather Worker, the
 chat, device and sign-in behaviour, the one-backend guard, device identity, the
 shared weather/i18n/locations/ICAO helpers, the web's chart data and sun times
