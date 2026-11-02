@@ -111,12 +111,19 @@ export function DetailPage({
   const offset = weather.utcOffsetSeconds;
 
   return (
-    <WeatherScroll family={family} onRefresh={onRefresh} refreshing={refreshing}>
+    <WeatherScroll
+      family={family}
+      onRefresh={onRefresh}
+      refreshing={refreshing}
+    >
       <HeroTopRow
         name={name}
         breadcrumb={`${name} / ${title}`}
         leading={
-          <BackControl label={`Back to ${name}`} fallback={locationHref(slug)} />
+          <BackControl
+            label={`Back to ${name}`}
+            fallback={locationHref(slug)}
+          />
         }
         onShare={() => shareWeather(name, current.temperature, info.label)}
         onSettings={openSettings}
@@ -231,7 +238,11 @@ export function LocationDetailScreen({ slug, sub }: LocationDetailScreenProps) {
     return (
       <>
         {screen}
-        <WeatherError message={state.message} onRetry={onRetry} leading={back} />
+        <WeatherError
+          message={state.message}
+          onRetry={onRetry}
+          leading={back}
+        />
       </>
     );
   }

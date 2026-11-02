@@ -18,6 +18,7 @@ import { PressureChart } from "./charts/PressureChart";
 import { UVIndexChart } from "./charts/UVIndexChart";
 import { WindSpeedChart } from "./charts/WindSpeedChart";
 import { ChartErrorBoundary } from "./ChartErrorBoundary";
+import { useCardBorder } from "./card-border";
 import { PageCard } from "./PageCard";
 import { WxText } from "./WxText";
 
@@ -33,6 +34,7 @@ export function AtmosphericDetailsCard({
   now,
 }: AtmosphericDetailsCardProps) {
   const { colors } = usePageColors();
+  const border = useCardBorder("quiet");
   const data = prepareAtmosphericData(hourly, utcOffsetSeconds, now);
   const sections = [
     {
@@ -46,10 +48,12 @@ export function AtmosphericDetailsCard({
   return (
     <PageCard
       title="Atmospheric Details"
-      subtitle="24-hour hourly trends"
-      tone="quiet"
+      borderColor={border}
       testID="atmospheric-details-card"
     >
+      <WxText type="body" color={colors.textTertiary}>
+        24-hour hourly trends
+      </WxText>
       <View style={styles.sections}>
         {sections.map((s) => (
           <View key={s.title} style={styles.section}>

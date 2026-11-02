@@ -20,7 +20,13 @@ function spec(over: Partial<SeriesSpec> & Pick<SeriesSpec, "key">): SeriesSpec {
   };
 }
 
-const base = { width: 320, height: 160, labels, fontSize: 12, maxTicksLimit: 8 };
+const base = {
+  width: 320,
+  height: 160,
+  labels,
+  fontSize: 12,
+  maxTicksLimit: 8,
+};
 
 describe("buildChartModel", () => {
   it("lays the plot inside the labels and puts the points edge to edge for a line", () => {
@@ -84,7 +90,10 @@ describe("buildChartModel", () => {
 
   it("draws a lone reading as a dot", () => {
     const values = labels.map((_, i) => (i === 5 ? 21 : null));
-    const m = buildChartModel({ ...base, series: [spec({ key: "t", values })] });
+    const m = buildChartModel({
+      ...base,
+      series: [spec({ key: "t", values })],
+    });
     expect(m.series[0].dots).toHaveLength(1);
   });
 

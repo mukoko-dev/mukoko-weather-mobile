@@ -157,7 +157,14 @@ function LegendSwatch({
   return (
     <Svg width={16} height={10} accessibilityElementsHidden>
       {spec.kind === "bar" ? (
-        <Rect x={3} y={1} width={10} height={8} rx={CHART.barRadius} fill={color} />
+        <Rect
+          x={3}
+          y={1}
+          width={10}
+          height={8}
+          rx={CHART.barRadius}
+          fill={color}
+        />
       ) : (
         <Line
           x1={0}
@@ -286,7 +293,11 @@ export function TimeSeriesChart({
     const t = touch.current;
     if (t.scrubbing) return;
     const { locationX, locationY } = e.nativeEvent;
-    if (Math.abs(locationX - t.x) > SPACE.snug || Math.abs(locationY - t.y) > SPACE.snug) return;
+    if (
+      Math.abs(locationX - t.x) > SPACE.snug ||
+      Math.abs(locationY - t.y) > SPACE.snug
+    )
+      return;
     const i = nearestIndex(locationX, model.xs);
     // Touching the selected point again clears it.
     setSelected((cur) => (i < 0 || i === cur ? null : i));
@@ -303,7 +314,11 @@ export function TimeSeriesChart({
 
   if (!hasData) {
     return (
-      <View testID={`${testID}-empty`} accessible accessibilityLabel={`${title}. Not enough forecast hours to draw this chart.`}>
+      <View
+        testID={`${testID}-empty`}
+        accessible
+        accessibilityLabel={`${title}. Not enough forecast hours to draw this chart.`}
+      >
         <WxText type="body" color={colors.textTertiary}>
           Not enough forecast hours to draw this chart.
         </WxText>
@@ -326,7 +341,9 @@ export function TimeSeriesChart({
       accessibilityLabel={`${title}. ${summary}`}
       accessibilityHint="Swipe up or down to hear each value."
       accessibilityValue={
-        index !== null ? { text: pointText(textSeries, labels, index, valueFormat) } : undefined
+        index !== null
+          ? { text: pointText(textSeries, labels, index, valueFormat) }
+          : undefined
       }
       accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
       onAccessibilityAction={onAccessibilityAction}
@@ -335,7 +352,12 @@ export function TimeSeriesChart({
       <View style={styles.readout} testID={`${testID}-readout`}>
         {index !== null ? (
           <>
-            <WxText type="bodySm" weight={600} tabular color={colors.textPrimary}>
+            <WxText
+              type="bodySm"
+              weight={600}
+              tabular
+              color={colors.textPrimary}
+            >
               {readoutTitle ?? ""}
             </WxText>
             {series.map((s, k) => (
@@ -412,7 +434,11 @@ export function TimeSeriesChart({
                 x={l.x}
                 y={model.plot.top + model.plot.height + fontSize + SPACE.hair}
                 textAnchor={
-                  l.index === 0 ? "start" : l.index === labels.length - 1 ? "end" : "middle"
+                  l.index === 0
+                    ? "start"
+                    : l.index === labels.length - 1
+                      ? "end"
+                      : "middle"
                 }
                 fontSize={fontSize}
                 fontFamily={FONT_FILE.sans[400]}
@@ -423,7 +449,9 @@ export function TimeSeriesChart({
             ))}
 
             {model.series.map((drawn) => {
-              const cfg = series.find((s) => s.key === drawn.spec.key) as SeriesConfig;
+              const cfg = series.find(
+                (s) => s.key === drawn.spec.key,
+              ) as SeriesConfig;
               const color = colorOf(cfg);
               return (
                 <G key={drawn.spec.key}>
@@ -457,14 +485,24 @@ export function TimeSeriesChart({
                       d={d}
                       fill="none"
                       stroke={color}
-                      strokeWidth={drawn.spec.dashed ? CHART.dashedLine : CHART.line}
-                      strokeDasharray={drawn.spec.dashed ? CHART.dash.join(" ") : undefined}
+                      strokeWidth={
+                        drawn.spec.dashed ? CHART.dashedLine : CHART.line
+                      }
+                      strokeDasharray={
+                        drawn.spec.dashed ? CHART.dash.join(" ") : undefined
+                      }
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                   ))}
                   {drawn.dots.map((p) => (
-                    <Circle key={`d${p.x}`} cx={p.x} cy={p.y} r={CHART.dot} fill={color} />
+                    <Circle
+                      key={`d${p.x}`}
+                      cx={p.x}
+                      cy={p.y}
+                      r={CHART.dot}
+                      fill={color}
+                    />
                   ))}
                 </G>
               );
@@ -483,7 +521,9 @@ export function TimeSeriesChart({
                 {model.series.map((drawn) => {
                   const p = drawn.points[index];
                   if (!p || drawn.spec.kind === "bar") return null;
-                  const cfg = series.find((s) => s.key === drawn.spec.key) as SeriesConfig;
+                  const cfg = series.find(
+                    (s) => s.key === drawn.spec.key,
+                  ) as SeriesConfig;
                   return (
                     <Circle
                       key={`s${drawn.spec.key}`}

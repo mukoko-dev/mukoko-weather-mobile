@@ -54,7 +54,11 @@ export const MAX_TICKS = 7;
  * Round tick values inside `[min, max]`: the smallest round step (1, 2 or 5
  * times a power of ten) that gives no more than `maxTicks` of them.
  */
-export function niceTicks(min: number, max: number, maxTicks = MAX_TICKS): number[] {
+export function niceTicks(
+  min: number,
+  max: number,
+  maxTicks = MAX_TICKS,
+): number[] {
   if (!(max > min)) return [min];
   const range = max - min;
   const unit = 10 ** (Math.floor(Math.log10(range)) - 2);
@@ -184,7 +188,7 @@ export function linePath(pts: readonly Point[]): string {
     dx.push(pts[i + 1].x - pts[i].x);
     slope.push(dx[i] === 0 ? 0 : (pts[i + 1].y - pts[i].y) / dx[i]);
   }
-  const m: number[] = new Array(n).fill(0);
+  const m: number[] = Array.from({ length: n }, () => 0);
   m[0] = slope[0];
   m[n - 1] = slope[n - 2];
   for (let i = 1; i < n - 1; i++) {
@@ -255,7 +259,12 @@ export function barsOf(
   const bars: Bar[] = [];
   values.forEach((v, index) => {
     if (typeof v !== "number" || !Number.isFinite(v)) return;
-    const y = yOf(Math.min(Math.max(v, domain.min), domain.max), domain, top, plotHeight);
+    const y = yOf(
+      Math.min(Math.max(v, domain.min), domain.max),
+      domain,
+      top,
+      plotHeight,
+    );
     const cx = xAt(index, count, left, plotWidth, true);
     bars.push({
       index,
@@ -288,7 +297,10 @@ export function maxLabelsFitting(
   limit: number,
 ): number {
   if (!(labelWidth > 0)) return limit;
-  return Math.max(2, Math.min(limit, Math.floor(plotWidth / (labelWidth * 1.4))));
+  return Math.max(
+    2,
+    Math.min(limit, Math.floor(plotWidth / (labelWidth * 1.4))),
+  );
 }
 
 /** A rough width of a label in dp, from its length and the type size. */

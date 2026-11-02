@@ -14,16 +14,21 @@ const deg = (_l: string, v: number) => `${v}°C`;
 describe("describeSeries", () => {
   it("names the lowest and highest value and when they happen", () => {
     expect(
-      describeSeries({ label: "Temperature", values: [21, 25, 29, 27] }, labels, deg),
+      describeSeries(
+        { label: "Temperature", values: [21, 25, 29, 27] },
+        labels,
+        deg,
+      ),
     ).toBe("Temperature: lowest 21°C at Now, highest 29°C at 10:00.");
   });
 
   it("says steady for a flat series", () => {
     expect(
-      describeSeries({ label: "Pressure", values: [1013, 1013, 1013, 1013] }, labels, (
-        _l,
-        v,
-      ) => `${v} hPa`),
+      describeSeries(
+        { label: "Pressure", values: [1013, 1013, 1013, 1013] },
+        labels,
+        (_l, v) => `${v} hPa`,
+      ),
     ).toBe("Pressure: steady at 1013 hPa.");
   });
 
@@ -31,9 +36,9 @@ describe("describeSeries", () => {
     expect(
       describeSeries({ label: "Wind", values: [null, 12, null, 8] }, labels),
     ).toBe("Wind: lowest 8 at 11:00, highest 12 at 09:00.");
-    expect(describeSeries({ label: "Wind", values: [null, null] }, labels)).toBe(
-      "Wind: no data.",
-    );
+    expect(
+      describeSeries({ label: "Wind", values: [null, null] }, labels),
+    ).toBe("Wind: no data.");
   });
 
   it("uses the plain number when no format is given", () => {

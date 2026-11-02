@@ -13,6 +13,7 @@ import { sunTimes } from "@/shared/sun-times";
 import { type DailyWeather } from "@/shared/weather";
 import { SIZE, SPACE } from "@/theme/mzizi";
 
+import { useCardBorder } from "./card-border";
 import { PageCard } from "./PageCard";
 import { WxText } from "./WxText";
 
@@ -23,8 +24,13 @@ export type SunTimesCardProps = {
   now?: Date;
 };
 
-export function SunTimesCard({ daily, utcOffsetSeconds, now }: SunTimesCardProps) {
+export function SunTimesCard({
+  daily,
+  utcOffsetSeconds,
+  now,
+}: SunTimesCardProps) {
   const { colors } = usePageColors();
+  const border = useCardBorder();
   const sun = sunTimes(daily, utcOffsetSeconds, now);
   const items = [
     {
@@ -47,7 +53,7 @@ export function SunTimesCard({ daily, utcOffsetSeconds, now }: SunTimesCardProps
     },
   ];
   return (
-    <PageCard title="Sun" testID="sun-times-card">
+    <PageCard title="Sun" borderColor={border} testID="sun-times-card">
       <View style={styles.items}>
         {items.map((item) => (
           <View
@@ -61,7 +67,12 @@ export function SunTimesCard({ daily, utcOffsetSeconds, now }: SunTimesCardProps
               <WxText type="body" color={colors.textTertiary}>
                 {item.label}
               </WxText>
-              <WxText type="body" weight={600} tabular color={colors.textPrimary}>
+              <WxText
+                type="body"
+                weight={600}
+                tabular
+                color={colors.textPrimary}
+              >
                 {item.value}
               </WxText>
             </View>

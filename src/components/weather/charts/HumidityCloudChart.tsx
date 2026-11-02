@@ -9,7 +9,13 @@ import { type AtmosphericDataPoint } from "@/shared/chart-data";
 import { type SeriesConfig, TimeSeriesChart } from "./TimeSeriesChart";
 
 export const HUMIDITY_CLOUD_SERIES: SeriesConfig[] = [
-  { key: "humidity", label: "Humidity", color: "humidity", fill: true, opacity: 0.3 },
+  {
+    key: "humidity",
+    label: "Humidity",
+    color: "humidity",
+    fill: true,
+    opacity: 0.3,
+  },
   { key: "cloudCover", label: "Cloud Cover", color: "cloud", dashed: true },
 ];
 

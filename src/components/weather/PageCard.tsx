@@ -1,61 +1,73 @@
 /**
- * An ordinary card on a sub-route (the web's `.baobab`): the card surface, a
- * 0.5 dp border all the way round (the primary at 25%, or the plain border for
- * a quieter card), the card padding, a serif title and an optional quiet line
- * under it. Borders, not shadows.
+ * An ordinary card on the page below the sky (the web's `.baobab` / `.acacia`):
+ * the card surface, a 0.5 dp border all the way round (never one side, never a
+ * shadow), the card radius and padding, and an optional heading row with an
+ * action at the end. A mineral may tint the WHOLE border; the border is a
+ * solid line in `borderColor`, nothing else.
+ *
+ * The heading is a real heading for VoiceOver. Used by the Community lane, the
+ * activity invitation, the reports list, and the AI cards.
  */
 
 import { type ReactNode } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, type ViewProps } from "react-native";
 
 import { usePageColors } from "@/hooks/usePageColors";
-import { BORDER, RADIUS, SPACE, withAlpha } from "@/theme/mzizi";
+import { BORDER, RADIUS, SPACE } from "@/theme/mzizi";
 
-import { SectionHeader } from "./SectionHeader";
 import { WxText } from "./WxText";
 
-export type PageCardProps = {
-  title: string;
-  /** A quiet line under the title. */
-  subtitle?: string;
-  /** `primary` is the web's `.baobab`, `quiet` its `.acacia`. */
-  tone?: "primary" | "quiet";
-  testID?: string;
+export type PageCardProps = ViewProps & {
+  title?: string;
+  /** Beside the heading, at the end (a small action). */
+  headerEnd?: ReactNode;
+  /** Tints the whole border (a category mineral at 40%); default `colors.border`. */
+  borderColor?: string;
+  /** An icon before the heading. */
+  headerStart?: ReactNode;
   children: ReactNode;
 };
 
 export function PageCard({
   title,
-  subtitle,
-  tone = "primary",
-  testID,
+  headerEnd,
+  headerStart,
+  borderColor,
   children,
+  style,
+  ...rest
 }: PageCardProps) {
   const { colors } = usePageColors();
   return (
     <View
-      testID={testID}
+      {...rest}
       style={[
         styles.card,
         {
           backgroundColor: colors.card,
-          borderColor:
-            tone === "primary" ? withAlpha(colors.primary, 0.25) : colors.border,
+          borderColor: borderColor ?? colors.border,
         },
+        style,
       ]}
     >
-      <View>
-        <SectionHeader
-          title={title}
-          titleColor={colors.textPrimary}
-          actionColor={colors.primary}
-        />
-        {subtitle ? (
-          <WxText type="body" color={colors.textTertiary}>
-            {subtitle}
-          </WxText>
-        ) : null}
-      </View>
+      {title ? (
+        <View style={styles.header}>
+          <View style={styles.title}>
+            {headerStart}
+            <WxText
+              type="h6"
+              weight={600}
+              family="serif"
+              color={colors.textPrimary}
+              accessibilityRole="header"
+              style={styles.titleText}
+            >
+              {title}
+            </WxText>
+          </View>
+          {headerEnd}
+        </View>
+      ) : null}
       {children}
     </View>
   );
@@ -68,4 +80,17 @@ const styles = StyleSheet.create({
     padding: SPACE.card,
     gap: SPACE.stack,
   },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: SPACE.stack,
+  },
+  title: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.snug,
+  },
+  titleText: { flexShrink: 1 },
 });

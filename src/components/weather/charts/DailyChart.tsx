@@ -13,7 +13,14 @@ import { paddedRange } from "./chart-layout";
 import { type SeriesConfig, TimeSeriesChart } from "./TimeSeriesChart";
 
 export const DAILY_SERIES: SeriesConfig[] = [
-  { key: "high", label: "High", color: "temp", fill: true, order: 1, showDots: true },
+  {
+    key: "high",
+    label: "High",
+    color: "temp",
+    fill: true,
+    order: 1,
+    showDots: true,
+  },
   {
     key: "low",
     label: "Low",
@@ -23,8 +30,20 @@ export const DAILY_SERIES: SeriesConfig[] = [
     order: 2,
     showDots: true,
   },
-  { key: "feelsHigh", label: "Feels High", color: "feels", dashed: true, order: 3 },
-  { key: "feelsLow", label: "Feels Low", color: "feelsLow", dashed: true, order: 4 },
+  {
+    key: "feelsHigh",
+    label: "Feels High",
+    color: "feels",
+    dashed: true,
+    order: 3,
+  },
+  {
+    key: "feelsLow",
+    label: "Feels Low",
+    color: "feelsLow",
+    dashed: true,
+    order: 4,
+  },
 ];
 
 const degrees = (v: number) => `${v}°`;

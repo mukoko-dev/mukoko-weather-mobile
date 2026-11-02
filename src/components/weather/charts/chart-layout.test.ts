@@ -34,9 +34,7 @@ describe("niceStep and niceTicks", () => {
   it("gives round ticks inside the range", () => {
     expect(niceTicks(0, 100)).toEqual([0, 20, 40, 60, 80, 100]);
     expect(niceTicks(11, 33)).toEqual([15, 20, 25, 30]);
-    expect(niceTicks(1010, 1020)).toEqual([
-      1010, 1012, 1014, 1016, 1018, 1020,
-    ]);
+    expect(niceTicks(1010, 1020)).toEqual([1010, 1012, 1014, 1016, 1018, 1020]);
     expect(niceTicks(12, 24)).toEqual([12, 14, 16, 18, 20, 22, 24]);
   });
 
@@ -87,9 +85,9 @@ describe("resolveDomain", () => {
   });
 
   it("skips gaps, and is null when there is nothing to plot", () => {
-    expect(resolveDomain([null, 4, null, 8], { min: 0, max: 10 }, false)).toEqual(
-      { min: 0, max: 10 },
-    );
+    expect(
+      resolveDomain([null, 4, null, 8], { min: 0, max: 10 }, false),
+    ).toEqual({ min: 0, max: 10 });
     expect(resolveDomain([null, null], undefined, false)).toBeNull();
     expect(resolveDomain([], { min: 0 }, false)).toBeNull();
   });
@@ -246,9 +244,9 @@ describe("barsOf", () => {
   });
 
   it("skips a gap", () => {
-    expect(barsOf([1, null, 3], domain, 0, 90, 0, 100).map((b) => b.index)).toEqual(
-      [0, 2],
-    );
+    expect(
+      barsOf([1, null, 3], domain, 0, 90, 0, 100).map((b) => b.index),
+    ).toEqual([0, 2]);
   });
 });
 
@@ -263,7 +261,9 @@ describe("x labels", () => {
   it("limits the count to what fits the plot", () => {
     const w = estimateTextWidth("00:00", 12);
     expect(maxLabelsFitting(300, w, 8)).toBeLessThanOrEqual(8);
-    expect(maxLabelsFitting(100, w, 8)).toBeLessThan(maxLabelsFitting(300, w, 8));
+    expect(maxLabelsFitting(100, w, 8)).toBeLessThan(
+      maxLabelsFitting(300, w, 8),
+    );
     expect(maxLabelsFitting(10, w, 8)).toBe(2);
     expect(maxLabelsFitting(300, 0, 8)).toBe(8);
   });

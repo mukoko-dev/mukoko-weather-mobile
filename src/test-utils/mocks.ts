@@ -37,7 +37,8 @@ export function routerMock() {
     router,
     useRouter: () => router,
     Stack: { Screen: () => null },
-    useLocalSearchParams: () => (globalThis as { __params?: object }).__params ?? {},
+    useLocalSearchParams: () =>
+      (globalThis as { __params?: object }).__params ?? {},
     useFocusEffect: (cb: () => void | (() => void)) => {
       React.useEffect(cb, [cb]);
     },

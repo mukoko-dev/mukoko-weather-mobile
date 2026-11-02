@@ -11,13 +11,7 @@ import { type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { usePageColors } from "@/hooks/usePageColors";
-import {
-  BORDER,
-  RADIUS,
-  SPACE,
-  TYPE,
-  withAlpha,
-} from "@/theme/mzizi";
+import { BORDER, RADIUS, SPACE, TYPE, withAlpha } from "@/theme/mzizi";
 import { NEUTRAL_SKY, SKY_FG } from "@/theme/sky";
 
 import { Bar, ShimmerProvider } from "./Shimmer";
@@ -40,10 +34,18 @@ function CardSkeleton({ charts }: { charts: number }) {
         { backgroundColor: colors.card, borderColor: colors.border },
       ]}
     >
-      <Bar color={bar} width={WIDTH.heading} height={Math.round(TYPE.h6.size * 0.7)} />
+      <Bar
+        color={bar}
+        width={WIDTH.heading}
+        height={Math.round(TYPE.h6.size * 0.7)}
+      />
       {Array.from({ length: charts }, (_, i) => (
         <View key={i} style={styles.chart}>
-          <Bar color={bar} width={WIDTH.label} height={Math.round(TYPE.bodySm.size * 0.7)} />
+          <Bar
+            color={bar}
+            width={WIDTH.label}
+            height={Math.round(TYPE.bodySm.size * 0.7)}
+          />
           <Bar color={bar} width="100%" height={0} style={styles.plot} />
         </View>
       ))}
@@ -60,7 +62,11 @@ export type DetailSkeletonProps = {
   cards?: number;
 };
 
-export function DetailSkeleton({ leading, what, cards = 2 }: DetailSkeletonProps) {
+export function DetailSkeleton({
+  leading,
+  what,
+  cards = 2,
+}: DetailSkeletonProps) {
   const bar = withAlpha(SKY_FG, 0.18);
   return (
     <WeatherScroll family={NEUTRAL_SKY}>
@@ -75,8 +81,18 @@ export function DetailSkeleton({ leading, what, cards = 2 }: DetailSkeletonProps
             style={styles.page}
           >
             <View style={styles.title}>
-              <TextBar type="h3" width={WIDTH.title} color={bar} align="flex-start" />
-              <TextBar type="body" width={WIDTH.subtitle} color={bar} align="flex-start" />
+              <TextBar
+                type="h3"
+                width={WIDTH.title}
+                color={bar}
+                align="flex-start"
+              />
+              <TextBar
+                type="body"
+                width={WIDTH.subtitle}
+                color={bar}
+                align="flex-start"
+              />
             </View>
             {Array.from({ length: cards }, (_, i) => (
               <CardSkeleton key={i} charts={1} />

@@ -23,10 +23,10 @@ import {
   TOUCH,
   WX_UV,
   uvBandIndex,
-  withAlpha,
 } from "@/theme/mzizi";
 
 import { DailyChart } from "./charts/DailyChart";
+import { useCardBorder } from "./card-border";
 import { PageCard } from "./PageCard";
 import { WxText } from "./WxText";
 
@@ -201,10 +201,15 @@ function DayItem({ row }: { row: DayRow }) {
 }
 
 export function DailyCard({ forecast }: { forecast: WeatherData }) {
+  const border = useCardBorder();
   const rows = dayRows(forecast);
   if (rows.length === 0) return null;
   return (
-    <PageCard title={`${rows.length}-Day Forecast`} testID="daily-card">
+    <PageCard
+      title={`${rows.length}-Day Forecast`}
+      borderColor={border}
+      testID="daily-card"
+    >
       <DailyChart daily={forecast.daily} />
       <View style={styles.list} accessibilityRole="list">
         {rows.map((row) => (

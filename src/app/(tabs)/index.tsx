@@ -74,9 +74,7 @@ export default function WeatherHome() {
     async (loc: Coords): Promise<{ name: string; slug: string } | null> => {
       try {
         const { location } = await geoLookup(loc.lat, loc.lon, true);
-        return location
-          ? { name: location.name, slug: location.slug }
-          : null;
+        return location ? { name: location.name, slug: location.slug } : null;
       } catch {
         return null;
       }

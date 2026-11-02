@@ -3,6 +3,7 @@
 import { type HourlyWeather } from "@/shared/weather";
 
 import { HourlyChart } from "./charts/HourlyChart";
+import { useCardBorder } from "./card-border";
 import { PageCard } from "./PageCard";
 
 export type HourlyForecastCardProps = {
@@ -16,8 +17,13 @@ export function HourlyForecastCard({
   utcOffsetSeconds,
   now,
 }: HourlyForecastCardProps) {
+  const border = useCardBorder();
   return (
-    <PageCard title="24-Hour Forecast" testID="hourly-forecast-card">
+    <PageCard
+      title="24-Hour Forecast"
+      borderColor={border}
+      testID="hourly-forecast-card"
+    >
       <HourlyChart
         hourly={hourly}
         utcOffsetSeconds={utcOffsetSeconds}

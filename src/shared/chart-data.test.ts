@@ -61,7 +61,10 @@ const emptyHourly = (): HourlyWeather => mockHourly(() => "", 0);
 
 function mockDaily(): DailyWeather {
   const days = 7;
-  const dates = Array.from({ length: days }, (_, i) => `2026-02-${pad(10 + i)}`);
+  const dates = Array.from(
+    { length: days },
+    (_, i) => `2026-02-${pad(10 + i)}`,
+  );
   const col = (f: (i: number) => number) => dates.map((_, i) => f(i));
   return {
     time: dates,

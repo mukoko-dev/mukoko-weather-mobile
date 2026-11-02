@@ -14,25 +14,36 @@ import { setWindow } from "@/test-utils/mocks";
 import { NOW, harareWeather } from "@/test-utils/weather-fixtures";
 import { WX_SERIES_DARK, WX_SERIES_LIGHT } from "@/theme/wx-series";
 
-import { HourlyChart, HOURLY_SERIES, hourlyAxes, hourlyValue } from "./HourlyChart";
+import {
+  HourlyChart,
+  HOURLY_SERIES,
+  hourlyAxes,
+  hourlyValue,
+} from "./HourlyChart";
 import { TimeSeriesChart } from "./TimeSeriesChart";
 
 const forecast = harareWeather().forecast!;
-const data = prepareHourlyData(forecast.hourly, forecast.utc_offset_seconds, NOW);
+const data = prepareHourlyData(
+  forecast.hourly,
+  forecast.utc_offset_seconds,
+  NOW,
+);
 
 const WIDTH = 320;
 
-async function mount(node = (
-  <TimeSeriesChart
-    title="Temperature and chance of rain, next 24 hours"
-    data={data}
-    labelKey="label"
-    series={HOURLY_SERIES}
-    yAxes={hourlyAxes(data)}
-    valueFormat={hourlyValue}
-    testID="c"
-  />
-)) {
+async function mount(
+  node = (
+    <TimeSeriesChart
+      title="Temperature and chance of rain, next 24 hours"
+      data={data}
+      labelKey="label"
+      series={HOURLY_SERIES}
+      yAxes={hourlyAxes(data)}
+      valueFormat={hourlyValue}
+      testID="c"
+    />
+  ),
+) {
   const tree = await render(node);
   const plot = tree.getByTestId("c-plot");
   await act(async () => {
@@ -43,7 +54,12 @@ async function mount(node = (
   return { tree, plot };
 }
 
-function touch(plot: Parameters<typeof fireEvent>[0], type: string, x: number, y = 40) {
+function touch(
+  plot: Parameters<typeof fireEvent>[0],
+  type: string,
+  x: number,
+  y = 40,
+) {
   fireEvent(plot, type, { nativeEvent: { locationX: x, locationY: y } });
 }
 
@@ -97,10 +113,14 @@ describe("TimeSeriesChart", () => {
     expect(chart.props.accessibilityRole).toBe("adjustable");
     const label: string = chart.props.accessibilityLabel;
     expect(label).toContain("Temperature and chance of rain, next 24 hours.");
-    expect(label).toMatch(/Temperature: lowest -?\d+°C at [\w:]+, highest -?\d+°C at [\w:]+\./);
+    expect(label).toMatch(
+      /Temperature: lowest -?\d+°C at [\w:]+, highest -?\d+°C at [\w:]+\./,
+    );
     expect(label).toMatch(/Feels Like: lowest/);
     expect(label).toMatch(/Rain %: /);
-    expect(chart.props.accessibilityHint).toBe("Swipe up or down to hear each value.");
+    expect(chart.props.accessibilityHint).toBe(
+      "Swipe up or down to hear each value.",
+    );
     expect(chart.props.accessibilityActions).toEqual([
       { name: "increment" },
       { name: "decrement" },
@@ -110,7 +130,8 @@ describe("TimeSeriesChart", () => {
   it("shows the legend until a point is chosen, with a swatch that is not only colour", async () => {
     const { tree } = await mount();
     const readout = tree.getByTestId("c-readout");
-    for (const s of HOURLY_SERIES) expect(json({ toJSON: () => readout })).toContain(s.label);
+    for (const s of HOURLY_SERIES)
+      expect(json({ toJSON: () => readout })).toContain(s.label);
     // A dashed line has a dash pattern in its swatch.
     expect(json(tree)).toContain("strokeDasharray");
   });
@@ -132,7 +153,9 @@ describe("TimeSeriesChart", () => {
         nativeEvent: { actionName: "increment" },
       });
     });
-    expect(chart().props.accessibilityValue.text.startsWith(data[1].label)).toBe(true);
+    expect(
+      chart().props.accessibilityValue.text.startsWith(data[1].label),
+    ).toBe(true);
     await act(async () => {
       fireEvent(chart(), "accessibilityAction", {
         nativeEvent: { actionName: "decrement" },
@@ -158,7 +181,9 @@ describe("TimeSeriesChart", () => {
       });
     }
     expect(
-      tree.getByTestId("c").props.accessibilityValue.text.startsWith(data[data.length - 1].label),
+      tree
+        .getByTestId("c")
+        .props.accessibilityValue.text.startsWith(data[data.length - 1].label),
     ).toBe(true);
   });
 
@@ -210,7 +235,12 @@ describe("TimeSeriesChart", () => {
   });
 
   it("shows a quiet message, not an empty box, when there is nothing to draw", async () => {
-    const empty = data.map((d) => ({ ...d, temp: null, feelsLike: null, rain: null }));
+    const empty = data.map((d) => ({
+      ...d,
+      temp: null,
+      feelsLike: null,
+      rain: null,
+    }));
     const tree = await render(
       <TimeSeriesChart
         title="Temperature"
@@ -220,8 +250,12 @@ describe("TimeSeriesChart", () => {
         testID="c"
       />,
     );
-    expect(tree.getByText("Not enough forecast hours to draw this chart.")).toBeTruthy();
-    expect(tree.getByTestId("c-empty").props.accessibilityLabel).toContain("Temperature.");
+    expect(
+      tree.getByText("Not enough forecast hours to draw this chart."),
+    ).toBeTruthy();
+    expect(tree.getByTestId("c-empty").props.accessibilityLabel).toContain(
+      "Temperature.",
+    );
     const one = await render(
       <TimeSeriesChart
         title="Temperature"
@@ -271,13 +305,24 @@ describe("TimeSeriesChart", () => {
   });
 
   it("fades in, and does not move at all under Reduce Motion", async () => {
-    const opacity = (tree: { getByTestId: (id: string) => { props: { style?: unknown } } }) => {
-      const style = ([] as object[]).concat(tree.getByTestId("c-plot").props.style as object).flat(3);
-      return style.reduce((a: number | undefined, s) => (s as { opacity?: number }).opacity ?? a, undefined);
+    const opacity = (tree: {
+      getByTestId: (id: string) => { props: { style?: unknown } };
+    }) => {
+      const style = ([] as object[])
+        .concat(tree.getByTestId("c-plot").props.style as object)
+        .flat(3);
+      return style.reduce(
+        (a: number | undefined, s) => (s as { opacity?: number }).opacity ?? a,
+        undefined,
+      );
     };
-    jest.spyOn(AccessibilityInfo, "isReduceMotionEnabled").mockResolvedValue(false);
+    jest
+      .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+      .mockResolvedValue(false);
     expect(opacity((await mount()).tree)).toBe(0);
-    jest.spyOn(AccessibilityInfo, "isReduceMotionEnabled").mockResolvedValue(true);
+    jest
+      .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+      .mockResolvedValue(true);
     const reduced = await mount();
     await act(async () => {
       await Promise.resolve();
@@ -289,7 +334,9 @@ describe("TimeSeriesChart", () => {
     const { tree } = await mount();
     const plot = tree.getByTestId("c-plot");
     const flat = ([] as object[]).concat(plot.props.style as object).flat(3);
-    expect(flat.some((s) => (s as { aspectRatio?: number }).aspectRatio === 2)).toBe(true);
+    expect(
+      flat.some((s) => (s as { aspectRatio?: number }).aspectRatio === 2),
+    ).toBe(true);
   });
 });
 

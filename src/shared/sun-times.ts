@@ -50,8 +50,10 @@ export function sunTimes(
     sunrise: label(rise),
     sunset: label(set),
     daylight: hasDaylight ? `${hours}h ${rest}m` : "--",
-    sunriseSpoken: rise === null ? "Sunrise unavailable" : `Sunrise at ${label(rise)}`,
-    sunsetSpoken: set === null ? "Sunset unavailable" : `Sunset at ${label(set)}`,
+    sunriseSpoken:
+      rise === null ? "Sunrise unavailable" : `Sunrise at ${label(rise)}`,
+    sunsetSpoken:
+      set === null ? "Sunset unavailable" : `Sunset at ${label(set)}`,
     daylightSpoken: hasDaylight
       ? `${hours} hours and ${rest} minutes of daylight`
       : "Daylight unavailable",
