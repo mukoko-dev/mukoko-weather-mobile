@@ -19,11 +19,18 @@ export type ShellValue = {
    * the bar and the menu act on.
    */
   basePath: string;
+  /** True under AppChrome: the page is framed for swiping (stable per screen). */
+  inShell: boolean;
+  /** Set while the current touch began in a NoSwipeZone (read by SwipeFrame). */
+  noSwipe?: { current: boolean };
+  /** Called by a NoSwipeZone when a touch starts inside it. */
+  markNoSwipe?: () => void;
 };
 
 export const ShellContext = createContext<ShellValue>({
   clearance: 0,
   basePath: "/",
+  inShell: false,
 });
 
 export function useShell(): ShellValue {

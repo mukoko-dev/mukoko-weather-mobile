@@ -11,8 +11,8 @@
  */
 
 import { router, usePathname } from "expo-router";
-import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
+import { Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -64,7 +64,15 @@ export function AppChrome({ children }: { children: ReactNode }) {
   if (!isOverlayRoute(route) && route !== pathname) setPathname(route);
   const insets = useSafeAreaInsets();
   const { savedLocations } = usePreferences();
-  const visible = showsBottomBar(pathname);
+  // On iOS sheets and modals are native and cover the bar; elsewhere they
+  // render in the same stack, under an absolute bar, so hide it there.
+  const visible =
+    showsBottomBar(pathname) &&
+    (Platform.OS === "ios" || !isOverlayRoute(route));
+  const noSwipe = useRef(false);
+  const markNoSwipe = useCallback(() => {
+    noSwipe.current = true;
+  }, []);
 
   const names = useMemo(
     () => Object.fromEntries(savedLocations.map((l) => [l.slug, l.name])),
@@ -106,8 +114,11 @@ export function AppChrome({ children }: { children: ReactNode }) {
       clearance: visible ? barClearance(insets.bottom) : 0,
       swipe,
       basePath: pathname,
+      inShell: true,
+      noSwipe,
+      markNoSwipe,
     }),
-    [visible, insets.bottom, swipe, pathname],
+    [visible, insets.bottom, swipe, pathname, markNoSwipe],
   );
 
   return (

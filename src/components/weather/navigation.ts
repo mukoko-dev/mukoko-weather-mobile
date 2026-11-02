@@ -4,9 +4,13 @@
 
 import { router } from "expo-router";
 
-/** The Weather tab: "Home" in the trail. */
+/**
+ * My Location: "Home" in the trail. Pops back to the home screen under the
+ * place (expo-router's `navigate` would push a second home), as the shell's
+ * bar does (src/shell/navigate.ts).
+ */
 export function goHome() {
-  router.navigate("/");
+  router.dismissTo("/");
 }
 
 /** A place's agriculture page. */

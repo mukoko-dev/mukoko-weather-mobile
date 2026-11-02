@@ -171,7 +171,9 @@ export default function WeatherHome() {
   }, [coords, load]);
 
   // The brand mark sits where a place page has Back, as the web header does.
-  const brand = <MukokoLogo onSky testID="home-brand" />;
+  // The mark alone: the trail (Home / country / province / place) shares the
+  // row, and the full wordmark would wrap it onto three lines on a phone.
+  const brand = <MukokoLogo onSky showWordmark={false} testID="home-brand" />;
   if (state.kind === "loading") {
     return <WeatherSkeleton leading={brand} inTabs />;
   }

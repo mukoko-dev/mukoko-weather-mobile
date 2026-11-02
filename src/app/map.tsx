@@ -57,13 +57,15 @@ export default function MapPlaceholder() {
           Rain, wind, cloud and air quality on a map, as on the website. It
           arrives once our weather service serves the map tiles.
         </WxText>
-        <PillButton
-          label="Back to the weather"
-          size="md"
-          onPress={() =>
-            router.canGoBack() ? router.back() : router.replace("/")
-          }
-        />
+        <View style={styles.action}>
+          <PillButton
+            label="Back to the weather"
+            size="md"
+            onPress={() =>
+              router.canGoBack() ? router.back() : router.replace("/")
+            }
+          />
+        </View>
       </View>
     </View>
   );
@@ -72,6 +74,8 @@ export default function MapPlaceholder() {
 const styles = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: SPACE.gutter },
   top: { flexDirection: "row" },
+  // PillButton hugs the start of its row; this centres it under the text.
+  action: { alignItems: "center", marginTop: SPACE.snug },
   body: {
     flex: 1,
     alignItems: "center",

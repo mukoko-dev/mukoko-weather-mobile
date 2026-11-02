@@ -16,7 +16,10 @@ import {
 import { SWIPE_FAIL_Y_DP, type SwipeConfig } from "./useLocationSwipe";
 
 export type SwipeFrameProps = {
-  swipe: SwipeConfig;
+  /** Undefined where the page cannot page: the pan is then off, the tree unchanged. */
+  swipe?: SwipeConfig;
+  /** True from the moment a touch starts in a NoSwipeZone until it ends. */
+  noSwipe: { current: boolean };
   style: StyleProp<ViewStyle>;
   /** The page's ScrollView: its native gesture runs with the swipe. */
   scroll: ReactElement;
@@ -26,23 +29,34 @@ export type SwipeFrameProps = {
 
 export function SwipeFrame({
   swipe,
+  noSwipe,
   style,
   scroll,
   children,
 }: SwipeFrameProps) {
   const scrollGesture = useNativeGesture({});
   const swipeGesture = usePanGesture({
+    enabled: Boolean(swipe),
     runOnJS: true,
-    activeOffsetX: swipe.activeOffsetX,
+    activeOffsetX: swipe?.activeOffsetX ?? 0,
     failOffsetY: [-SWIPE_FAIL_Y_DP, SWIPE_FAIL_Y_DP],
     simultaneousWith: scrollGesture,
     onDeactivate: (e) => {
-      if (!e.canceled) swipe.onSwipe(e.translationX, e.translationY);
+      if (!e.canceled && !noSwipe.current) {
+        swipe?.onSwipe(e.translationX, e.translationY);
+      }
     },
   });
   return (
     <GestureDetector gesture={swipeGesture}>
-      <View style={style}>
+      {/* Capture runs before any child's handler: a new touch clears the
+          flag, and a NoSwipeZone under the finger sets it again. */}
+      <View
+        style={style}
+        onTouchStartCapture={() => {
+          noSwipe.current = false;
+        }}
+      >
         <GestureDetector gesture={scrollGesture}>{scroll}</GestureDetector>
         {children}
       </View>

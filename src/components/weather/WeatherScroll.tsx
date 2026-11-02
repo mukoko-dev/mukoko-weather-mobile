@@ -81,7 +81,7 @@ export function WeatherScroll({
   inTabs = false,
 }: WeatherScrollProps) {
   const insets = useSafeAreaInsets();
-  const { clearance, swipe } = useShell();
+  const { clearance, swipe, inShell, noSwipe } = useShell();
   const { colors, dark } = usePageColors();
   const [scrollY] = useState(() => new Animated.Value(0));
   const [onSky, setOnSky] = useState(true);
@@ -156,10 +156,16 @@ export function WeatherScroll({
   );
   const rootStyle = [styles.root, { backgroundColor: colors.background }];
 
-  // Inside the shell, where there are places to page to, the page swipes
-  // between them (SwipeFrame); otherwise it is the plain page.
-  return swipe ? (
-    <SwipeFrame swipe={swipe} style={rootStyle} scroll={scroll}>
+  // Inside the shell the page is always framed for swiping (SwipeFrame), so
+  // the tree never changes when swiping turns on or off: the pan is simply
+  // enabled or not. Outside the shell (a screen alone, tests) it is plain.
+  return inShell && noSwipe ? (
+    <SwipeFrame
+      swipe={swipe}
+      noSwipe={noSwipe}
+      style={rootStyle}
+      scroll={scroll}
+    >
       {scrim}
     </SwipeFrame>
   ) : (
