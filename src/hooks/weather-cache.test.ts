@@ -31,6 +31,29 @@ describe("weather cache", () => {
     expect(recallWeather("harare", 0)).toBeUndefined();
   });
 
+  it("never remembers the seasonal estimate, and drops an older real answer", () => {
+    rememberWeather("harare", w(1), 0);
+    rememberWeather(
+      "harare",
+      { ...w(2), source: "fallback" } as WeatherResponse,
+      10,
+    );
+    expect(recallWeather("harare", 10)).toBeUndefined();
+    rememberWeather(
+      "bulawayo",
+      { ...w(3), source: "fallback" } as WeatherResponse,
+      10,
+    );
+    expect(recallWeather("bulawayo", 10)).toBeUndefined();
+    // A real answer is remembered as before.
+    rememberWeather(
+      "harare",
+      { ...w(4), source: "open-meteo" } as WeatherResponse,
+      20,
+    );
+    expect(recallWeather("harare", 20)?.current.temperature).toBe(4);
+  });
+
   it("keeps the newest answer for a place", () => {
     rememberWeather("harare", w(1), 0);
     rememberWeather("harare", w(2), 10);

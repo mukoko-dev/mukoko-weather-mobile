@@ -23,6 +23,13 @@ export function rememberWeather(
   weather: WeatherResponse,
   at: number = Date.now(),
 ): void {
+  // The seasonal estimate is a stand-in for a forecast, not one: remembering
+  // it would draw it as a real hourly forecast on the detail pages and keep
+  // serving it after the Worker recovers. A real answer replaces it at once.
+  if (weather.source === "fallback") {
+    entries.delete(slug);
+    return;
+  }
   entries.delete(slug);
   entries.set(slug, { weather, at });
   while (entries.size > WEATHER_CACHE_MAX) {
