@@ -70,9 +70,8 @@ describe("preferences store", () => {
     toggleActivity("");
     expect(await readStored()).toBeNull();
     for (let i = 0; i < MAX_ACTIVITIES + 5; i += 1) toggleActivity(`a-${i}`);
-    expect(((await readStored())?.activities as string[]).length).toBe(
-      MAX_ACTIVITIES,
-    );
+    const stored = (await readStored()) as { activities: string[] };
+    expect(stored.activities).toHaveLength(MAX_ACTIVITIES);
   });
 
   it("adds a saved location and reports the result", async () => {

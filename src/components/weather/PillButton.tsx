@@ -49,7 +49,7 @@ export function PillButton({
   testID,
   stretch = false,
 }: PillButtonProps) {
-  const { colors, scheme } = usePageColors();
+  const { colors } = usePageColors();
   const reduceMotion = useReduceMotion();
   const filled = variant === "filled";
   const ink = filled ? inkOn(colors.primary) : colors.textPrimary;

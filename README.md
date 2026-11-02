@@ -138,12 +138,15 @@ mukoko-weather-mobile/
       sky.ts                     # The eight page skies (light + dark), stars, rain streaks
       colors.ts                  # Light + dark palette for the other tabs (mineral-derived)
       typography.ts              # Type scale for the other tabs: hero/display/title/body/mono
-    shared/                      # Pure logic ported from the web (hero, hourly outlook, place-time, tile insights), with the web's tests
+    shared/                      # Pure logic ported from the web (hero, hourly outlook, place-time, tile insights, activities, suitability rules, feasibility, tips, community lane, report types), with the web's tests
     api/
       client.ts                  # base URL, ROUTES table, fetch wrapper, error parsing
       weather.ts                 # GET /v1/weather (+ /v1/locations for a slug), converted to the screens' model
       locations.ts               # GET /v1/search, /v1/geo, /v1/locations
       chat.ts                    # POST /v1/ai/chat (Shamwari)
+      activities.ts              # GET /v1/activities, /v1/suitability (checked field by field, cached 10 min)
+      reports.ts                 # GET/POST /v1/reports, POST /v1/reports/upvote (switched off: COMMUNITY_REPORTS_ENABLED)
+      ai.ts                      # POST /v1/ai/summary, /v1/ai/followup (signed-in only; not called while sign-in is off)
       devices.ts                 # POST /v1/devices (device preference profile)
       auth.ts                    # WorkOS hosted sign-in via expo-auth-session (switched off)
     device/
@@ -153,6 +156,7 @@ mukoko-weather-mobile/
       BrandText.tsx              # Typography + tone variants
       Header.tsx                 # Wordmark + 7-mineral stripe
       icons/Icon.tsx             # Drawn weather + interface icons (react-native-svg); no emoji
+      icons/ActivityIcon.tsx     # Drawn activity glyphs, report-type icons and the sheet/report action icons
       weather/                   # The location page, one component per web section:
         WeatherScroll.tsx        #   page container: sky, gutters, safe areas, status bar
         WeatherSky.tsx           #   the page sky (expo-linear-gradient)
@@ -162,11 +166,24 @@ mukoko-weather-mobile/
         DailyCard.tsx            #   the week
         WeatherSkeleton.tsx      #   structural loading state
         WeatherPage.tsx          #   one page for both screens; error state
+        CommunityLane.tsx        #   24 h lane per picked activity, rated by the Worker's rules, with report pins
+        ActivityPickerSheet.tsx  #   the activity picker (also opened from the My tab)
+        ActivitiesSheet.tsx      #   the advice sheet: ActivityCard per activity (rating, 24 h trend, tips)
+        ActivitySheets.tsx       #   one provider holding the picker and the advice sheet
+        RecentReports.tsx        #   community reports list + upvote (not live yet)
+        ReportWizardSheet.tsx    #   the 3-step report wizard (submit behind COMMUNITY_REPORTS_ENABLED)
+        AiSummary.tsx            #   Shamwari insight: the signed-out state, and the signed-in card behind the sign-in switch
+        AiFollowup.tsx           #   inline follow-up chat (signed in, after an insight)
+        DetailSheet.tsx          #   the one sheet scaffold (iOS page sheet; Android bottom sheet)
     hooks/
       usePalette.ts              # Reads OS color scheme -> palette (other tabs)
       usePageColors.ts           # The web's page colours for the weather screens
       useNow.ts                  # The current instant, refreshed each minute
       useReduceMotion.ts         # OS Reduce Motion, live
+      useActivityData.ts         # Activity list + suitability rules (seed first; rules have a failure state)
+      useReports.ts              # Reports for a place (`off` while the switch is off)
+      useSignedIn.ts             # Signed-in state behind SIGN_IN_AVAILABLE
+      useHeroActivityLine.ts     # The hero's "for your activities" line
     test-utils/                  # Mocks and recorded-answer fixtures for the tests
   assets/
     images/                      # Icons, splash, tab glyphs
@@ -174,17 +191,20 @@ mukoko-weather-mobile/
 
 ## What's wired vs. switched off
 
-| Surface                                               | Status           | Notes                                                                                                                                                                                                                                                                                                  |
-| ----------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Weather home (sky, hero, Conditions, tiles, 7-day)    | Live             | `GET /v1/weather?lat&lon`; the answer is converted to the screens' model in `src/api/weather.ts`                                                                                                                                                                                                       |
-| Location detail (`/location/[slug]`)                  | Live             | `GET /v1/locations?slug=` for the coordinate, then `GET /v1/weather`                                                                                                                                                                                                                                   |
-| Explore / search                                      | Live             | `GET /v1/search?q=`                                                                                                                                                                                                                                                                                    |
-| Use my location                                       | Live             | `GET /v1/geo?lat&lon&autoCreate=true` names the exact place under the fix. Nothing is stored; the app has no route that creates a place                                                                                                                                                                |
-| Shamwari AI tab                                       | Live             | Full-viewport chat screen (`src/app/(tabs)/shamwari.tsx`) against `POST /v1/ai/chat`; mirrors the Worker's message-length, history and rate limits                                                                                                                                                     |
-| Brand fonts (Noto Serif + Noto Sans + JetBrains Mono) | Live             | Bundled via `@expo-google-fonts/*`                                                                                                                                                                                                                                                                     |
-| Device identity (SecureStore UUID)                    | Live             | Generated on first launch                                                                                                                                                                                                                                                                              |
-| Device registration                                   | **Switched off** | `POST /v1/devices` with the install id and nothing else, behind `DEVICE_REGISTRATION_ENABLED` in `src/device/register.ts` (off: a person's preferences are to live in their own synced database, so the server-side device profile is being retired). Even when on, development builds log and skip it |
-| WorkOS AuthKit sign-in                                | **Switched off** | The API has no route to exchange the code for a session, so the screen says "Sign-in isn't available yet" and keeps no session. Flip `SIGN_IN_AVAILABLE` in `src/api/auth.ts` once it exists (design: issue #41)                                                                                       |
+| Surface                                               | Status           | Notes                                                                                                                                                                                                                                                                                                             |
+| ----------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Weather home (sky, hero, Conditions, tiles, 7-day)    | Live             | `GET /v1/weather?lat&lon`; the answer is converted to the screens' model in `src/api/weather.ts`                                                                                                                                                                                                                  |
+| Location detail (`/location/[slug]`)                  | Live             | `GET /v1/locations?slug=` for the coordinate, then `GET /v1/weather`                                                                                                                                                                                                                                              |
+| Explore / search                                      | Live             | `GET /v1/search?q=`                                                                                                                                                                                                                                                                                               |
+| Use my location                                       | Live             | `GET /v1/geo?lat&lon&autoCreate=true` names the exact place under the fix. Nothing is stored; the app has no route that creates a place                                                                                                                                                                           |
+| Shamwari AI tab                                       | Live             | Full-viewport chat screen (`src/app/(tabs)/shamwari.tsx`) against `POST /v1/ai/chat`; mirrors the Worker's message-length, history and rate limits                                                                                                                                                                |
+| Activities: picker, advice, Community lane, hero line | Live             | Activities from `GET /v1/activities`, ratings from the Worker's rules at `GET /v1/suitability`, evaluated on the device. The picks are stored on this device only and are never sent anywhere (not to the API, a device profile or an AI route). With the rules unreachable the screens say so and show no rating |
+| Community reports (list, upvote, report wizard)       | **Switched off** | Built against the Worker's contract (mukoko-weather PR #401); `GET /v1/reports` answers 404 on production today. Behind `COMMUNITY_REPORTS_ENABLED` in `src/api/reports.ts`, pinned off by a test: with it off no request is made, the card says reports are not live, and the wizard cannot send                 |
+| Shamwari insight and follow-up on the location page   | **Switched off** | Signed-in only on the web. With sign-in off (below) the page shows the signed-out card, which says why. The signed-in cards (`POST /v1/ai/summary`, `/v1/ai/followup`) are built behind the same switch and send no activities                                                                                    |
+| Brand fonts (Noto Serif + Noto Sans + JetBrains Mono) | Live             | Bundled via `@expo-google-fonts/*`                                                                                                                                                                                                                                                                                |
+| Device identity (SecureStore UUID)                    | Live             | Generated on first launch                                                                                                                                                                                                                                                                                         |
+| Device registration                                   | **Switched off** | `POST /v1/devices` with the install id and nothing else, behind `DEVICE_REGISTRATION_ENABLED` in `src/device/register.ts` (off: a person's preferences are to live in their own synced database, so the server-side device profile is being retired). Even when on, development builds log and skip it            |
+| WorkOS AuthKit sign-in                                | **Switched off** | The API has no route to exchange the code for a session, so the screen says "Sign-in isn't available yet" and keeps no session. Flip `SIGN_IN_AVAILABLE` in `src/api/auth.ts` once it exists (design: issue #41)                                                                                                  |
 
 ### Needs a Cloudflare route first
 
@@ -194,6 +214,11 @@ change, not an app change:
 - **Sign-in:** a token-exchange route on the Mukoko or Nyuchi API that takes
   `{ code, codeVerifier, redirectUri }` and answers a session, holding the
   WorkOS secret. Issue #41 has the design.
+- **Community reports:** deploy `POST /v1/reports`, `GET /v1/reports` and
+  `POST /v1/reports/upvote` (mukoko-weather PR #401), then flip
+  `COMMUNITY_REPORTS_ENABLED`. The model's follow-up questions for the wizard
+  (`POST /v1/reports/clarify`) are not served by any Worker; the wizard uses
+  the Worker's fixed questions meanwhile.
 - **Creating a place:** belongs to the Nyuchi API, not to a Worker and not to
   this app. GPS uses `autoCreate=true`, which names the spot without storing it.
 

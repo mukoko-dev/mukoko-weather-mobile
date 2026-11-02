@@ -18,7 +18,6 @@
 
 import { type ColorSchemeName } from "react-native";
 
-import { type CategoryMineral, type LaneMineral } from "@/shared/activities";
 import { type SuitabilityLevel } from "@/shared/suitability";
 import {
   MINERAL_EDGE,

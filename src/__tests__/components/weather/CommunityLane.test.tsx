@@ -125,7 +125,7 @@ describe("CommunityLane with activities picked", () => {
     toggleActivity("crop-farming");
     routedFetch(ROUTES);
     const tree = await render(<Lane />);
-    const row = await tree.findByTestId("lane-crop-farming");
+    await tree.findByTestId("lane-crop-farming");
 
     const rules = rulesByKey(toRules(suitabilityFixture));
     const offset = weatherOffsetSeconds(forecast, NOW);

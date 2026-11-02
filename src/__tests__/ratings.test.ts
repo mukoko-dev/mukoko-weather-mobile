@@ -7,13 +7,7 @@
 
 import suitability from "@/api/__fixtures__/suitability.json";
 import { ACTIVITY_CATEGORIES, laneMineral } from "@/shared/activities";
-import {
-  DARK,
-  LIGHT,
-  MINERAL_EDGE,
-  contrastRatio,
-  pageColorsFor,
-} from "@/theme/mzizi";
+import { DARK, LIGHT, contrastRatio, pageColorsFor } from "@/theme/mzizi";
 import {
   LANE_ALPHA,
   LANE_HEIGHT,
