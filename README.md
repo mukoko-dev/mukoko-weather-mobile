@@ -146,10 +146,6 @@ mukoko-weather-mobile/
       chat.ts                    # POST /v1/ai/chat (Shamwari)
       devices.ts                 # POST /v1/devices (device preference profile)
       auth.ts                    # WorkOS hosted sign-in via expo-auth-session (switched off)
-    analytics/                   # Measurement through our own API only: no SDK, nothing sent yet
-      events.ts                  # The event vocabulary shared with the web; closed-set values and coarse places only
-      queue.ts                   # The on-device queue: cap, persistence, opt-out, resettable install id, batches
-      index.ts                   # track(), recordAppOpen(), the proposed /v1/events route (upload switched off)
     device/
       identity.ts                # UUID v4 in SecureStore (Android/iOS) / localStorage (web)
       register.ts                # POST /v1/devices with the install id (switched off)
@@ -188,7 +184,6 @@ mukoko-weather-mobile/
 | Brand fonts (Noto Serif + Noto Sans + JetBrains Mono) | Live             | Bundled via `@expo-google-fonts/*`                                                                                                                                                                                                                                                                     |
 | Device identity (SecureStore UUID)                    | Live             | Generated on first launch                                                                                                                                                                                                                                                                              |
 | Device registration                                   | **Switched off** | `POST /v1/devices` with the install id and nothing else, behind `DEVICE_REGISTRATION_ENABLED` in `src/device/register.ts` (off: a person's preferences are to live in their own synced database, so the server-side device profile is being retired). Even when on, development builds log and skip it |
-| Measurement (first open, forecast shown, place saved) | **Queued only**  | Events are validated and queued on the phone (`src/analytics`); nothing is sent until the API serves `POST /v1/events` (mukoko-dev/mukoko-weather#438) and the app shows the opt-out switch. Then flip `EVENTS_UPLOAD_ENABLED`                                                                         |
 | WorkOS AuthKit sign-in                                | **Switched off** | The API has no route to exchange the code for a session, so the screen says "Sign-in isn't available yet" and keeps no session. Flip `SIGN_IN_AVAILABLE` in `src/api/auth.ts` once it exists (design: issue #41)                                                                                       |
 
 ### Needs a Cloudflare route first
@@ -199,9 +194,6 @@ change, not an app change:
 - **Sign-in:** a token-exchange route on the Mukoko or Nyuchi API that takes
   `{ code, codeVerifier, redirectUri }` and answers a session, holding the
   WorkOS secret. Issue #41 has the design.
-- **Measurement:** `POST /v1/events` and `POST /v1/events/forget` on the
-  weather API (proposal: mukoko-dev/mukoko-weather#438). The app already
-  queues the events.
 - **Creating a place:** belongs to the Nyuchi API, not to a Worker and not to
   this app. GPS uses `autoCreate=true`, which names the spot without storing it.
 
