@@ -155,8 +155,8 @@ function emptyWeather(): WeatherData {
   };
 }
 
-/** Local date-time at the given hour and minute on 2026-10-08. */
-const at = (h: number, m = 0) => new Date(2026, 9, 8, h, m);
+/** Wall-clock time at the given hour and minute on 2026-10-08 (no offset in the fixture: read as UTC). */
+const at = (h: number, m = 0) => new Date(Date.UTC(2026, 9, 8, h, m));
 /** Default "now": 14:30 on 2026-10-08 (hourly index 14). */
 const NOW = at(14, 30);
 
@@ -956,7 +956,7 @@ describe("robustness across every insight", () => {
 
   it("does not throw when now precedes the forecast", () => {
     const w = makeWeather({ hourly: { uv_index: uvProfile() } });
-    const r = uvInsight(w, new Date(2020, 0, 1));
+    const r = uvInsight(w, new Date(Date.UTC(2020, 0, 1)));
     expect(r.peakToday).toBe(0);
     expect(r.sentence).toBe("Low for the rest of the day.");
   });
