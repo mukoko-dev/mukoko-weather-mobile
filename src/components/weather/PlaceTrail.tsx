@@ -31,7 +31,7 @@ export function PlaceTrail({ items, onHome, color }: PlaceTrailProps) {
       style={styles.trail}
     >
       {items.map((item, i) => (
-        <View key={`${item.kind}-${item.label}`} style={styles.crumb}>
+        <View key={`${i}-${item.kind}-${item.label}`} style={styles.crumb}>
           {i > 0 ? (
             <View
               accessibilityElementsHidden

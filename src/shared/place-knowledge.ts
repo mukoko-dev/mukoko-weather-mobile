@@ -143,8 +143,11 @@ export function profileRows(profile: PlaceProfile | null): ProfileRow[] {
     });
   }
 
-  if (cur.cropPhases.length > 0) {
-    const value = cur.cropPhases
+  // The answer is cached for 30 minutes and drawn by a card with no boundary
+  // above it: a profile whose `cropPhases` is missing must not crash the page.
+  const phases = Array.isArray(cur.cropPhases) ? cur.cropPhases : [];
+  if (phases.length > 0) {
+    const value = phases
       .slice(0, 2)
       .map((p) => {
         const season = p.season ? ` (${p.season.toLowerCase()})` : "";

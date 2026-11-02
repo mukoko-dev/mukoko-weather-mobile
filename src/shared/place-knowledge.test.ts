@@ -115,6 +115,21 @@ describe("profileRows", () => {
     );
   });
 
+  it("survives an answer with no crop phases instead of crashing the About card", () => {
+    for (const cropPhases of [undefined, null]) {
+      const rows = profileRows({
+        ...HARARE,
+        current: {
+          ...HARARE.current!,
+          cropPhases,
+        } as unknown as NonNullable<typeof HARARE.current>,
+      });
+      // The rest of the card still shows; only the crop row is left out.
+      expect(rows.map((r) => r.label)).toContain("Climate zone");
+      expect(rows.map((r) => r.label)).not.toContain("Crop calendar");
+    }
+  });
+
   it("names the season of a multi-season crop and caps the list at two", () => {
     const phase = HARARE.current!.cropPhases[0];
     const rows = profileRows({

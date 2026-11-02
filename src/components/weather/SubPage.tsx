@@ -172,23 +172,34 @@ export function SubPageError({
       style={[styles.root, { backgroundColor: colors.background }]}
       testID="subpage-error"
     >
-      <View style={pagePadding(insets, false)}>
-        <View style={styles.column}>
-          <View style={styles.topRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back"
-              onPress={onBack}
-              style={[styles.back, { borderColor: colors.border }]}
-            >
-              <ChevronLeftIcon size={SIZE.iconMd} color={colors.textPrimary} />
-            </Pressable>
+      {/* Scrolls, as the page does: at the largest text size on a small phone
+          the message can be taller than the screen, and "Try again" is the
+          only way out of a failed load. */}
+      <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={pagePadding(insets, false)}>
+          <View style={styles.column}>
+            <View style={styles.topRow}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                onPress={onBack}
+                style={[styles.back, { borderColor: colors.border }]}
+              >
+                <ChevronLeftIcon
+                  size={SIZE.iconMd}
+                  color={colors.textPrimary}
+                />
+              </Pressable>
+            </View>
+            <CardHeading>{title}</CardHeading>
+            <CardBody>{message}</CardBody>
+            <PillButton label="Try again" variant="primary" onPress={onRetry} />
           </View>
-          <CardHeading>{title}</CardHeading>
-          <CardBody>{message}</CardBody>
-          <PillButton label="Try again" variant="primary" onPress={onRetry} />
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }

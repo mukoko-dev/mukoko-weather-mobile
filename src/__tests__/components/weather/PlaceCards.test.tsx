@@ -13,6 +13,7 @@ import { EnsoCard } from "@/components/weather/EnsoCard";
 import { MapPreviewCard } from "@/components/weather/MapPreviewCard";
 import { PlaceTrail } from "@/components/weather/PlaceTrail";
 import { SeasonBadge, SeasonFooter } from "@/components/weather/SeasonBadge";
+import { SubPageError } from "@/components/weather/SubPage";
 import { type PlaceInfo } from "@/shared/place-info";
 import { placeTrail } from "@/shared/place-trail";
 
@@ -322,5 +323,51 @@ describe("PlaceTrail", () => {
     expect(
       tree.getByText("Mashonaland East").props.numberOfLines,
     ).toBeUndefined();
+  });
+
+  it("draws two crumbs with the same label (a city-state's province is its country) without a key clash", async () => {
+    const errors = jest.spyOn(console, "error").mockImplementation(() => {});
+    const items = placeTrail({
+      name: "Woodlands",
+      countryName: "Singapore",
+      province: "Singapore",
+    });
+    expect(items.map((i) => i.label)).toEqual([
+      "Home",
+      "Singapore",
+      "Singapore",
+      "Woodlands",
+    ]);
+    const tree = await render(
+      <PlaceTrail items={items} onHome={jest.fn()} color="#000000" />,
+    );
+    expect(tree.getAllByText("Singapore")).toHaveLength(2);
+    const keyWarnings = errors.mock.calls.filter((c) =>
+      String(c[0]).includes("same key"),
+    );
+    expect(keyWarnings).toHaveLength(0);
+    errors.mockRestore();
+  });
+});
+
+describe("SubPageError", () => {
+  it("scrolls, so Try again is reachable at the largest text size, and both controls work", async () => {
+    const onRetry = jest.fn();
+    const onBack = jest.fn();
+    const tree = await render(
+      <SubPageError
+        title="This place did not load"
+        message="Mukoko could not be reached or does not know this place."
+        onRetry={onRetry}
+        onBack={onBack}
+      />,
+    );
+    // One scroll container holds the whole face, Back and Try again included.
+    expect(JSON.stringify(tree.toJSON())).toContain("RCTScrollView");
+    expect(tree.getByTestId("subpage-error")).toBeTruthy();
+    await fireEvent.press(tree.getByLabelText("Try again"));
+    await fireEvent.press(tree.getByLabelText("Back"));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 });
