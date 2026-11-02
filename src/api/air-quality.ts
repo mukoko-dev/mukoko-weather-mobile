@@ -50,6 +50,13 @@ export function toAirQuality(raw: unknown): AirQuality | null {
   const aqi = num(w.aqi);
   if (aqi === null || aqi < 0) return null;
   const dominant = POLLUTANT_ORDER.find((k) => k === w.dominantPollutant);
+  const subIndexes = byPollutant(w.subIndexes, false);
+  // With nothing scoreable the Worker answers `{aqi: 0, level: "good",
+  // dominantPollutant: null}` and an empty `subIndexes`. That is "no
+  // reading", not clean air: a card must never show it as a green 0.
+  if (aqi === 0 && !dominant && Object.keys(subIndexes).length === 0) {
+    return null;
+  }
   const trend =
     w.trend === "worse" || w.trend === "better" || w.trend === "similar"
       ? w.trend
@@ -59,9 +66,7 @@ export function toAirQuality(raw: unknown): AirQuality | null {
     level: typeof w.level === "string" ? w.level : undefined,
     dominantPollutant: dominant ?? null,
     pollutants: byPollutant(w.pollutants, true),
-    subIndexes: byPollutant(w.subIndexes, false) as Partial<
-      Record<PollutantKey, number>
-    >,
+    subIndexes: subIndexes as Partial<Record<PollutantKey, number>>,
     whoGuidelines: byPollutant(w.whoGuidelines, false) as Partial<
       Record<PollutantKey, number>
     >,

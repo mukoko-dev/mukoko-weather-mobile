@@ -104,6 +104,30 @@ describe("air quality", () => {
     await expect(fetchAirQuality(0, 0)).rejects.toThrow(/unavailable/);
   });
 
+  it("treats the Worker's nothing-scoreable answer as no reading, never as clean air", async () => {
+    // `{aqi: 0, level: "good", dominantPollutant: null}` with no sub-indexes.
+    const none = {
+      aqi: 0,
+      level: "good",
+      dominantPollutant: null,
+      subIndexes: {},
+      pollutants: { pm2_5: null, pm10: null, o3: null },
+    };
+    expect(toAirQuality(none)).toBeNull();
+    expect(toAirQuality({ aqi: 0 })).toBeNull();
+    mockFetch({ body: none });
+    await expect(fetchAirQuality(0, 0)).rejects.toThrow(/unavailable/);
+    // A real zero, with a pollutant that was scored, is still a reading.
+    expect(
+      toAirQuality({
+        aqi: 0,
+        level: "good",
+        dominantPollutant: "pm2_5",
+        subIndexes: { pm2_5: 0 },
+      })?.aqi,
+    ).toBe(0);
+  });
+
   it("ignores an unknown dominant pollutant", () => {
     expect(
       toAirQuality({ aqi: 10, dominantPollutant: "radon" })?.dominantPollutant,
