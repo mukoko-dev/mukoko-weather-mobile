@@ -20,7 +20,7 @@ import { type ColorSchemeName } from "react-native";
 
 import { type CategoryMineral, type LaneMineral } from "@/shared/activities";
 import { type SuitabilityLevel } from "@/shared/suitability";
-import { MINERAL_EDGE, type PageColors } from "@/theme/mzizi";
+import { MINERAL_EDGE, type Mineral, type PageColors } from "@/theme/mzizi";
 
 // ---------------------------------------------------------------------------
 // Severity — `--color-severity-*`
@@ -115,7 +115,7 @@ export const SEVERITY_TINT = 0.1;
  * primary (the Mzizi storm family), not a mineral, as on the web.
  */
 export function mineralColor(
-  mineral: CategoryMineral | LaneMineral,
+  mineral: Mineral | "primary",
   colors: PageColors,
   scheme: ColorSchemeName,
 ): string {
@@ -182,6 +182,8 @@ export const LANE = {
   dot: 10,
   /** The lane's left inset (`pl-4`). */
   inset: 16,
+  /** The ring around the hero's activity dot (`ring-2`). */
+  ring: 2,
   /** An activity icon disc in the advice card (`h-9 w-9`). */
   iconDisc: 36,
   /** The feasibility chart's plot height (`aspect-[16/5]` at card width). */

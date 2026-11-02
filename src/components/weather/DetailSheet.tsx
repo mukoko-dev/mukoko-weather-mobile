@@ -18,7 +18,13 @@
  * Reduce Motion on the sheet fades instead of sliding. Borders, not shadows.
  */
 
-import { type ReactNode } from "react";
+import {
+  type ComponentRef,
+  type MutableRefObject,
+  type ReactNode,
+  useEffect,
+  useRef,
+} from "react";
 import {
   Modal,
   Platform,
@@ -50,6 +56,13 @@ export type DetailSheetProps = {
   children: ReactNode;
   /** Pinned under the scrolling body (a primary action). */
   footer?: ReactNode;
+  /**
+   * Filled in with a function that scrolls the body to `y`, for a sheet that
+   * scrolls to one of its items.
+   */
+  scrollToRef?: MutableRefObject<
+    ((y: number, animated: boolean) => void) | null
+  >;
   testID?: string;
 };
 
@@ -60,8 +73,18 @@ export function DetailSheet({
   onClose,
   children,
   footer,
+  scrollToRef,
   testID,
 }: DetailSheetProps) {
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  useEffect(() => {
+    if (!scrollToRef) return;
+    scrollToRef.current = (y, animated) =>
+      scroll.current?.scrollTo({ y, animated });
+    return () => {
+      scrollToRef.current = null;
+    };
+  }, [scrollToRef]);
   const { colors } = usePageColors();
   const reduceMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
@@ -121,10 +144,15 @@ export function DetailSheet({
         </Pressable>
       </View>
       <ScrollView
+        ref={scroll}
         style={styles.scroll}
         contentContainerStyle={[
           styles.body,
-          { paddingBottom: footer ? SPACE.section : insets.bottom + SPACE.section },
+          {
+            paddingBottom: footer
+              ? SPACE.section
+              : insets.bottom + SPACE.section,
+          },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}

@@ -10,11 +10,12 @@
  */
 
 import { router } from "expo-router";
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { Pressable, Share, StyleSheet, View } from "react-native";
 
 import { type WeatherResponse } from "@/api/weather";
 import { ChevronLeftIcon } from "@/components/icons/Icon";
+import { useHeroActivityLine } from "@/hooks/useHeroActivityLine";
 import { useNow } from "@/hooks/useNow";
 import { usePageColors } from "@/hooks/usePageColors";
 import { skyFamily } from "@/shared/hero";
@@ -22,10 +23,16 @@ import { weatherCodeToInfo } from "@/shared/weather";
 import { RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
 import { NEUTRAL_SKY, SKY_FG, SKY_FG_DIM, skyStops } from "@/theme/sky";
 
+import { ActivityInvite } from "./ActivityInvite";
+import { ActivitySheetsProvider } from "./ActivitySheets";
+import { AiFollowup } from "./AiFollowup";
+import { AiSummary } from "./AiSummary";
+import { CommunityLane } from "./CommunityLane";
 import { ConditionTiles } from "./ConditionTiles";
 import { ConditionsCard } from "./ConditionsCard";
 import { DailyCard } from "./DailyCard";
 import { RoundControl } from "./RoundControl";
+import { RecentReports } from "./RecentReports";
 import { HeroTopRow, SkyHero } from "./SkyHero";
 import { WeatherScroll } from "./WeatherScroll";
 import { WxText } from "./WxText";
@@ -119,6 +126,10 @@ export function WeatherPage({
   const isDay = current.isDay ?? true;
   const family = skyFamily(code, isDay);
   const info = weatherCodeToInfo(code);
+  const activityLine = useHeroActivityLine(forecast, now);
+  // The AI insight, once loaded, is what the follow-up chat starts from.
+  const [insight, setInsight] = useState<string | null>(null);
+  const place = weather.location;
 
   const onShare = () => {
     void Share.share({
@@ -129,36 +140,61 @@ export function WeatherPage({
   };
 
   return (
-    <WeatherScroll
-      family={family}
-      onRefresh={onRefresh}
-      refreshing={refreshing}
-      inTabs={inTabs}
-    >
-      <SkyHero
-        name={name}
-        temperature={current.temperature}
-        weatherCode={code}
-        isDay={isDay}
-        high={daily[0]?.tempMax}
-        low={daily[0]?.tempMin}
-        utcOffsetSeconds={weather.utcOffsetSeconds}
-        now={now}
-        isCurrentLocation={isCurrentLocation}
-        isHome={isHome}
-        breadcrumb={breadcrumbOf(weather.location)}
-        leading={leading}
-        onShare={onShare}
-        onSettings={openSettings}
-      />
-      {forecast ? (
-        <>
-          <ConditionsCard forecast={forecast} now={now} />
-          <ConditionTiles forecast={forecast} now={now} />
-          <DailyCard forecast={forecast} />
-        </>
-      ) : null}
-    </WeatherScroll>
+    <ActivitySheetsProvider forecast={forecast} now={now}>
+      <WeatherScroll
+        family={family}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+        inTabs={inTabs}
+      >
+        <SkyHero
+          name={name}
+          temperature={current.temperature}
+          weatherCode={code}
+          isDay={isDay}
+          high={daily[0]?.tempMax}
+          low={daily[0]?.tempMin}
+          utcOffsetSeconds={weather.utcOffsetSeconds}
+          now={now}
+          isCurrentLocation={isCurrentLocation}
+          isHome={isHome}
+          breadcrumb={breadcrumbOf(weather.location)}
+          leading={leading}
+          onShare={onShare}
+          onSettings={openSettings}
+          activityLine={activityLine}
+        />
+        {forecast ? (
+          <>
+            <ConditionsCard forecast={forecast} now={now} />
+            <CommunityLane slug={place?.slug} forecast={forecast} now={now} />
+            <ConditionTiles forecast={forecast} now={now} />
+            <DailyCard forecast={forecast} />
+            <RecentReports slug={place?.slug} name={name} now={now} />
+            <ActivityInvite />
+            {place ? (
+              <>
+                <AiSummary
+                  place={{
+                    slug: place.slug,
+                    name,
+                    lat: place.lat,
+                    lon: place.lon,
+                    country: place.country,
+                  }}
+                  onLoaded={setInsight}
+                />
+                <AiFollowup
+                  name={name}
+                  slug={place.slug ?? ""}
+                  insight={insight}
+                />
+              </>
+            ) : null}
+          </>
+        ) : null}
+      </WeatherScroll>
+    </ActivitySheetsProvider>
   );
 }
 
