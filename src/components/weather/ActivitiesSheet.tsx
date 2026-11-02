@@ -84,7 +84,7 @@ export function ActivitiesSheet({
 
   return (
     <DetailSheet
-      visible={visible}
+      open={visible}
       title="My activities"
       description="How the forecast affects each activity you picked, hour by hour. Ratings come from the same rules as the Community lane."
       onClose={onClose}

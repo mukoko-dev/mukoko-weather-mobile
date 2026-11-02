@@ -77,7 +77,7 @@ export function RecentReports({
     if (counted) {
       setVoted((prev) => new Set(prev).add(id));
     } else {
-      void AccessibilityInfo.announceForAccessibility(
+      AccessibilityInfo.announceForAccessibility(
         "Your vote could not be counted.",
       );
     }

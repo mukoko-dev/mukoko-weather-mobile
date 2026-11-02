@@ -121,6 +121,11 @@ describe("ROUTES", () => {
       aiFollowup: "/v1/ai/followup",
       devices: "/v1/devices",
       chat: "/v1/ai/chat",
+      airQuality: "/v1/air-quality",
+      haze: "/v1/haze",
+      normals: "/v1/normals",
+      normalsMonthly: "/v1/normals/monthly",
+      history: "/v1/history",
     });
   });
 });

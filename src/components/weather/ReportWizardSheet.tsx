@@ -165,7 +165,7 @@ export function ReportWizardSheet({
 
   return (
     <DetailSheet
-      visible={visible}
+      open={visible}
       title={step === "sent" ? "Report sent" : "Report weather"}
       description={
         step === "select"

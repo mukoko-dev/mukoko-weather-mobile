@@ -79,7 +79,7 @@ export function ActivityPickerSheet({
 
   return (
     <DetailSheet
-      visible={visible}
+      open={visible}
       title="Choose activities"
       description="Pick what you follow the weather for. Your picks stay on this device and are never sent anywhere."
       onClose={onClose}

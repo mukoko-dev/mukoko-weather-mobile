@@ -12,7 +12,7 @@
  */
 
 import { type Href, router } from "expo-router";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Pressable, Share, StyleSheet, View } from "react-native";
 
 import { type WeatherResponse } from "@/api/weather";
@@ -23,7 +23,7 @@ import { useNow } from "@/hooks/useNow";
 import { rememberWeather } from "@/hooks/weather-cache";
 import { usePageColors } from "@/hooks/usePageColors";
 import { skyFamily } from "@/shared/hero";
-import { weatherCodeToInfo } from "@/shared/weather";
+import { checkFrostRisk, weatherCodeToInfo } from "@/shared/weather";
 import { RADIUS, SIZE, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
 import { NEUTRAL_SKY, SKY_FG, SKY_FG_DIM, skyStops } from "@/theme/sky";
 
@@ -31,9 +31,11 @@ import { ActivityInvite } from "./ActivityInvite";
 import { ActivitySheetsProvider } from "./ActivitySheets";
 import { AiFollowup } from "./AiFollowup";
 import { AiSummary } from "./AiSummary";
+import { FrostAlertBanner, WeatherUnavailableBanner } from "./AlertBanners";
 import { CommunityLane } from "./CommunityLane";
 import { ConditionTiles } from "./ConditionTiles";
 import { ConditionsCard } from "./ConditionsCard";
+import { ForecastExtras } from "./ForecastExtras";
 import { RoundControl } from "./RoundControl";
 import { RecentReports } from "./RecentReports";
 import { HeroTopRow, SkyHero } from "./SkyHero";
@@ -103,6 +105,16 @@ export function breadcrumbOf(
     (p): p is string => typeof p === "string" && p.length > 0,
   );
   return parts.length > 0 ? parts.join(" / ") : undefined;
+}
+
+/**
+ * The point the cards below the hero ask the Worker about: the place's own
+ * coordinate when the page was loaded by place, else the (rounded) GPS fix.
+ */
+export function pointOf(
+  weather: WeatherResponse,
+): { lat: number; lon: number } | undefined {
+  return weather.location ?? weather.coordinates;
 }
 
 /** What a share says. No link: the app talks to one backend and names no site. */
@@ -177,6 +189,18 @@ export function WeatherPage({
     text: string;
   } | null>(null);
   const insight = insightFor?.placeKey === placeKey ? insightFor.text : null;
+  const point = pointOf(weather);
+  // The web's two notices above the page: every provider failed, and frost.
+  const usingFallback = weather.source === "fallback";
+  // No frost alert from the seasonal estimate: its temperatures are not a
+  // forecast, and the web shows none either (`usingFallback ? null : ...`).
+  const frost = useMemo(
+    () =>
+      forecast && !usingFallback
+        ? checkFrostRisk(forecast.hourly, forecast.utc_offset_seconds)
+        : null,
+    [forecast, usingFallback],
+  );
   const slug = slugProp ?? weather.location?.slug;
   const links = useLocationLinks(slug);
 
@@ -213,6 +237,10 @@ export function WeatherPage({
           onSettings={openSettings}
           activityLine={activityLine}
         />
+        {usingFallback ? (
+          <WeatherUnavailableBanner onRefresh={onRefresh} />
+        ) : null}
+        {frost ? <FrostAlertBanner alert={frost} /> : null}
         {forecast ? (
           <>
             <ConditionsCard
@@ -224,8 +252,12 @@ export function WeatherPage({
             <ConditionTiles
               forecast={forecast}
               now={now}
+              point={point}
+              slug={weather.location?.slug}
+              refreshKey={weather}
               onOpenTrends={links?.openAtmosphere}
             />
+            <ForecastExtras weather={weather} />
             <RecentReports slug={place?.slug} name={name} now={now} />
             <ActivityInvite />
             {place ? (

@@ -1,21 +1,16 @@
 /**
- * The one sheet scaffold for detail on the weather page (the web's
- * `DetailSheet`: a bottom sheet on a phone with a title, a description and a
- * Close action). The activity picker, the activity advice and the report
- * wizard are built on it.
+ * The one detail sheet (the web's `DetailSheet`): a title, an optional
+ * headline and sentence, the content, an optional plain explanation and a
+ * Close button. On iOS it is the system page sheet (swipe down to dismiss); on
+ * Android a full-screen modal that the back gesture closes. Used by the
+ * Conditions tiles' details, the air-quality detail, the averages, the
+ * activity picker and advice, and the report wizard: the app's ONE sheet.
  *
- * The platform sheet pattern (Apple HIG, Sheets and Modality):
- *
- * - iOS presents the system page sheet (`presentationStyle="pageSheet"`): the
- *   native card with its grabber, swipe down to dismiss and the page behind
- *   it scaled back. Nothing is drawn by the app for that.
- * - Android draws a bottom sheet over a scrim: rounded top corners, a grabber,
- *   tap the scrim or press Back to dismiss, at most 90% of the screen high.
- *
- * Both always have a visible Close button (48 dp), because dismissing by
- * gesture alone is not available to everyone. The title is a heading; the
- * panel is announced as a modal so VoiceOver and TalkBack stay inside it. With
- * Reduce Motion on the sheet fades instead of sliding. Borders, not shadows.
+ * Why the core `Modal` and not a native bottom sheet: it is the long-stable,
+ * Expo Go-safe sheet on both platforms and it needs no native module.
+ * A sheet is a modal task with a clear end, so it always has a Close button
+ * (48 dp or taller) as well as the swipe, and VoiceOver is held inside it
+ * (`accessibilityViewIsModal`).
  */
 
 import {
@@ -25,36 +20,30 @@ import {
   useEffect,
   useRef,
 } from "react";
-import {
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useReduceMotion } from "@/hooks/useReduceMotion";
 import { usePageColors } from "@/hooks/usePageColors";
-import { BORDER, RADIUS, SPACE, TOUCH, withAlpha } from "@/theme/mzizi";
-import { LANE } from "@/theme/ratings";
+import { BORDER, RADIUS, SIZE, SPACE, TOUCH } from "@/theme/mzizi";
 
 import { WxText } from "./WxText";
 
-/** The scrim behind the Android sheet. */
-const SCRIM = 0.4;
-/** The tallest the Android sheet gets, as a fraction of the screen. */
-const MAX_HEIGHT = "90%";
-
 export type DetailSheetProps = {
-  visible: boolean;
+  open: boolean;
+  /** The sheet's accessible name and its small uppercase label. */
   title: string;
-  /** One sentence under the title; read by the screen reader after it. */
-  description?: string;
   onClose: () => void;
-  children: ReactNode;
-  /** Pinned under the scrolling body (a primary action). */
+  /** Under the title: the headline number or phrase. */
+  headline?: string;
+  /** Under the headline: the one-sentence insight. */
+  sentence?: string;
+  /** A plain explanation of the thing, after the content. */
+  about?: string;
+  /** One sentence under the title saying what the sheet is for. */
+  description?: string;
+  children?: ReactNode;
+  /** Pinned under the scrolling body (a primary action, such as Done). */
   footer?: ReactNode;
   /**
    * Filled in with a function that scrolls the body to `y`, for a sheet that
@@ -66,16 +55,23 @@ export type DetailSheetProps = {
   testID?: string;
 };
 
-export function DetailSheet({
-  visible,
+/**
+ * The sheet's content, mounted only while the sheet is open (so a closed sheet
+ * costs nothing and needs no safe-area provider).
+ */
+function SheetBody({
   title,
-  description,
   onClose,
+  headline,
+  sentence,
+  about,
+  description,
   children,
   footer,
   scrollToRef,
-  testID,
-}: DetailSheetProps) {
+}: Omit<DetailSheetProps, "open" | "testID">) {
+  const { colors } = usePageColors();
+  const insets = useSafeAreaInsets();
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   useEffect(() => {
     if (!scrollToRef) return;
@@ -85,88 +81,91 @@ export function DetailSheet({
       scrollToRef.current = null;
     };
   }, [scrollToRef]);
-  const { colors } = usePageColors();
-  const reduceMotion = useReduceMotion();
-  const insets = useSafeAreaInsets();
-  const ios = Platform.OS === "ios";
-
-  const panel = (
+  const sidePadding = {
+    paddingLeft: Math.max(SPACE.gutter, insets.left),
+    paddingRight: Math.max(SPACE.gutter, insets.right),
+  };
+  return (
     <View
+      style={[styles.root, { backgroundColor: colors.background }]}
       accessibilityViewIsModal
-      testID={testID}
-      style={[
-        ios ? styles.pageSheet : styles.androidSheet,
-        { backgroundColor: colors.card, borderColor: colors.border },
-      ]}
     >
-      {ios ? null : (
-        <View
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          style={[styles.grabber, { backgroundColor: colors.border }]}
-        />
-      )}
-      <View style={styles.header}>
-        <View style={styles.titles}>
+      <ScrollView
+        ref={scroll}
+        contentContainerStyle={[
+          styles.content,
+          sidePadding,
+          { paddingBottom: SPACE.section + (footer ? 0 : insets.bottom) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
           <WxText
-            type="h4"
+            type="bodySm"
             weight={600}
-            family="serif"
-            color={colors.textPrimary}
+            uppercase
+            tracking="wider"
+            color={colors.textTertiary}
             accessibilityRole="header"
           >
             {title}
           </WxText>
+          {headline ? (
+            <WxText
+              type="h2"
+              weight={600}
+              family="serif"
+              tabular
+              color={colors.textPrimary}
+            >
+              {headline}
+            </WxText>
+          ) : null}
+          {sentence ? (
+            <WxText type="body" color={colors.textSecondary}>
+              {sentence}
+            </WxText>
+          ) : null}
           {description ? (
-            <WxText type="bodySm" color={colors.textTertiary}>
+            <WxText type="body" color={colors.textSecondary}>
               {description}
             </WxText>
           ) : null}
         </View>
+
+        {children}
+
+        {about ? (
+          <WxText type="bodySm" color={colors.textTertiary}>
+            {about}
+          </WxText>
+        ) : null}
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Close ${title}`}
           onPress={onClose}
-          hitSlop={SPACE.snug}
           style={({ pressed }) => [
             styles.close,
             {
               borderColor: colors.border,
-              backgroundColor: pressed
-                ? withAlpha(colors.textPrimary, 0.08)
-                : "transparent",
+              borderWidth: pressed ? BORDER.active : BORDER.rest,
             },
           ]}
         >
-          <WxText type="body" weight={600} color={colors.textPrimary}>
+          <WxText type="bodyLg" weight={600} color={colors.textPrimary}>
             Close
           </WxText>
         </Pressable>
-      </View>
-      <ScrollView
-        ref={scroll}
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.body,
-          {
-            paddingBottom: footer
-              ? SPACE.section
-              : insets.bottom + SPACE.section,
-          },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        automaticallyAdjustKeyboardInsets
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
       </ScrollView>
       {footer ? (
         <View
           style={[
             styles.footer,
+            sidePadding,
             {
+              paddingBottom: SPACE.stack + insets.bottom,
               borderTopColor: colors.border,
-              paddingBottom: insets.bottom + SPACE.section,
             },
           ]}
         >
@@ -175,79 +174,110 @@ export function DetailSheet({
       ) : null}
     </View>
   );
+}
 
+export function DetailSheet({ open, testID, ...body }: DetailSheetProps) {
+  const reduceMotion = useReduceMotion();
   return (
     <Modal
-      visible={visible}
-      animationType={reduceMotion ? "fade" : "slide"}
-      presentationStyle={ios ? "pageSheet" : undefined}
-      transparent={!ios}
-      onRequestClose={onClose}
-      statusBarTranslucent={!ios}
-      navigationBarTranslucent={!ios}
+      visible={open}
+      animationType={reduceMotion ? "none" : "slide"}
+      presentationStyle="pageSheet"
+      onRequestClose={body.onClose}
+      testID={testID}
     >
-      {ios ? (
-        panel
-      ) : (
-        <View style={styles.overlay}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Close ${title}`}
-            onPress={onClose}
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: withAlpha(colors.textPrimary, SCRIM) },
-            ]}
-          />
-          {panel}
-        </View>
-      )}
+      <SheetBody {...body} />
     </Modal>
   );
 }
 
+/**
+ * A section inside a sheet: a serif h6 heading and its content, one stack
+ * apart. The heading is a VoiceOver header.
+ */
+export function SheetSection({
+  heading,
+  children,
+}: {
+  heading: string;
+  children: ReactNode;
+}) {
+  const { colors } = usePageColors();
+  return (
+    <View style={styles.section}>
+      <WxText
+        type="h6"
+        weight={600}
+        family="serif"
+        color={colors.textPrimary}
+        accessibilityRole="header"
+      >
+        {heading}
+      </WxText>
+      {children}
+    </View>
+  );
+}
+
+/** A label and its value on one row: the sheets' "related readings". */
+export function StatTile({ label, value }: { label: string; value: string }) {
+  const { colors } = usePageColors();
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${label}: ${value}`}
+      style={[
+        styles.stat,
+        { backgroundColor: colors.card, borderColor: colors.border },
+      ]}
+    >
+      <WxText type="bodySm" color={colors.textTertiary}>
+        {label}
+      </WxText>
+      <WxText type="body" weight={600} color={colors.textPrimary}>
+        {value}
+      </WxText>
+    </View>
+  );
+}
+
+/** Two columns of `StatTile`s (one column at the largest text size). */
+export function StatGrid({
+  stats,
+}: {
+  stats: readonly { label: string; value: string }[];
+}) {
+  return (
+    <View style={styles.statGrid}>
+      {stats.map((s) => (
+        <View key={s.label} style={styles.statCell}>
+          <StatTile label={s.label} value={s.value} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: "flex-end" },
-  pageSheet: { flex: 1 },
-  androidSheet: {
-    maxHeight: MAX_HEIGHT,
-    borderTopLeftRadius: RADIUS.skyCard,
-    borderTopRightRadius: RADIUS.skyCard,
-    borderWidth: BORDER.rest,
-    borderBottomWidth: 0,
-    overflow: "hidden",
-  },
-  grabber: {
-    alignSelf: "center",
-    width: LANE.grabberWidth,
-    height: LANE.grabberHeight,
-    borderRadius: RADIUS.pill,
-    marginTop: SPACE.snug,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: SPACE.stack,
-    paddingHorizontal: SPACE.card,
-    paddingTop: SPACE.card,
-    paddingBottom: SPACE.snug,
-  },
-  titles: { flex: 1, gap: SPACE.hair },
+  root: { flex: 1 },
+  content: { paddingTop: SPACE.section, gap: SPACE.section },
+  header: { gap: SPACE.hair },
+  footer: { paddingTop: SPACE.stack, borderTopWidth: BORDER.rest },
+  section: { gap: SPACE.stack },
   close: {
-    minHeight: TOUCH.min,
-    minWidth: TOUCH.min,
-    paddingHorizontal: SPACE.card,
+    minHeight: TOUCH.default,
     borderRadius: RADIUS.pill,
-    borderWidth: BORDER.rest,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: SIZE.pillPadX,
   },
-  scroll: { flexShrink: 1 },
-  body: { paddingHorizontal: SPACE.card, gap: SPACE.stack },
-  footer: {
-    paddingHorizontal: SPACE.card,
-    paddingTop: SPACE.stack,
-    borderTopWidth: BORDER.rest,
+  stat: {
+    flex: 1,
+    borderRadius: RADIUS.card,
+    borderWidth: BORDER.rest,
+    padding: SPACE.cozy,
+    gap: SPACE.hair,
   },
+  statGrid: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.stack },
+  statCell: { flexBasis: "45%", flexGrow: 1, minWidth: 0 },
 });

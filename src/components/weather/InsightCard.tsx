@@ -10,7 +10,7 @@
  */
 
 import { type ReactNode } from "react";
-import { StyleSheet, View, useWindowDimensions } from "react-native";
+import { Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 
 import { usePageColors } from "@/hooks/usePageColors";
 import {
@@ -29,10 +29,22 @@ export type InsightCardProps = {
   icon: (color: string) => ReactNode;
   mineral: Mineral;
   sentence?: string;
+  /**
+   * What VoiceOver reads in place of `sentence` when the written one holds
+   * symbols a screen reader says badly ("PM2.5", "O₃"): the same sentence in
+   * words. Shown text is always `sentence`.
+   */
+  spokenSentence?: string;
   /** What VoiceOver reads for the visual, before the sentence. */
   summary?: string;
   /** A wide tile spans the row and takes its natural height. */
   wide?: boolean;
+  /**
+   * Makes the whole tile one button that opens its detail (the web's
+   * `CardHitArea`): a tile is the entry point, so nothing inside it is a
+   * second button. Without it the tile is a plain, readable card.
+   */
+  onPress?: () => void;
   children: ReactNode;
 };
 
@@ -41,25 +53,18 @@ export function InsightCard({
   icon,
   mineral,
   sentence,
+  spokenSentence,
   summary,
   wide = false,
+  onPress,
   children,
 }: InsightCardProps) {
   const { colors, scheme } = usePageColors();
-  const spoken = [label, summary, sentence].filter(Boolean).join(". ");
-  return (
-    <View
-      accessible
-      accessibilityLabel={spoken}
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.card,
-          borderColor: mineralEdge(mineral, scheme),
-        },
-        wide ? null : styles.square,
-      ]}
-    >
+  const spoken = [label, summary, spokenSentence ?? sentence]
+    .filter(Boolean)
+    .join(". ");
+  const body = (
+    <>
       <View style={styles.header}>
         {icon(colors.textTertiary)}
         <WxText
@@ -79,6 +84,39 @@ export function InsightCard({
           {sentence}
         </WxText>
       ) : null}
+    </>
+  );
+  const surface = {
+    backgroundColor: colors.card,
+    borderColor: mineralEdge(mineral, scheme),
+  };
+
+  if (onPress) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={spoken}
+        accessibilityHint="Opens details"
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.card,
+          surface,
+          wide ? null : styles.square,
+          // Mzizi: a card that can be pressed takes the active border.
+          pressed ? styles.pressed : null,
+        ]}
+      >
+        {body}
+      </Pressable>
+    );
+  }
+  return (
+    <View
+      accessible
+      accessibilityLabel={spoken}
+      style={[styles.card, surface, wide ? null : styles.square]}
+    >
+      {body}
     </View>
   );
 }
@@ -123,6 +161,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   square: { minHeight: SIZE.insightMin },
+  pressed: { borderWidth: BORDER.active },
   header: { flexDirection: "row", alignItems: "center", gap: SPACE.tight },
   body: { flex: 1, alignItems: "center", justifyContent: "center" },
   grid: { gap: SPACE.stack },

@@ -31,6 +31,8 @@ export interface HourlyWeather {
   wind_gusts_10m: number[];
   uv_index: number[];
   is_day: number[];
+  /** Present when the model supplies it (the web's type has it). */
+  dew_point_2m?: (number | null)[];
 }
 
 export interface DailyWeather {
@@ -161,7 +163,15 @@ export function checkFrostRisk(
     .map((temp, i) => ({ temp, time: hourly.time[i] }))
     .filter((h) => {
       const hour = placeHourOf(h.time, offsetSeconds);
-      return hour !== null && (hour >= 22 || hour <= 8) && h.temp <= 3;
+      // A missing reading is not a frost hour: in JS `null <= 3` is true, so
+      // an hour the model left blank would raise "0°C expected" in a warm place.
+      return (
+        hour !== null &&
+        (hour >= 22 || hour <= 8) &&
+        typeof h.temp === "number" &&
+        Number.isFinite(h.temp) &&
+        h.temp <= 3
+      );
     });
 
   if (frostHours.length > 0) {

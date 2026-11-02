@@ -71,8 +71,14 @@ describe("a person with nothing picked", () => {
     expect(tree.queryByTestId("hero-activity-line")).toBeNull();
     expect(tree.queryByTestId("ai-followup")).toBeNull();
     expect(HAS_EMOJI.test(allText(tree.toJSON()))).toBe(false);
-    // No activities, no rules, no reports, no AI: nothing is requested.
-    expect(calls).toHaveLength(0);
+    // No activities, no rules, no reports, no AI: none of those is requested.
+    // (The weather cards below the tiles read air quality, haze and the
+    // normals for the place's point; those carry no picks.)
+    expect(
+      calls.filter((c) =>
+        /\/v1\/(activities|suitability|reports|ai\/|devices)/.test(c.url),
+      ),
+    ).toHaveLength(0);
   });
 
   it("opens the picker from the invitation", async () => {
@@ -141,7 +147,7 @@ describe("a person with picks", () => {
       expect(c.body).toBeUndefined();
       expect(c.url).not.toMatch(/football|activit(y|ies)=|selected/i);
     }
-    expect(calls.some((c) => /\/v1\/(ai|reports|devices)/.test(c.url))).toBe(
+    expect(calls.some((c) => /\/v1\/(ai\/|reports|devices)/.test(c.url))).toBe(
       false,
     );
   });

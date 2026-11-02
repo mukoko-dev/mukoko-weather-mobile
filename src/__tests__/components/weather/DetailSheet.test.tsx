@@ -1,145 +1,183 @@
 /**
- * The sheet scaffold: the platform sheet pattern on each platform (the iOS
- * page sheet; the Android bottom sheet over a scrim), a visible 48 dp Close,
- * a heading, and Reduce Motion.
+ * The one detail sheet: a modal task with a clear end. Closed it draws nothing;
+ * open it names itself, holds VoiceOver inside, has a 48 dp+ Close button, and
+ * the swipe/back gesture closes it too.
  */
 
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
-import { AccessibilityInfo, Platform, Text } from "react-native";
+import { fireEvent, render } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
 
-import { DetailSheet } from "@/components/weather/DetailSheet";
-import { IPHONE_INSETS, setInsets, setWindow } from "@/test-utils/mocks";
+import {
+  DetailSheet,
+  SheetSection,
+  StatGrid,
+} from "@/components/weather/DetailSheet";
+import { InsightCard } from "@/components/weather/InsightCard";
 import { TOUCH } from "@/theme/mzizi";
+import { IPHONE_INSETS, setInsets, setWindow } from "@/test-utils/mocks";
+import { Text } from "react-native";
 
 jest.mock("react-native-safe-area-context", () =>
   require("@/test-utils/mocks").safeAreaMock(),
 );
 
-function flat(style: unknown): Record<string, unknown> {
-  return Array.isArray(style)
-    ? style.flat(3).reduce((a: object, b: object) => ({ ...a, ...b }), {})
-    : ((style ?? {}) as Record<string, unknown>);
-}
-
-/** The sheet's Modal: the root of the rendered tree, with its props. */
-function modalProps(tree: { toJSON: () => unknown }) {
-  return (tree.toJSON() as { type: string; props: Record<string, unknown> })
-    .props;
-}
-
-const original = Platform.OS;
-afterEach(() => {
-  Platform.OS = original;
-  jest.restoreAllMocks();
-});
-
 beforeEach(() => {
   setInsets(IPHONE_INSETS);
   setWindow(393, 852);
-  jest
-    .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
-    .mockResolvedValue(false);
 });
 
 describe("DetailSheet", () => {
-  it("shows the title as a heading, the description, the content and a Close", async () => {
-    const onClose = jest.fn();
+  it("draws nothing while closed", async () => {
+    const tree = await render(
+      <DetailSheet open={false} title="Wind" onClose={jest.fn()}>
+        <Text>inside</Text>
+      </DetailSheet>,
+    );
+    expect(tree.queryByText("inside")).toBeNull();
+  });
+
+  it("names itself, shows its headline, sentence, content and explanation", async () => {
     const tree = await render(
       <DetailSheet
-        visible
-        title="My activities"
-        description="How it goes."
-        onClose={onClose}
+        open
+        title="Wind"
+        headline="12 km/h E"
+        sentence="Steady."
+        about="Wind is air moving."
+        onClose={jest.fn()}
       >
-        <Text>Body copy</Text>
+        <SheetSection heading="Next 24 hours">
+          <Text>chart</Text>
+        </SheetSection>
+        <StatGrid stats={[{ label: "Gusts", value: "20 km/h" }]} />
       </DetailSheet>,
     );
-    expect(tree.getByText("My activities").props.accessibilityRole).toBe(
-      "header",
-    );
-    expect(tree.getByText("How it goes.")).toBeTruthy();
-    expect(tree.getByText("Body copy")).toBeTruthy();
-    const close = tree.getByLabelText("Close My activities");
-    expect(close.props.accessibilityRole).toBe("button");
-    expect(flat(close.props.style).minHeight).toBe(TOUCH.min);
-    expect(flat(close.props.style).minWidth).toBe(TOUCH.min);
-    await fireEvent.press(close);
-    expect(onClose).toHaveBeenCalled();
+    expect(tree.getByText("Wind")).toBeTruthy();
+    expect(tree.getByText("12 km/h E")).toBeTruthy();
+    expect(tree.getByText("Steady.")).toBeTruthy();
+    expect(tree.getByText("Wind is air moving.")).toBeTruthy();
+    expect(tree.getByLabelText("Gusts: 20 km/h")).toBeTruthy();
+    // Section headings are VoiceOver headers.
+    expect(tree.getAllByRole("header").map((h) => h.props.children)).toEqual([
+      "Wind",
+      "Next 24 hours",
+    ]);
   });
 
-  it("renders nothing while closed", async () => {
-    const tree = await render(
-      <DetailSheet visible={false} title="Hidden" onClose={jest.fn()}>
-        <Text>Body copy</Text>
-      </DetailSheet>,
-    );
-    expect(tree.queryByText("Body copy")).toBeNull();
-  });
-
-  it("is the system page sheet on iOS, announced as modal", async () => {
-    Platform.OS = "ios";
-    const tree = await render(
-      <DetailSheet visible title="T" onClose={jest.fn()} testID="sheet">
-        <Text>x</Text>
-      </DetailSheet>,
-    );
-    expect(modalProps(tree).presentationStyle).toBe("pageSheet");
-    expect(modalProps(tree).transparent).toBe(false);
-    expect(tree.getByTestId("sheet").props.accessibilityViewIsModal).toBe(true);
-  });
-
-  it("is a bottom sheet over a scrim on Android, which also closes on the scrim and on Back", async () => {
-    Platform.OS = "android";
+  it("holds VoiceOver inside, is the system page sheet, and closes by back or swipe", async () => {
     const onClose = jest.fn();
     const tree = await render(
-      <DetailSheet visible title="T" onClose={onClose}>
-        <Text>x</Text>
+      <DetailSheet open title="Wind" onClose={onClose} testID="sheet">
+        <Text>inside</Text>
       </DetailSheet>,
     );
-    expect(modalProps(tree).presentationStyle).toBeUndefined();
-    expect(modalProps(tree).transparent).toBe(true);
-    // Two ways to close by name: the scrim and the Close button.
-    // (The panel is announced as modal, so the scrim is hidden from the
-    // screen reader but still tappable.)
-    const all = { includeHiddenElements: true };
-    expect(tree.getAllByLabelText("Close T", all)).toHaveLength(2);
-    // Back closes it: the Modal's request-close handler is the same onClose.
-    await fireEvent.press(tree.getAllByLabelText("Close T", all)[0]);
-    expect(onClose).toHaveBeenCalled();
+    const modal = tree.getByTestId("sheet");
+    expect(modal.props.presentationStyle).toBe("pageSheet");
+    modal.props.onRequestClose();
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(tree.toJSON())).toContain(
+      '"accessibilityViewIsModal":true',
+    );
   });
 
-  it("fades instead of sliding under Reduce Motion", async () => {
-    jest
-      .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
-      .mockResolvedValue(true);
+  it("has a Close button at least 48 dp tall (56 by default)", async () => {
+    const onClose = jest.fn();
     const tree = await render(
-      <DetailSheet visible title="T" onClose={jest.fn()}>
-        <Text>x</Text>
+      <DetailSheet open title="Wind" onClose={onClose}>
+        <Text>inside</Text>
       </DetailSheet>,
     );
-    await waitFor(() => expect(modalProps(tree).animationType).toBe("fade"));
+    const close = tree.getByLabelText(/^Close/);
+    const style = StyleSheet.flatten(close.props.style) as {
+      minHeight: number;
+    };
+    expect(style.minHeight).toBeGreaterThanOrEqual(TOUCH.min);
+    await fireEvent.press(close);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
+});
 
-  it("slides when motion is allowed", async () => {
-    const tree = await render(
-      <DetailSheet visible title="T" onClose={jest.fn()}>
-        <Text>x</Text>
-      </DetailSheet>,
-    );
-    expect(modalProps(tree).animationType).toBe("slide");
-  });
-
-  it("pins a footer under the scrolling body", async () => {
+describe("DetailSheet for a task (the activity and report sheets)", () => {
+  it("says what it is for under the title, and pins a footer under the body", async () => {
     const tree = await render(
       <DetailSheet
-        visible
-        title="T"
+        open
+        title="Choose activities"
+        description="Pick what you follow the weather for."
         onClose={jest.fn()}
         footer={<Text>Done now</Text>}
       >
-        <Text>x</Text>
+        <Text>list</Text>
       </DetailSheet>,
     );
+    expect(
+      tree.getByText("Pick what you follow the weather for."),
+    ).toBeTruthy();
     expect(tree.getByText("Done now")).toBeTruthy();
+    expect(tree.getByText("list")).toBeTruthy();
+  });
+
+  it("hands a sheet a way to scroll its body, and takes it back on close", async () => {
+    const scrollToRef: {
+      current: ((y: number, animated: boolean) => void) | null;
+    } = { current: null };
+    const tree = await render(
+      <DetailSheet
+        open
+        title="My activities"
+        onClose={jest.fn()}
+        scrollToRef={scrollToRef}
+      >
+        <Text>cards</Text>
+      </DetailSheet>,
+    );
+    expect(typeof scrollToRef.current).toBe("function");
+    await tree.rerender(
+      <DetailSheet
+        open={false}
+        title="My activities"
+        onClose={jest.fn()}
+        scrollToRef={scrollToRef}
+      >
+        <Text>cards</Text>
+      </DetailSheet>,
+    );
+    expect(scrollToRef.current).toBeNull();
+  });
+});
+
+describe("InsightCard as a button", () => {
+  const icon = () => null;
+
+  it("is one button with its spoken label and a hint when it opens something", async () => {
+    const onPress = jest.fn();
+    const tree = await render(
+      <InsightCard
+        label="Wind"
+        mineral="cobalt"
+        icon={icon}
+        summary="10 kilometres per hour"
+        sentence="Calm."
+        onPress={onPress}
+      >
+        <Text>dial</Text>
+      </InsightCard>,
+    );
+    const card = tree.getByLabelText("Wind. 10 kilometres per hour. Calm.");
+    expect(card.props.accessibilityRole).toBe("button");
+    expect(card.props.accessibilityHint).toBe("Opens details");
+    await fireEvent.press(card);
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it("is a plain readable card when it opens nothing", async () => {
+    const tree = await render(
+      <InsightCard label="Wind" mineral="cobalt" icon={icon} sentence="Calm.">
+        <Text>dial</Text>
+      </InsightCard>,
+    );
+    const card = tree.getByLabelText("Wind. Calm.");
+    expect(card.props.accessibilityRole).toBeUndefined();
+    expect(card.props.accessibilityHint).toBeUndefined();
   });
 });
