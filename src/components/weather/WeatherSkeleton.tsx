@@ -45,13 +45,18 @@ const WIDTH = {
   temp: 28,
   dial: 80,
   sentence: "75%",
+  season: "60%",
 } as const;
+
+/** The season line's badge: two lines of body text, its padding and border. */
+const SEASON_BADGE_HEIGHT =
+  lineHeightOf("body") * 2 + SPACE.hair * 2 + BORDER.rest * 2;
 
 /** The pieces of the skeleton the tests count. */
 export const SKELETON = { hours: 8, tilesRows: 2 } as const;
 
 /** A row of the real text size and leading holding one bar 0.7 em tall. */
-function TextBar({
+export function TextBar({
   type,
   width,
   color,
@@ -80,7 +85,7 @@ function TextBar({
 }
 
 /** The top row: a live control at the left if given, else a bar; bars at the right. */
-function TopRowSkeleton({ leading }: { leading?: ReactNode }) {
+export function TopRowSkeleton({ leading }: { leading?: ReactNode }) {
   const bar = withAlpha(SKY_FG, 0.18);
   return (
     <View style={styles.topRow} testID="skeleton-top-row">
@@ -198,6 +203,20 @@ function ConditionsSkeleton() {
           </View>
         ))}
       </View>
+      <View
+        testID="skeleton-season"
+        style={[
+          styles.season,
+          { borderTopColor: withAlpha(SKY_FG, SKY_SURFACE.card.border) },
+        ]}
+      >
+        <Bar
+          color={bar}
+          width={WIDTH.season}
+          height={SEASON_BADGE_HEIGHT}
+          radius={RADIUS.input}
+        />
+      </View>
     </View>
   );
 }
@@ -305,6 +324,12 @@ const styles = StyleSheet.create({
     marginTop: SPACE.hair,
     paddingBottom: SPACE.stack,
     borderBottomWidth: BORDER.rest,
+  },
+  season: {
+    marginTop: SPACE.stack,
+    paddingTop: SPACE.stack,
+    borderTopWidth: BORDER.rest,
+    alignItems: "center",
   },
   hours: {
     flexDirection: "row",

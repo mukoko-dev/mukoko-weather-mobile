@@ -82,7 +82,9 @@ describe("no emoji in the weather screens", () => {
       .filter((f) => /\.tsx?$/.test(f))
       .map((f) => join(root, "components", "weather", f)),
     join(root, "components", "icons", "Icon.tsx"),
-    join(root, "components", "TabIcon.tsx"),
+    ...readdirSync(join(root, "components", "shell"))
+      .filter((f) => /\.tsx?$/.test(f))
+      .map((f) => join(root, "components", "shell", f)),
     join(root, "app", "(tabs)", "index.tsx"),
     join(root, "app", "location", "[slug].tsx"),
   ];

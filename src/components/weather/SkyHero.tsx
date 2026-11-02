@@ -2,7 +2,7 @@
  * The open-sky hero: no card, no decorative shapes. A centred stack straight on
  * the page sky, on the Mzizi type scale only:
  *
- *   top row   back / breadcrumb at the left, round Share and Settings at the right
+ *   top row   back / the trail at the left, round Share and Settings at the right
  *   eyebrow   MY LOCATION or HOME, else the place's own clock (caption, mono)
  *   name      Noto Serif, h2, weight 600
  *   numeral   Noto Sans, display, weight 400, tight tracking
@@ -32,10 +32,13 @@ import {
   heroLocalTime,
   type HeroBadge,
 } from "@/shared/hero";
+import { type TrailItem } from "@/shared/place-trail";
 import { weatherCodeToInfo } from "@/shared/weather";
-import { SIZE, SPACE, lineHeightOf } from "@/theme/mzizi";
+import { SIZE, SPACE, RADIUS, lineHeightOf } from "@/theme/mzizi";
+import { LANE } from "@/theme/ratings";
 import { SKY_FG, SKY_FG_DIM } from "@/theme/sky";
 
+import { PlaceTrail } from "./PlaceTrail";
 import { RoundControl } from "./RoundControl";
 import { WxText } from "./WxText";
 
@@ -51,13 +54,30 @@ export type SkyHeroProps = {
   now: Date;
   isCurrentLocation?: boolean;
   isHome?: boolean;
-  /** The trail above the name, for example "Zimbabwe / Mashonaland East". */
-  breadcrumb?: string;
+  /** The trail above the name: Home / Country / Province / Place. */
+  trail?: TrailItem[];
+  /** Home, the first crumb: the Weather tab. */
+  onHome?: () => void;
   /** A control at the left of the top row (Back on a place's page). */
   leading?: ReactNode;
   onShare: () => void;
   onSettings: () => void;
+  /**
+   * The quiet "for your activities" line under High and Low: the first picked
+   * activity with a readable day, for example "Football: good until 15:00".
+   * Absent when nothing is picked or its rules have not loaded.
+   */
+  activityLine?: HeroActivityLine | null;
 };
+
+export type HeroActivityLine = {
+  label: string;
+  clause: string;
+  /** The category's lane mineral (a colour for the dot). */
+  dot: string;
+};
+
+const noop = () => undefined;
 
 function EyebrowBadge({ badge }: { badge: HeroBadge }) {
   return (
@@ -88,23 +108,26 @@ function EyebrowBadge({ badge }: { badge: HeroBadge }) {
  */
 export function HeroTopRow({
   name,
-  breadcrumb,
+  trail,
+  onHome,
   leading,
   onShare,
   onSettings,
 }: Pick<
   SkyHeroProps,
-  "name" | "breadcrumb" | "leading" | "onShare" | "onSettings"
+  "name" | "trail" | "onHome" | "leading" | "onShare" | "onSettings"
 >) {
   return (
     <View style={styles.topRow}>
       <View style={styles.leading}>
         {leading}
-        {breadcrumb ? (
+        {trail && trail.length > 0 ? (
           <View style={styles.trail}>
-            <WxText type="bodySm" color={SKY_FG_DIM}>
-              {breadcrumb}
-            </WxText>
+            <PlaceTrail
+              items={trail}
+              onHome={onHome ?? noop}
+              color={SKY_FG_DIM}
+            />
           </View>
         ) : null}
       </View>
@@ -131,10 +154,12 @@ export function SkyHero({
   now,
   isCurrentLocation = false,
   isHome = false,
-  breadcrumb,
+  trail,
+  onHome,
   leading,
   onShare,
   onSettings,
+  activityLine,
 }: SkyHeroProps) {
   const info = weatherCodeToInfo(weatherCode);
   const badges = heroEyebrowBadges(isCurrentLocation, isHome);
@@ -148,7 +173,8 @@ export function SkyHero({
     <View testID="sky-hero">
       <HeroTopRow
         name={name}
-        breadcrumb={breadcrumb}
+        trail={trail}
+        onHome={onHome}
         leading={leading}
         onShare={onShare}
         onSettings={onSettings}
@@ -237,6 +263,26 @@ export function SkyHero({
             ))}
           </View>
         ) : null}
+
+        {activityLine ? (
+          <View
+            style={styles.activity}
+            accessible
+            accessibilityLabel={`${activityLine.label}: ${activityLine.clause}`}
+            testID="hero-activity-line"
+          >
+            <View
+              importantForAccessibility="no-hide-descendants"
+              style={[
+                styles.dot,
+                { backgroundColor: activityLine.dot, borderColor: SKY_FG },
+              ]}
+            />
+            <WxText type="h6" weight={600} color={SKY_FG}>
+              {activityLine.label}: {activityLine.clause}
+            </WxText>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -285,5 +331,18 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "center",
     columnGap: SPACE.stack,
+  },
+  activity: {
+    marginTop: SPACE.stack,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACE.snug,
+  },
+  dot: {
+    width: LANE.dot,
+    height: LANE.dot,
+    borderRadius: RADIUS.pill,
+    borderWidth: LANE.ring,
   },
 });

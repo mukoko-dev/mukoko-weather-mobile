@@ -113,8 +113,22 @@ describe("ROUTES", () => {
       geo: "/v1/geo",
       search: "/v1/search",
       locations: "/v1/locations",
+      activities: "/v1/activities",
+      suitability: "/v1/suitability",
+      reports: "/v1/reports",
+      reportsUpvote: "/v1/reports/upvote",
+      aiSummary: "/v1/ai/summary",
+      aiFollowup: "/v1/ai/followup",
       devices: "/v1/devices",
       chat: "/v1/ai/chat",
+      airQuality: "/v1/air-quality",
+      haze: "/v1/haze",
+      normals: "/v1/normals",
+      normalsMonthly: "/v1/normals/monthly",
+      history: "/v1/history",
+      agriculture: "/v1/agriculture",
+      enso: "/v1/enso",
+      profile: "/v1/locations/profile",
     });
   });
 });

@@ -162,6 +162,15 @@ describe("toWeatherResponse", () => {
     expect(weather.timezone).toBe("Africa/Harare");
     expect(weather.utcOffsetSeconds).toBe(7200);
     expect(weather.location).toBeUndefined();
+    // The terrain height the forecast used for the exact point.
+    expect(weather.forecastElevation).toBe(1484);
+  });
+
+  it("leaves the forecast height out rather than invent one", () => {
+    expect(toWeatherResponse({}).forecastElevation).toBeUndefined();
+    expect(
+      toWeatherResponse({ elevation: "high" }).forecastElevation,
+    ).toBeUndefined();
   });
 
   it.each([
@@ -279,6 +288,9 @@ describe("fetchWeather", () => {
       country: "ZW",
       lat: -17.83,
       lon: 31.05,
+      // The place's height, for the detail pages' subtitle ("Harare · 1490m").
+      elevation: 1490,
+      source: "seed",
     });
   });
 

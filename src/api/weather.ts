@@ -14,6 +14,8 @@
 
 import { apiRequest, ROUTES } from "@/api/client";
 import { fetchLocation, type LocationSummary } from "@/api/locations";
+import { type ModelForecast } from "@/shared/model-comparison";
+import { type MinutelyData } from "@/shared/nowcast";
 import { type WeatherData, weatherCodeToInfo } from "@/shared/weather";
 
 export type DailyForecast = {
@@ -55,6 +57,10 @@ export type WeatherResponse = {
     country?: string;
     lat: number;
     lon: number;
+    /** Metres above sea level, when the API knows it. */
+    elevation?: number;
+    source?: string;
+    address?: string;
   };
   current: CurrentConditions;
   daily: DailyForecast[];
@@ -66,6 +72,26 @@ export type WeatherResponse = {
    * to start at the current hour.
    */
   forecast?: WeatherData;
+  /** The terrain height in metres the forecast used for this exact point. */
+  forecastElevation?: number;
+  /**
+   * The next hour in 15-minute steps (`minutely`), for the Next hour card.
+   * Absent when the Worker sent none.
+   */
+  minutely?: MinutelyData;
+  /**
+   * Each model's hourly series and their shared hourly axis (`models`,
+   * `models_time`), for the Model comparison card. Absent when the Worker sent
+   * fewer than two models.
+   */
+  models?: ModelForecast[];
+  modelsTime?: string[];
+  /**
+   * The point the weather was asked for, rounded to about 110 m, when it was
+   * asked by coordinate (a GPS fix) and no place was read. The cards below the
+   * hero (air quality, haze, averages) ask the Worker about this same point.
+   */
+  coordinates?: { lat: number; lon: number };
   /** Where the forecast came from. `fallback` is a seasonal estimate. */
   source?: "tomorrow" | "open-meteo" | "fallback";
   fetchedAt?: string;
@@ -84,6 +110,10 @@ type WireWeather = {
   daily?: Record<string, unknown>;
   timezone?: unknown;
   utc_offset_seconds?: unknown;
+  elevation?: unknown;
+  minutely?: unknown;
+  models?: unknown;
+  models_time?: unknown;
 };
 
 /** Where the answer came from, from the `X-Weather-Provider` header. */
@@ -225,6 +255,52 @@ export function toForecast(raw: WireWeather): WeatherData | undefined {
   return forecast as unknown as WeatherData;
 }
 
+/** The nowcast block, or `undefined` when it has no usable step. */
+export function toMinutely(raw: unknown): MinutelyData | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const block = raw as Record<string, unknown>;
+  const precip = column(block, "precipitation");
+  if (!precip.some((v) => num(v) !== null)) return undefined;
+  // Times and steps stay paired by index: a step whose time is missing is
+  // dropped together with its time, never shifted onto the next one. A
+  // missing amount is 0, the nowcast's "no rain reported" (src/shared/nowcast).
+  const times = column(block, "time");
+  const time: string[] = [];
+  const precipitation: number[] = [];
+  precip.forEach((v, i) => {
+    const t = times[i];
+    if (times.length > 0 && typeof t !== "string") return;
+    time.push(typeof t === "string" ? t : "");
+    precipitation.push(num(v) ?? 0);
+  });
+  if (precipitation.length === 0) return undefined;
+  return { time, precipitation };
+}
+
+/**
+ * The per-model hourly series. A model without an id or without a temperature
+ * series is dropped; a missing hour stays `null` (never zero).
+ */
+export function toModels(raw: unknown): ModelForecast[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const models: ModelForecast[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const e = entry as Record<string, unknown>;
+    if (typeof e.model !== "string" || e.model.length === 0) continue;
+    const temperature = column(e, "temperature_2m");
+    if (temperature.length === 0) continue;
+    models.push({
+      model: e.model,
+      temperature_2m: temperature.map(num),
+      precipitation: column(e, "precipitation").map(num),
+    });
+  }
+  // One model is nothing to compare: the card needs at least two to show
+  // agreement or spread.
+  return models.length >= 2 ? models : undefined;
+}
+
 /** Most hours kept; the screens show the next 24. */
 const MAX_HOURS = 48;
 
@@ -272,11 +348,20 @@ export function toWeatherResponse(
       country: place.country,
       lat: place.lat,
       lon: place.lon,
+      elevation: place.elevation,
+      source: place.source,
+      address: place.address,
     },
     current,
     daily: toDaily(raw.daily),
     hourly: alignHourly(raw.hourly, current.observedAt),
     forecast: toForecast(raw),
+    forecastElevation: num(raw.elevation) ?? undefined,
+    minutely: toMinutely(raw.minutely),
+    models: toModels(raw.models),
+    modelsTime: Array.isArray(raw.models_time)
+      ? raw.models_time.filter((t): t is string => typeof t === "string")
+      : undefined,
     source: sourceOf(meta.provider),
     fetchedAt: meta.fetchedAt ?? undefined,
     timezone: typeof raw.timezone === "string" ? raw.timezone : undefined,
@@ -289,7 +374,7 @@ export function toWeatherResponse(
  * Worker caches by a 5 km cell, so a finer fix only reveals where the person
  * is.
  */
-function roundCoord(n: number): number {
+export function roundCoord(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
@@ -303,7 +388,7 @@ async function fetchWeatherAt(
     query: { lat: roundCoord(lat), lon: roundCoord(lon) },
     signal,
   });
-  return toWeatherResponse(
+  const weather = toWeatherResponse(
     data ?? {},
     {
       provider: headers.get("X-Weather-Provider"),
@@ -311,6 +396,12 @@ async function fetchWeatherAt(
     },
     place,
   );
+  return place
+    ? weather
+    : {
+        ...weather,
+        coordinates: { lat: roundCoord(lat), lon: roundCoord(lon) },
+      };
 }
 
 export async function fetchWeather(

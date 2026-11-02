@@ -24,6 +24,7 @@ import Svg, {
 
 import { usePageColors } from "@/hooks/usePageColors";
 import { FONT_FILE, SIZE, SPACE, WX_UV, withAlpha } from "@/theme/mzizi";
+import { WX_AQI } from "@/theme/weather-scales";
 import {
   GRADIENT_BREAKS,
   arcPoint,
@@ -31,6 +32,7 @@ import {
   clampPct,
   compassTicks,
   fractionOf,
+  moonTerminatorPath,
   sunArcPath,
   sunArcPoint,
   sunArcSegmentPath,
@@ -41,7 +43,7 @@ import {
 import { WxText } from "./WxText";
 
 /** An SVG that scales to its box: `viewBox` sets the aspect, `maxWidth` the cap. */
-function Scaled({
+export function Scaled({
   viewBox,
   maxWidth,
   label,
@@ -221,22 +223,32 @@ export function CompassDial({
 /** Hard colour bands edges as a percent of the bar (`GRADIENT_BREAKS.uv`). */
 export const UV_BREAK_PCT = GRADIENT_BREAKS.uv ?? [];
 
+/** The two hard-banded scales: the WHO UV index and the US EPA AQI. */
+const SCALES = {
+  uv: { colors: WX_UV, breaks: GRADIENT_BREAKS.uv ?? [], clip: "uv-clip" },
+  aqi: { colors: WX_AQI, breaks: GRADIENT_BREAKS.aqi ?? [], clip: "aqi-clip" },
+} as const;
+
 export function GradientScale({
   positionPct,
   label,
+  stops = "uv",
 }: {
   positionPct: number;
   label: string;
+  /** Which scale to draw; the UV index by default. */
+  stops?: keyof typeof SCALES;
 }) {
   const { colors } = usePageColors();
   const pos = clampPct(positionPct);
+  const scale = SCALES[stops];
   return (
     <Scaled
       viewBox="-6 -2 112 16"
       label={`${label}: ${Math.round(pos)}% along the scale`}
     >
       <Defs>
-        <ClipPath id="uv-clip">
+        <ClipPath id={scale.clip}>
           <Rect x={0} y={3} width={100} height={6} rx={3} />
         </ClipPath>
       </Defs>
@@ -248,13 +260,13 @@ export function GradientScale({
         rx={3}
         fill={withAlpha(colors.textTertiary, 0.15)}
       />
-      <G clipPath="url(#uv-clip)">
-        {WX_UV.map((c, i) => (
+      <G clipPath={`url(#${scale.clip})`}>
+        {scale.colors.map((c, i) => (
           <Rect
             key={c}
-            x={UV_BREAK_PCT[i]}
+            x={scale.breaks[i]}
             y={3}
-            width={Math.max(0, UV_BREAK_PCT[i + 1] - UV_BREAK_PCT[i])}
+            width={Math.max(0, scale.breaks[i + 1] - scale.breaks[i])}
             height={6}
             fill={c}
           />
@@ -531,6 +543,52 @@ export function SunArc({
       >
         {sunset}
       </SvgText>
+    </Scaled>
+  );
+}
+
+// --- moon disc ---------------------------------------------------------------
+
+const MOON_R = 40;
+
+/**
+ * The moon: a shadowed disc with the lit part drawn from the terminator path
+ * (src/shared/widget-geometry.ts). Waxing is lit on the right in the northern
+ * hemisphere and on the left in the southern, as the web draws it. A thin ring
+ * keeps the disc visible in dark mode, where the shadow is nearly the card.
+ */
+export function MoonDisc({
+  phase,
+  illumination,
+  southernHemisphere = false,
+}: {
+  phase: number;
+  illumination: number;
+  southernHemisphere?: boolean;
+}) {
+  const { colors } = usePageColors();
+  const p = ((phase % 1) + 1) % 1;
+  const waxing = p < 0.5;
+  const pct = Math.round(Math.max(0, Math.min(1, illumination)) * 100);
+  const lit = pct > 0 ? moonTerminatorPath(p, MOON_R) : "";
+  return (
+    <Scaled
+      viewBox="-44 -44 88 88"
+      maxWidth={SIZE.moonMax}
+      label={`Moon, ${pct}% illuminated, ${waxing ? "waxing" : "waning"}`}
+    >
+      <Circle r={MOON_R} fill={colors.moonShadow} />
+      {lit ? (
+        <G scaleX={southernHemisphere ? -1 : 1}>
+          <Path d={lit} fill={colors.moonLit} />
+        </G>
+      ) : null}
+      <Circle
+        r={MOON_R}
+        fill="none"
+        strokeWidth={0.8}
+        stroke={colors.outline}
+      />
     </Scaled>
   );
 }

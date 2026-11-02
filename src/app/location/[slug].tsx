@@ -19,21 +19,13 @@ import {
   WeatherError,
   WeatherPage,
 } from "@/components/weather/WeatherPage";
+import { placeNameFromSlug } from "@/components/weather/location-routes";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
 
 type LoadState =
   | { kind: "loading" }
   | { kind: "ready"; weather: WeatherResponse }
   | { kind: "error"; message: string };
-
-function titleCaseSlug(slug: string | undefined): string {
-  if (!slug) return "Location";
-  return slug
-    .split(/[-_]/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 export default function LocationScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -85,7 +77,7 @@ export default function LocationScreen() {
     void load();
   }, [load]);
 
-  const fallbackName = titleCaseSlug(slug);
+  const fallbackName = placeNameFromSlug(slug);
   const name =
     state.kind === "ready"
       ? (state.weather.location?.name ?? fallbackName)

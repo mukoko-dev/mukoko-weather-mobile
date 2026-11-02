@@ -1,0 +1,33 @@
+{
+  "aqi": 68,
+  "dominantPollutant": "pm2_5",
+  "fetchedAt": "2026-11-01T02:15:30Z",
+  "level": "moderate",
+  "pollutants": {
+    "co": 268.0,
+    "nh3": null,
+    "no2": 11.0,
+    "o3": 34.0,
+    "pm10": 21.8,
+    "pm2_5": 20.4,
+    "so2": 2.0
+  },
+  "source": "open-meteo",
+  "subIndexes": {
+    "co": 3,
+    "no2": 6,
+    "o3": 16,
+    "pm10": 20,
+    "pm2_5": 68,
+    "so2": 1
+  },
+  "whoGuidelines": {
+    "co": 4000.0,
+    "nh3": 0.0,
+    "no2": 25.0,
+    "o3": 100.0,
+    "pm10": 45.0,
+    "pm2_5": 15.0,
+    "so2": 40.0
+  }
+}

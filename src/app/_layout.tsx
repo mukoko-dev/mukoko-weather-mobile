@@ -13,8 +13,11 @@
  *     </ThemeProvider>
  *   </SafeAreaProvider>
  *
- * /location/[slug], /sign-in, and /sign-in-callback push above the tabs.
- * The (tabs) group renders the actual bottom Tabs.
+ * /location/[slug] (and its /forecast and /atmosphere pages), /sign-in, and
+ * /sign-in-callback push above the tabs. The (tabs) group holds the home,
+ * Locations, Explore and My screens; its tab bar is not drawn. AppChrome
+ * (src/components/shell) draws the one floating bottom bar over the weather
+ * pages, as the web does, and /menu is the ⋯ menu as a native sheet.
  */
 
 import { useFonts } from "expo-font";
@@ -22,12 +25,14 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { useColorScheme, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { recordAppOpen } from "@/analytics";
 import { initAuth } from "@/api/auth";
 import { BRAND_FONTS } from "@/brand/fonts";
 import { BrandStripe } from "@/components/BrandStripe";
+import { AppChrome } from "@/components/shell/AppChrome";
 import { registerDevice } from "@/device/register";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -60,29 +65,59 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <View style={{ flex: 1, flexDirection: "row" }}>
-          <BrandStripe width={3} />
-          <View style={{ flex: 1 }}>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="location/[slug]"
-                options={{ headerShown: false, presentation: "card" }}
-              />
-              <Stack.Screen
-                name="sign-in"
-                options={{ title: "Sign in", presentation: "modal" }}
-              />
-              <Stack.Screen
-                name="sign-in-callback"
-                options={{ title: "Signing in...", presentation: "modal" }}
-              />
-            </Stack>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider
+          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+        >
+          <View style={{ flex: 1, flexDirection: "row" }}>
+            <BrandStripe width={3} />
+            <View style={{ flex: 1 }}>
+              <AppChrome>
+                {/* No native header by default: a place's pages (the location,
+                    its forecast and atmosphere pages, and any page added under
+                    it) carry their own top row with Back. The sign-in modals
+                    keep theirs. */}
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen
+                    name="location/[slug]"
+                    options={{ presentation: "card" }}
+                  />
+                  <Stack.Screen
+                    name="menu"
+                    options={{
+                      presentation: "formSheet",
+                      sheetAllowedDetents: "fitToContents",
+                      sheetGrabberVisible: true,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="map"
+                    options={{ presentation: "fullScreenModal" }}
+                  />
+                  <Stack.Screen
+                    name="sign-in"
+                    options={{
+                      headerShown: true,
+                      title: "Sign in",
+                      presentation: "modal",
+                    }}
+                  />
+                  <Stack.Screen
+                    name="sign-in-callback"
+                    options={{
+                      headerShown: true,
+                      title: "Signing in...",
+                      presentation: "modal",
+                    }}
+                  />
+                </Stack>
+              </AppChrome>
+            </View>
           </View>
-        </View>
-      </ThemeProvider>
-    </SafeAreaProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -11,9 +11,11 @@
  * VoiceOver item ("Now: 28 degrees, Overcast").
  */
 
+import { type ReactNode } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { WeatherIcon } from "@/components/icons/Icon";
+import { NoSwipeZone } from "@/components/shell/NoSwipeZone";
 import { heroOutlook } from "@/shared/hero";
 import {
   currentHourIndex,
@@ -24,6 +26,7 @@ import { type WeatherData, weatherCodeToInfo } from "@/shared/weather";
 import { BORDER, RADIUS, SIZE, SPACE, withAlpha } from "@/theme/mzizi";
 import { SKY_FG, SKY_FG_DIM, SKY_SURFACE } from "@/theme/sky";
 
+import { SectionHeader } from "./SectionHeader";
 import { WxText } from "./WxText";
 
 /** Hours in the strip. */
@@ -68,9 +71,18 @@ export function hourTiles(forecast: WeatherData, now: Date): HourTile[] {
 export type ConditionsCardProps = {
   forecast: WeatherData;
   now: Date;
+  /** A quiet line at the foot of the card (the season), under a hairline. */
+  footer?: ReactNode;
+  /** Opens the place's /forecast page; no link without it. */
+  onOpenForecast?: () => void;
 };
 
-export function ConditionsCard({ forecast, now }: ConditionsCardProps) {
+export function ConditionsCard({
+  forecast,
+  now,
+  footer,
+  onOpenForecast,
+}: ConditionsCardProps) {
   const hours = hourTiles(forecast, now);
   if (hours.length === 0) return null;
   const outlook = heroOutlook(
@@ -90,15 +102,21 @@ export function ConditionsCard({ forecast, now }: ConditionsCardProps) {
         },
       ]}
     >
-      <WxText
-        type="h6"
-        weight={600}
-        family="serif"
-        color={SKY_FG}
-        accessibilityRole="header"
-      >
-        Conditions
-      </WxText>
+      <SectionHeader
+        title="Conditions"
+        titleColor={SKY_FG}
+        actionColor={SKY_FG}
+        action={
+          onOpenForecast
+            ? {
+                label: "Full forecast",
+                spoken: "Full forecast, hourly and 7-day",
+                onPress: onOpenForecast,
+                testID: "full-forecast-link",
+              }
+            : undefined
+        }
+      />
       {outlook ? (
         <View style={[styles.outlook, { borderBottomColor: hairline }]}>
           <WxText type="body" color={SKY_FG_DIM}>
@@ -106,40 +124,47 @@ export function ConditionsCard({ forecast, now }: ConditionsCardProps) {
           </WxText>
         </View>
       ) : null}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        accessibilityLabel="Hourly forecast, scroll horizontally"
-        style={styles.strip}
-        contentContainerStyle={styles.hours}
-      >
-        {hours.map((h) => (
-          <View
-            key={h.time}
-            accessible
-            accessibilityLabel={h.spoken}
-            style={styles.hour}
-          >
-            <WxText type="body" color={SKY_FG_DIM}>
-              {h.label}
-            </WxText>
-            <WeatherIcon
-              code={h.code}
-              isDay={h.isDay}
-              size={SIZE.iconMd}
-              color={SKY_FG}
-            />
-            <WxText type="body" weight={600} tabular color={SKY_FG}>
-              {`${h.temp}°`}
-            </WxText>
-            {h.rainPct !== null ? (
-              <WxText type="body" weight={600} tabular color={SKY_FG}>
-                {`${h.rainPct}%`}
+      <NoSwipeZone>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          accessibilityLabel="Hourly forecast, scroll horizontally"
+          style={styles.strip}
+          contentContainerStyle={styles.hours}
+        >
+          {hours.map((h) => (
+            <View
+              key={h.time}
+              accessible
+              accessibilityLabel={h.spoken}
+              style={styles.hour}
+            >
+              <WxText type="body" color={SKY_FG_DIM}>
+                {h.label}
               </WxText>
-            ) : null}
-          </View>
-        ))}
-      </ScrollView>
+              <WeatherIcon
+                code={h.code}
+                isDay={h.isDay}
+                size={SIZE.iconMd}
+                color={SKY_FG}
+              />
+              <WxText type="body" weight={600} tabular color={SKY_FG}>
+                {`${h.temp}°`}
+              </WxText>
+              {h.rainPct !== null ? (
+                <WxText type="body" weight={600} tabular color={SKY_FG}>
+                  {`${h.rainPct}%`}
+                </WxText>
+              ) : null}
+            </View>
+          ))}
+        </ScrollView>
+      </NoSwipeZone>
+      {footer ? (
+        <View style={[styles.footer, { borderTopColor: hairline }]}>
+          {footer}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -157,6 +182,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: BORDER.rest,
   },
   strip: { marginTop: SPACE.stack },
+  footer: {
+    marginTop: SPACE.stack,
+    paddingTop: SPACE.stack,
+    borderTopWidth: BORDER.rest,
+    alignItems: "center",
+  },
   hours: { gap: SPACE.cozy, paddingBottom: SPACE.snug },
   hour: {
     minWidth: SIZE.hourTileMin,
