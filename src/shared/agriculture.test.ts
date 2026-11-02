@@ -520,8 +520,12 @@ describe("why there is no farm data", () => {
   it("reads the recorded unavailable answer as not ready", () => {
     const off = agricultureUnavailable as unknown as AgricultureResponse;
     expect(isAgricultureReady(off)).toBe(false);
-    expect(unavailableFor(off.reason).title).toBe(
-      "No farm data for this point",
-    );
+    expect(unavailableFor(off.reason).title).toBe("Farm data is not answering");
+  });
+
+  it("blames the source, never the place, when the source failed (issue #74)", () => {
+    const { body } = unavailableFor("provider_error");
+    expect(body).not.toMatch(/sea|off the grid|connection/i);
+    expect(body).toMatch(/weather source/);
   });
 });

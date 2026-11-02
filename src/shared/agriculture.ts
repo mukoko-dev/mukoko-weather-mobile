@@ -669,8 +669,8 @@ export function unavailableFor(reason: string | null | undefined): Unavailable {
       };
     case "provider_error":
       return {
-        title: "No farm data for this point",
-        body: "The forecast source did not give soil and water data for this exact place. It may be out at sea or off the grid, or the source may be busy.",
+        title: "Farm data is not answering",
+        body: "Our weather source isn't answering for soil and water data right now. Try again shortly.",
         retry: true,
       };
     case "insufficient_data":

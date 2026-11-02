@@ -9,6 +9,10 @@ import { act, fireEvent, render } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { Share } from "react-native";
 
+import { ApiError, NetworkError } from "@/api/client";
+import { FAILURE_COPY } from "@/api/failure";
+import weatherHarareFixture from "@/api/__fixtures__/weather-harare.json";
+import { saveForecast, setForecastStorage } from "@/state/forecast-store";
 import { fetchWeather } from "@/api/weather";
 import { FALLBACK_MESSAGE } from "@/hooks/useLocationWeather";
 import { ChartErrorBoundary } from "@/components/weather/ChartErrorBoundary";
@@ -30,6 +34,7 @@ import {
 } from "@/test-utils/mocks";
 import {
   HAS_EMOJI,
+  NOW,
   allText,
   harareWeather,
 } from "@/test-utils/weather-fixtures";
@@ -388,16 +393,16 @@ describe("the screen: every state", () => {
 
   it("failed: says what happened, offers Try again, and keeps Back and Settings", async () => {
     fetchMock.mockRejectedValueOnce(
-      new Error("The weather service is not answering."),
+      new ApiError("upstream failed", 502, "https://weather-api.mukoko.com"),
     );
     const tree = await render(
       <LocationDetailScreen slug="harare" sub="forecast" />,
     );
     await settle();
     expect(tree.getByText("Weather unavailable")).toBeTruthy();
-    expect(
-      tree.getByText("The weather service is not answering."),
-    ).toBeTruthy();
+    // The cause in plain words, never the error's own text.
+    expect(tree.getByText(FAILURE_COPY.provider)).toBeTruthy();
+    expect(tree.queryByText("upstream failed")).toBeNull();
     expect(tree.getByLabelText("Back to Harare")).toBeTruthy();
     expect(tree.getByLabelText("Settings and sign in")).toBeTruthy();
     fetchMock.mockResolvedValueOnce(harareWeather());
@@ -405,6 +410,65 @@ describe("the screen: every state", () => {
     await settle();
     expect(tree.getByText("Harare Forecast")).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("offline with a copy on the phone: shows it, saying it is saved and why (issue #69)", async () => {
+    const files = new Map<string, string>();
+    setForecastStorage({
+      read: async (k) => files.get(k) ?? null,
+      write: async (k, v) => {
+        files.set(k, v);
+      },
+      remove: async (k) => {
+        files.delete(k);
+      },
+    });
+    const saved = NOW.getTime() - 30 * 60_000;
+    await saveForecast(
+      "bulawayo",
+      {
+        raw: weatherHarareFixture as never,
+        meta: { provider: "open-meteo:blend" },
+        place: { slug: "bulawayo", name: "Bulawayo", lat: -20.15, lon: 28.58 },
+      },
+      { name: "Bulawayo", slug: "bulawayo" },
+      saved,
+    );
+    const now = jest.spyOn(Date, "now").mockReturnValue(NOW.getTime());
+    try {
+      fetchMock.mockRejectedValueOnce(
+        new NetworkError("offline", "https://weather-api.mukoko.com"),
+      );
+      const tree = await render(
+        <LocationDetailScreen slug="bulawayo" sub="forecast" />,
+      );
+      await settle();
+      expect(tree.queryByText("Weather unavailable")).toBeNull();
+      expect(tree.getByText("Bulawayo Forecast")).toBeTruthy();
+      expect(
+        tree.getByText(
+          `Could not refresh: ${FAILURE_COPY.offline} Showing what is saved on this device, updated 30 min ago.`,
+        ),
+      ).toBeTruthy();
+      // Still offline on pull to refresh: the copy stays marked as saved.
+      fetchMock.mockRejectedValueOnce(
+        new NetworkError("timeout", "https://weather-api.mukoko.com"),
+      );
+      const control = findProp(tree.toJSON(), "refreshControl") as {
+        props: { onRefresh: () => Promise<void> };
+      };
+      await act(async () => {
+        await control.props.onRefresh();
+      });
+      expect(
+        tree.getByText(
+          `Could not refresh: ${FAILURE_COPY.timeout} Showing what is saved on this device, updated 30 min ago.`,
+        ),
+      ).toBeTruthy();
+    } finally {
+      now.mockRestore();
+      setForecastStorage(null);
+    }
   });
 
   it("empty: an answer with no hours is said in words, not drawn as empty charts", async () => {
@@ -535,7 +599,9 @@ describe("the screen: every state", () => {
       <LocationDetailScreen slug="harare" sub="forecast" />,
     );
     await settle();
-    fetchMock.mockRejectedValueOnce(new Error("You are offline."));
+    fetchMock.mockRejectedValueOnce(
+      new NetworkError("offline", "https://weather-api.mukoko.com"),
+    );
     const control = findProp(tree.toJSON(), "refreshControl") as {
       props: { onRefresh: () => Promise<void> };
     };
@@ -545,7 +611,9 @@ describe("the screen: every state", () => {
     expect(tree.getByText("Harare Forecast")).toBeTruthy();
     expect(tree.queryByText("Weather unavailable")).toBeNull();
     expect(tree.getByTestId("detail-refresh-error")).toBeTruthy();
-    expect(tree.getByText("Could not refresh: You are offline.")).toBeTruthy();
+    expect(
+      tree.getByText(`Could not refresh: ${FAILURE_COPY.offline}`),
+    ).toBeTruthy();
   });
 
   it("pull to refresh asks again and keeps the page", async () => {

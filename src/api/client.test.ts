@@ -8,6 +8,8 @@ import {
   API_BASE_URL,
   ApiError,
   DEFAULT_API_BASE_URL,
+  NetworkError,
+  REQUEST_TIMEOUT_MS,
   ROUTES,
   apiFetch,
   apiRequest,
@@ -291,9 +293,80 @@ describe("apiRequest", () => {
     });
   });
 
-  it("lets a network failure through untouched", async () => {
+  it("names a network failure as offline, keeping fetch's own message for logs", async () => {
     const down = new Error("Network request failed");
     mockFetch({ networkError: down });
-    await expect(apiFetch(ROUTES.weather)).rejects.toBe(down);
+    const err = await apiFetch(ROUTES.weather).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(NetworkError);
+    expect(err).toMatchObject({
+      kind: "offline",
+      message: "Network request failed",
+      cause: down,
+    });
+  });
+
+  it("treats a body cut off after the headers as offline, never as an empty answer", async () => {
+    globalThis.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: { get: () => "application/json" },
+      json: async () => {
+        throw new TypeError("Network request failed");
+      },
+    })) as unknown as typeof fetch;
+    await expect(apiFetch(ROUTES.weather)).rejects.toMatchObject({
+      name: "NetworkError",
+      kind: "offline",
+    });
+  });
+
+  it("lets the caller's own abort through untouched", async () => {
+    const abort = Object.assign(new Error("Aborted"), { name: "AbortError" });
+    mockFetch({ networkError: abort });
+    await expect(apiFetch(ROUTES.weather)).rejects.toBe(abort);
+  });
+
+  it("gives up a stalled request after the timeout (issue #70)", async () => {
+    jest.useFakeTimers();
+    try {
+      let seen: AbortSignal | undefined;
+      globalThis.fetch = jest.fn(
+        (_url: unknown, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            seen = init?.signal ?? undefined;
+            seen?.addEventListener("abort", () =>
+              reject(
+                Object.assign(new Error("Aborted"), { name: "AbortError" }),
+              ),
+            );
+          }),
+      ) as unknown as typeof fetch;
+      const pending = apiFetch(ROUTES.weather).catch((e: unknown) => e);
+      await Promise.resolve();
+      jest.advanceTimersByTime(REQUEST_TIMEOUT_MS - 1);
+      expect(seen?.aborted).toBe(false);
+      jest.advanceTimersByTime(1);
+      const err = await pending;
+      expect(err).toBeInstanceOf(NetworkError);
+      expect(err).toMatchObject({ kind: "timeout" });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("takes a per-request timeout, and the caller's abort still cancels", async () => {
+    const calls = mockFetch({ body: {} });
+    const controller = new AbortController();
+    await apiFetch(ROUTES.weather, {
+      signal: controller.signal,
+      timeoutMs: 1000,
+    });
+    expect(calls[0].signal?.aborted).toBe(false);
+    const stalled = mockFetch({ body: {} });
+    controller.abort();
+    await apiFetch(ROUTES.weather, { signal: controller.signal }).catch(
+      () => undefined,
+    );
+    expect(stalled[0].signal?.aborted).toBe(true);
   });
 });

@@ -330,7 +330,7 @@ export function CommunityLane({ slug, forecast, now }: CommunityLaneProps) {
         <View style={styles.stack} accessibilityRole="alert">
           <WxText type="body" color={colors.textSecondary}>
             Could not load the rules the lane is rated with, so no bar is shown.
-            Check your connection and try again.
+            Try again in a moment.
           </WxText>
           <PillButton label="Try again" variant="outline" onPress={retry} />
         </View>

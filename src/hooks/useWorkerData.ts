@@ -19,7 +19,8 @@ import { useCallback, useEffect, useState } from "react";
 export type RemoteState<T> =
   | { status: "loading" }
   | { status: "ready"; data: T }
-  | { status: "unavailable" };
+  /** The request failed; `error` says why (src/api/failure.ts words it). */
+  | { status: "unavailable"; error?: unknown };
 
 type Load<T> = (signal: AbortSignal) => Promise<T>;
 
@@ -45,13 +46,13 @@ export function useWorkerData<T>(
         if (!controller.signal.aborted) {
           setHeld({ load, state: { status: "ready", data } });
         }
-      } catch {
+      } catch (error) {
         if (controller.signal.aborted) return;
         // A refresh that fails keeps the answer this card already shows.
         setHeld((prev) =>
           prev && prev.load === load && prev.state.status === "ready"
             ? prev
-            : { load, state: { status: "unavailable" } },
+            : { load, state: { status: "unavailable", error } },
         );
       }
     })();
