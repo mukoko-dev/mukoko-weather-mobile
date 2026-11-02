@@ -18,6 +18,7 @@ import {
   swipeTarget,
 } from "@/components/shell/useLocationSwipe";
 import { laneChips, pagerSequence } from "@/shared/location-pager";
+import { setHomeStandIn } from "@/state/home-status";
 import { IPHONE_INSETS, setInsets } from "@/test-utils/mocks";
 import { BAR, barClearance } from "@/theme/shell";
 
@@ -86,6 +87,31 @@ describe("BottomBar", () => {
     expect(tree.getByRole("button", { name: "My Location" })).toBeTruthy();
     expect(tree.getByRole("button", { name: "Harare" })).toBeTruthy();
     expect(tree.getByRole("button", { name: "Nairobi" })).toBeTruthy();
+  });
+
+  it("never says My Location over the default city when home has no fix (#66)", async () => {
+    const lone = laneChips(pagerSequence([]), () => "");
+    setHomeStandIn("Harare");
+    try {
+      const tree = await render(
+        <BottomBar
+          chips={lone}
+          activeIndex={0}
+          activeId="none"
+          hasMapLocation
+          onChipPress={jest.fn()}
+          onMap={jest.fn()}
+          onLocations={jest.fn()}
+        />,
+      );
+      expect(tree.queryByText("My Location")).toBeNull();
+      expect(tree.getByText("Harare")).toBeTruthy();
+      expect(
+        tree.getByRole("button", { name: "Harare, not your location" }),
+      ).toBeTruthy();
+    } finally {
+      setHomeStandIn(null);
+    }
   });
 
   it("marks exactly the current page as selected", async () => {
