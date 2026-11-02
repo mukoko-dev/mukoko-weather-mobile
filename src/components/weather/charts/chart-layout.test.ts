@@ -270,7 +270,9 @@ describe("x labels", () => {
 
   it("shows every label when they all fit", () => {
     const x7 = Array.from({ length: 7 }, (_, i) => xAt(i, 7, 30, 290, false));
-    const w7 = [5, 3, 3, 3, 3, 3, 3].map((n) => estimateTextWidth("x".repeat(n), 12, X_LABEL_EM));
+    const w7 = [5, 3, 3, 3, 3, 3, 3].map((n) =>
+      estimateTextWidth("x".repeat(n), 12, X_LABEL_EM),
+    );
     expect(chooseLabelIndices(x7, w7, 8, 4)).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 
@@ -289,7 +291,9 @@ describe("x labels", () => {
     expect(chooseLabelIndices(xs, big, 24, 6).length).toBeLessThanOrEqual(
       chooseLabelIndices(xs, widths, 24, 6).length,
     );
-    const narrow = Array.from({ length: 24 }, (_, i) => xAt(i, 24, 30, 120, false));
+    const narrow = Array.from({ length: 24 }, (_, i) =>
+      xAt(i, 24, 30, 120, false),
+    );
     expect(chooseLabelIndices(narrow, widths, 24, 6).length).toBeLessThan(
       chooseLabelIndices(xs, widths, 24, 6).length,
     );

@@ -72,6 +72,10 @@ const payloadOf = (hex: string) =>
 /** `toContain` without printing a whole rendered tree when it fails. */
 const has = (haystack: string, needle: string) => haystack.includes(needle);
 
+// The first render in a cold worker loads and transforms react-native-svg, which
+// can pass the default 5 s on a busy machine.
+jest.setTimeout(20_000);
+
 // The colour scheme the chart reads (`usePageColors` -> `useColorScheme`).
 jest.mock("react-native/Libraries/Utilities/useColorScheme", () => ({
   __esModule: true,

@@ -272,7 +272,13 @@ export function barsOf(
     // of 0 at night is an empty slot, not a hairline that reads as a value.
     if (height < MIN_BAR_HEIGHT) return;
     const cx = xAt(index, count, left, plotWidth, true);
-    bars.push({ index, x: cx - width / 2, y: Math.min(y, baseline), width, height });
+    bars.push({
+      index,
+      x: cx - width / 2,
+      y: Math.min(y, baseline),
+      width,
+      height,
+    });
   });
   return bars;
 }
@@ -316,8 +322,16 @@ export function chooseLabelIndices(
     if (shown.length > max) continue;
     let ok = true;
     for (let k = 1; k < shown.length && ok; k++) {
-      const a = spanOf(xs[shown[k - 1]], widths[shown[k - 1]], anchorOf(shown[k - 1], count));
-      const b = spanOf(xs[shown[k]], widths[shown[k]], anchorOf(shown[k], count));
+      const a = spanOf(
+        xs[shown[k - 1]],
+        widths[shown[k - 1]],
+        anchorOf(shown[k - 1], count),
+      );
+      const b = spanOf(
+        xs[shown[k]],
+        widths[shown[k]],
+        anchorOf(shown[k], count),
+      );
       ok = b[0] - a[1] >= gap;
     }
     if (ok) return shown;
