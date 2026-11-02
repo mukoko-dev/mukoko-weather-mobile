@@ -13,11 +13,11 @@
  *     </ThemeProvider>
  *   </SafeAreaProvider>
  *
- * /location/[slug], /sign-in, and /sign-in-callback push above the tabs.
- * The (tabs) group holds the home, Locations, Explore and My screens; its
- * tab bar is not drawn. AppChrome (src/components/shell) draws the one
- * floating bottom bar over the weather pages, as the web does, and /menu is
- * the ⋯ menu as a native sheet.
+ * /location/[slug] (and its /forecast and /atmosphere pages), /sign-in, and
+ * /sign-in-callback push above the tabs. The (tabs) group holds the home,
+ * Locations, Explore and My screens; its tab bar is not drawn. AppChrome
+ * (src/components/shell) draws the one floating bottom bar over the weather
+ * pages, as the web does, and /menu is the ⋯ menu as a native sheet.
  */
 
 import { useFonts } from "expo-font";
@@ -71,19 +71,19 @@ export default function RootLayout() {
             <BrandStripe width={3} />
             <View style={{ flex: 1 }}>
               <AppChrome>
-                <Stack>
-                  <Stack.Screen
-                    name="(tabs)"
-                    options={{ headerShown: false }}
-                  />
+                {/* No native header by default: a place's pages (the location,
+                    its forecast and atmosphere pages, and any page added under
+                    it) carry their own top row with Back. The sign-in modals
+                    keep theirs. */}
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(tabs)" />
                   <Stack.Screen
                     name="location/[slug]"
-                    options={{ headerShown: false, presentation: "card" }}
+                    options={{ presentation: "card" }}
                   />
                   <Stack.Screen
                     name="menu"
                     options={{
-                      headerShown: false,
                       presentation: "formSheet",
                       sheetAllowedDetents: "fitToContents",
                       sheetGrabberVisible: true,
@@ -91,18 +91,23 @@ export default function RootLayout() {
                   />
                   <Stack.Screen
                     name="map"
-                    options={{
-                      headerShown: false,
-                      presentation: "fullScreenModal",
-                    }}
+                    options={{ presentation: "fullScreenModal" }}
                   />
                   <Stack.Screen
                     name="sign-in"
-                    options={{ title: "Sign in", presentation: "modal" }}
+                    options={{
+                      headerShown: true,
+                      title: "Sign in",
+                      presentation: "modal",
+                    }}
                   />
                   <Stack.Screen
                     name="sign-in-callback"
-                    options={{ title: "Signing in...", presentation: "modal" }}
+                    options={{
+                      headerShown: true,
+                      title: "Signing in...",
+                      presentation: "modal",
+                    }}
                   />
                 </Stack>
               </AppChrome>
