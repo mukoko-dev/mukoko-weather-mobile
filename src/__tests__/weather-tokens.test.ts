@@ -23,10 +23,17 @@ function weatherFiles(): string[] {
   const charts = readdirSync(chartsDir)
     .filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f))
     .map((f) => join(chartsDir, f));
+  const shell = readdirSync(join(root, "components", "shell"))
+    .filter((f) => /\.tsx?$/.test(f))
+    .map((f) => join(root, "components", "shell", f));
   return [
     ...components,
     ...charts,
+    ...shell,
     join(root, "app", "(tabs)", "index.tsx"),
+    join(root, "app", "(tabs)", "locations.tsx"),
+    join(root, "app", "menu.tsx"),
+    join(root, "app", "map.tsx"),
     join(root, "app", "location", "[slug].tsx"),
     join(root, "app", "location", "[slug]", "agriculture.tsx"),
     join(root, "app", "location", "[slug]", "forecast.tsx"),

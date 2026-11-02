@@ -222,7 +222,7 @@ describe("the top row", () => {
     });
   });
 
-  it("Share sends a plain sentence with no link, and Settings opens the Settings tab", async () => {
+  it("Share sends a plain sentence with no link, and Settings opens the menu", async () => {
     const share = jest
       .spyOn(Share, "share")
       .mockResolvedValue({ action: "sharedAction", activityType: undefined });
@@ -231,7 +231,7 @@ describe("the top row", () => {
     expect(share).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(share.mock.calls[0][0])).not.toMatch(/https?:/);
     await fireEvent.press(tree.getByLabelText("Settings and sign in"));
-    expect(router.navigate).toHaveBeenCalledWith("/my");
+    expect(router.push).toHaveBeenCalledWith("/menu");
   });
 });
 

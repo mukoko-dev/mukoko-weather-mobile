@@ -146,14 +146,14 @@ describe("WeatherPage", () => {
     );
   });
 
-  it("opens Settings from the top row", async () => {
+  it("opens the menu (settings, sign in, places) from the top row", async () => {
     const tree = await render(
       <WeatherPage weather={harareWeather()} name="Harare" inTabs />,
     );
     await fireEvent.press(
       tree.getByRole("button", { name: "Settings and sign in" }),
     );
-    expect(router.navigate).toHaveBeenCalledWith("/my");
+    expect(router.push).toHaveBeenCalledWith("/menu");
   });
 
   it("builds the trail the web's way: Home, country, province, place", () => {

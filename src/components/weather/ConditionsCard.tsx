@@ -15,6 +15,7 @@ import { type ReactNode } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { WeatherIcon } from "@/components/icons/Icon";
+import { NoSwipeZone } from "@/components/shell/NoSwipeZone";
 import { heroOutlook } from "@/shared/hero";
 import {
   currentHourIndex,
@@ -123,40 +124,42 @@ export function ConditionsCard({
           </WxText>
         </View>
       ) : null}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        accessibilityLabel="Hourly forecast, scroll horizontally"
-        style={styles.strip}
-        contentContainerStyle={styles.hours}
-      >
-        {hours.map((h) => (
-          <View
-            key={h.time}
-            accessible
-            accessibilityLabel={h.spoken}
-            style={styles.hour}
-          >
-            <WxText type="body" color={SKY_FG_DIM}>
-              {h.label}
-            </WxText>
-            <WeatherIcon
-              code={h.code}
-              isDay={h.isDay}
-              size={SIZE.iconMd}
-              color={SKY_FG}
-            />
-            <WxText type="body" weight={600} tabular color={SKY_FG}>
-              {`${h.temp}°`}
-            </WxText>
-            {h.rainPct !== null ? (
-              <WxText type="body" weight={600} tabular color={SKY_FG}>
-                {`${h.rainPct}%`}
+      <NoSwipeZone>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          accessibilityLabel="Hourly forecast, scroll horizontally"
+          style={styles.strip}
+          contentContainerStyle={styles.hours}
+        >
+          {hours.map((h) => (
+            <View
+              key={h.time}
+              accessible
+              accessibilityLabel={h.spoken}
+              style={styles.hour}
+            >
+              <WxText type="body" color={SKY_FG_DIM}>
+                {h.label}
               </WxText>
-            ) : null}
-          </View>
-        ))}
-      </ScrollView>
+              <WeatherIcon
+                code={h.code}
+                isDay={h.isDay}
+                size={SIZE.iconMd}
+                color={SKY_FG}
+              />
+              <WxText type="body" weight={600} tabular color={SKY_FG}>
+                {`${h.temp}°`}
+              </WxText>
+              {h.rainPct !== null ? (
+                <WxText type="body" weight={600} tabular color={SKY_FG}>
+                  {`${h.rainPct}%`}
+                </WxText>
+              ) : null}
+            </View>
+          ))}
+        </ScrollView>
+      </NoSwipeZone>
       {footer ? (
         <View style={[styles.footer, { borderTopColor: hairline }]}>
           {footer}
