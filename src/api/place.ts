@@ -78,3 +78,27 @@ export function withPlace(
       : { lat: point.lat, lon: point.lon },
   };
 }
+
+/**
+ * The weather answer as the Weather tab draws it. The farm and place cards ask
+ * the Worker about the place under the page, so they must not start from the
+ * bare GPS point and then start again once the geo lookup names it (two farm
+ * payloads and two profile requests at every cold start, and a season line that
+ * changes after first paint). Until the lookup has settled, the answer is
+ * passed through as it is: it carries no place, so those cards are left out.
+ * Once it has settled, with a name or without one, they are drawn for the place
+ * the lookup found or, failing that, the point.
+ */
+export function weatherForPage(
+  weather: WeatherResponse,
+  fix: {
+    lat: number;
+    lon: number;
+    place?: LocationSummary | null;
+    /** True once the geo lookup has answered, or has failed. */
+    settled?: boolean;
+  } | null,
+): WeatherResponse {
+  if (!fix?.settled) return weather;
+  return withPlace(weather, fix, fix.place);
+}

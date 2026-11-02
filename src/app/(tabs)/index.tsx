@@ -23,7 +23,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { geoLookup, type LocationSummary } from "@/api/locations";
 import { fetchWeather, type WeatherResponse } from "@/api/weather";
-import { withPlace } from "@/api/place";
+import { weatherForPage } from "@/api/place";
 import { WeatherError, WeatherPage } from "@/components/weather/WeatherPage";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
 
@@ -36,6 +36,8 @@ type Coords = {
   label?: string;
   /** The place the fix was named as, once the geo lookup has answered. */
   place?: LocationSummary;
+  /** True once the geo lookup has answered or failed (see `weatherForPage`). */
+  settled?: boolean;
   /** True for the Harare default: not the person's own location. */
   fallback?: boolean;
 };
@@ -100,13 +102,13 @@ export default function WeatherHome() {
       // geocode never holds the first paint.
       void load(loc);
       const place = await resolvePlace(loc);
-      if (place) {
-        setCoords((prev) => ({
-          ...(prev ?? loc),
-          label: place.name,
-          place,
-        }));
-      }
+      // Settled whether or not it was named: the place cards wait for this, so
+      // they ask the Worker once, for the place, not first for the bare point.
+      setCoords((prev) => ({
+        ...(prev ?? loc),
+        ...(place ? { label: place.name, place } : {}),
+        settled: true,
+      }));
     })();
   }, [load, resolveLocation, resolvePlace]);
 
@@ -132,9 +134,7 @@ export default function WeatherHome() {
     coords?.label ?? state.weather.location?.name ?? "Current location";
   return (
     <WeatherPage
-      weather={
-        coords ? withPlace(state.weather, coords, coords.place) : state.weather
-      }
+      weather={weatherForPage(state.weather, coords)}
       name={name}
       isCurrentLocation={Boolean(coords && !coords.fallback)}
       onRefresh={onRefresh}
