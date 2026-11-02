@@ -155,6 +155,7 @@ export function DetailSheet({
           },
         ]}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}
       >
         {children}
