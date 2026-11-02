@@ -6,6 +6,7 @@ import {
   areaPath,
   barsOf,
   chooseLabelIndices,
+  estimateLabelWidth,
   estimateTextWidth,
   linePath,
   nearestIndex,
@@ -311,6 +312,27 @@ describe("x labels", () => {
         expect(bStart - aEnd).toBeGreaterThanOrEqual(6);
       }
     }
+  });
+
+  it("measures letters wider than digits, so day names are not guessed too narrow", () => {
+    // Noto Sans at 12 dp draws "Mon" about 25 dp wide; the digit width alone
+    // said 20 and let "Today" and "Mon" touch on a 390 dp phone.
+    expect(estimateLabelWidth("Mon", 12)).toBeGreaterThanOrEqual(24);
+    expect(estimateLabelWidth("Today", 12)).toBeGreaterThanOrEqual(36);
+    // A clock label keeps the digit width: 4 digits and a colon.
+    expect(estimateLabelWidth("03:00", 12)).toBeCloseTo(5 * 0.55 * 12, 5);
+    expect(estimateLabelWidth("", 12)).toBe(0);
+  });
+
+  it("thins a week of day names whose neighbours would draw into each other", () => {
+    // The 7-day chart on a 390 dp phone: 7 points ~47 dp apart, 12 dp type.
+    const days = ["Today", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const x7 = days.map((_, i) => xAt(i, 7, 68, 282, false));
+    const w7 = days.map((d) => estimateLabelWidth(d, 12));
+    const shown = chooseLabelIndices(x7, w7, 8, 4);
+    // "Today" (first, start-anchored) and "Mon" would touch: not both drawn.
+    expect(shown.includes(0) && shown.includes(1)).toBe(false);
+    expect(shown[0]).toBe(0);
   });
 
   it("is empty for no points and the first label alone when nothing fits", () => {

@@ -12,11 +12,11 @@ import {
   type Domain,
   type Point,
   type Reading,
-  X_LABEL_EM,
   areaPath,
   barsOf,
   anchorOf,
   chooseLabelIndices,
+  estimateLabelWidth,
   estimateTextWidth,
   linePath,
   niceTicks,
@@ -171,7 +171,7 @@ export function buildChartModel(input: ChartInput): ChartModel {
   const texts = labels.map((l, i) =>
     input.xTickFormat ? input.xTickFormat(l, i) : l,
   );
-  const widths = texts.map((t) => estimateTextWidth(t, fontSize, X_LABEL_EM));
+  const widths = texts.map((t) => estimateLabelWidth(t, fontSize));
   const xLabels: XLabel[] = chooseLabelIndices(
     xs,
     widths,

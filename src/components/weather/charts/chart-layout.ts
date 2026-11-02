@@ -348,6 +348,26 @@ export function chooseLabelIndices(
 export const Y_LABEL_EM = 0.68;
 export const X_LABEL_EM = 0.55;
 
+/**
+ * What one LETTER of an x label is, in em. Letters run wider than the digits
+ * and colons of a clock label (Noto Sans: "Mon" is 2.1 em, "03:00" is 2.5 em
+ * for five characters), so a week of day names measured at the digit width came
+ * out narrower than it draws and neighbouring names touched ("TodayMon").
+ */
+export const X_LETTER_EM = 0.68;
+
+/**
+ * A rough width of an x label in dp: letters at `X_LETTER_EM`, everything else
+ * (digits, colons, the degree sign) at `X_LABEL_EM`. It leans wide on purpose: a
+ * label that draws a little wider than guessed must still not touch its
+ * neighbour.
+ */
+export function estimateLabelWidth(text: string, fontSize: number): number {
+  let em = 0;
+  for (const ch of text) em += /\p{L}/u.test(ch) ? X_LETTER_EM : X_LABEL_EM;
+  return em * fontSize;
+}
+
 /** A rough width of a label in dp, from its length and the type size. */
 export function estimateTextWidth(
   text: string,
