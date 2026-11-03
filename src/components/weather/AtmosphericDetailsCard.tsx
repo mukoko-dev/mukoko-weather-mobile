@@ -1,0 +1,94 @@
+/**
+ * The four 24-hour atmospheric charts on /atmosphere (the web's
+ * `AtmosphericDetails`): humidity with cloud cover, wind with gusts, pressure,
+ * and UV. Each chart is its own section with a heading, and a crash or an
+ * empty series in one never takes the others down (each chart draws its own
+ * empty message).
+ */
+
+import { useMemo } from "react";
+import { StyleSheet, View } from "react-native";
+
+import { usePageColors } from "@/hooks/usePageColors";
+import { prepareAtmosphericData } from "@/shared/chart-data";
+import { type HourlyWeather } from "@/shared/weather";
+import { SPACE } from "@/theme/mzizi";
+
+import { HumidityCloudChart } from "./charts/HumidityCloudChart";
+import { PressureChart } from "./charts/PressureChart";
+import { UVIndexChart } from "./charts/UVIndexChart";
+import { WindSpeedChart } from "./charts/WindSpeedChart";
+import { ChartErrorBoundary } from "./ChartErrorBoundary";
+import { useCardBorder } from "./card-border";
+import { PageCard } from "./PageCard";
+import { WxText } from "./WxText";
+
+export type AtmosphericDetailsCardProps = {
+  hourly: HourlyWeather;
+  utcOffsetSeconds?: number;
+  now?: Date;
+  /** A chart that crashed draws again when this changes (a new answer). */
+  resetKey?: string;
+};
+
+export function AtmosphericDetailsCard({
+  hourly,
+  utcOffsetSeconds,
+  now,
+  resetKey,
+}: AtmosphericDetailsCardProps) {
+  const { colors } = usePageColors();
+  const border = useCardBorder("quiet");
+  // The series are rebuilt only for a new answer, offset or instant, so the
+  // charts' own memos (axes, labels, model) hold between the page's re-renders.
+  const data = useMemo(
+    () => prepareAtmosphericData(hourly, utcOffsetSeconds, now),
+    [hourly, utcOffsetSeconds, now],
+  );
+  const sections = [
+    {
+      title: "Humidity & Cloud Cover",
+      chart: <HumidityCloudChart data={data} />,
+    },
+    { title: "Wind Speed & Gusts", chart: <WindSpeedChart data={data} /> },
+    { title: "Barometric Pressure", chart: <PressureChart data={data} /> },
+    { title: "UV Index", chart: <UVIndexChart data={data} /> },
+  ];
+  return (
+    <PageCard
+      title="Atmospheric Details"
+      borderColor={border}
+      testID="atmospheric-details-card"
+    >
+      <WxText type="body" color={colors.textTertiary}>
+        24-hour hourly trends
+      </WxText>
+      <View style={styles.sections}>
+        {sections.map((s) => (
+          <View key={s.title} style={styles.section}>
+            <WxText
+              type="body"
+              weight={600}
+              color={colors.textSecondary}
+              accessibilityRole="header"
+            >
+              {s.title}
+            </WxText>
+            <ChartErrorBoundary
+              name={s.title.toLowerCase()}
+              color={colors.textTertiary}
+              resetKey={resetKey}
+            >
+              {s.chart}
+            </ChartErrorBoundary>
+          </View>
+        ))}
+      </View>
+    </PageCard>
+  );
+}
+
+const styles = StyleSheet.create({
+  sections: { gap: SPACE.card },
+  section: { gap: SPACE.snug },
+});

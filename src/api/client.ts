@@ -1,10 +1,21 @@
 /**
- * Thin fetch wrapper around the mukoko-weather Python API (`/api/py/*`).
+ * Transport for the Mukoko weather API. Every network call the app makes goes
+ * through this module, and it only ever reaches the Cloudflare backend.
  *
- * Base URL is read from EXPO_PUBLIC_API_URL at build time. Defaults to
- * production (https://weather.mukoko.com). For local dev set
- *   EXPO_PUBLIC_API_URL=http://<your-lan-ip>:3000
- * in your .env so the simulator/device can reach a Next.js dev server.
+ * Today that is the public weather Worker (`mukoko-dev/mukoko-weather`,
+ * `workers/public-api`). The Mukoko consumer API (`mukoko-dev/mukoko-api`,
+ * `api.mukoko.com`) will take over; it has no DNS yet. Moving is a change to
+ * `DEFAULT_API_BASE_URL` and the `ROUTES` table below, nothing else.
+ *
+ * The app never talks to a database. Data platforms sit behind the API.
+ * `scripts/check-cloudflare-only.mjs` (run by `npm test`) fails the build if a
+ * source file, config or doc names a retired host, a database URL, or a
+ * weather provider.
+ *
+ * `EXPO_PUBLIC_API_URL` overrides the default, but only with a host on
+ * `ALLOWED_API_HOSTS` (or, in a development build, a machine on your own
+ * network running `wrangler dev`). Anything else is ignored. The value is
+ * inlined at build time, so it must never hold a secret.
  *
  * The mobile session token (issued by WorkOS sign-in) is read lazily so we
  * don't create a SecureStore dependency cycle when this module is imported
@@ -13,10 +24,120 @@
 
 import { Platform } from "react-native";
 
-const DEFAULT_BASE_URL = "https://weather.mukoko.com";
+/** The public weather Worker: Cloudflare, behind `weather-api.mukoko.com`. */
+export const DEFAULT_API_BASE_URL = "https://weather-api.mukoko.com";
 
-export const API_BASE_URL: string =
-  process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, "") ?? DEFAULT_BASE_URL;
+/**
+ * Hosts the app may call. `api.mukoko.com` is the Mukoko consumer API, which
+ * reaches the weather Worker over a service binding (no DNS yet).
+ */
+export const ALLOWED_API_HOSTS: readonly string[] = [
+  "weather-api.mukoko.com",
+  "api.mukoko.com",
+];
+
+/**
+ * Every route the app calls, in one place. These are the weather Worker's
+ * paths; the consumer API serves the same data under `/v1/weather/*`, so the
+ * move is an edit to this table.
+ */
+export const ROUTES = {
+  /** GET ?lat&lon -> full weather (current, hourly, daily). */
+  weather: "/v1/weather",
+  /** GET ?lat&lon[&autoCreate=true] -> the place for a coordinate. */
+  geo: "/v1/geo",
+  /** GET ?q&limit -> places matching a name. */
+  search: "/v1/search",
+  /** GET ?slug -> one place. */
+  locations: "/v1/locations",
+  /** GET [?id|category|q|mode=categories] -> the activities (or categories). */
+  activities: "/v1/activities",
+  /** GET [?key] -> the suitability rules the activity ratings are read from. */
+  suitability: "/v1/suitability",
+  /** GET ?location&hours -> recent community reports; POST -> file one. Not live yet. */
+  reports: "/v1/reports",
+  /** POST {reportId} -> upvote a report. Not live yet. */
+  reportsUpvote: "/v1/reports/upvote",
+  /**
+   * POST {location} -> {insight}: the AI weather summary. Not verified live,
+   * and the web serves it only as an internal route: see `src/api/ai.ts`
+   * before turning sign-in on.
+   */
+  aiSummary: "/v1/ai/summary",
+  /** POST {message, locationName, ...} -> {response}: the inline follow-up. Same caveat. */
+  aiFollowup: "/v1/ai/followup",
+  /** POST {deviceId, preferences?} -> a device preference profile. */
+  devices: "/v1/devices",
+  /** POST {message, history, activities?} -> Shamwari's reply. */
+  chat: "/v1/ai/chat",
+  /** GET ?lat&lon -> the US AQI, its pollutants and the WHO guidelines. */
+  airQuality: "/v1/air-quality",
+  /** GET ?lat&lon -> the haze panel (smoke, dust, smog, seasons). */
+  haze: "/v1/haze",
+  /** GET ?lat&lon&date -> today's climate-normal high and low. */
+  normals: "/v1/normals",
+  /** GET ?lat&lon -> the twelve monthly climate normals. */
+  normalsMonthly: "/v1/normals/monthly",
+  /** GET ?location&days -> the days recorded for a place. */
+  history: "/v1/history",
+  /** GET ?lat&lon[&location&country&crops] -> farm windows, rain, soil, water balance. */
+  agriculture: "/v1/agriculture",
+  /** GET -> the El Nino / La Nina phase (NOAA CPC ONI). */
+  enso: "/v1/enso",
+  /** GET ?slug|lat&lon[&country] -> a place's season, climate, crop calendar and soil. */
+  profile: "/v1/locations/profile",
+  /**
+   * POST {schema, installId, batchId, sentAt, client, events} -> 202: the
+   * on-device event queue (src/analytics). Proposed, not live yet:
+   * mukoko-dev/mukoko-weather#438. Sent without the sign-in token.
+   */
+  events: "/v1/events",
+  /** POST {installId} -> 204: delete what the API holds for an install id. Proposed. */
+  eventsForget: "/v1/events/forget",
+} as const;
+
+/** `http(s)://host[:port]` with nothing after it, as the base URL must be. */
+const ORIGIN = /^(https?):\/\/([a-z0-9.-]+)(?::(\d{1,5}))?\/*$/i;
+
+/** A machine on the developer's own network (a local `wrangler dev`). */
+function isLocalHost(host: string): boolean {
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host.endsWith(".local") ||
+    /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host) ||
+    /^192\.168\.\d{1,3}\.\d{1,3}$/.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host)
+  );
+}
+
+/**
+ * The base URL to call: `raw` (the `EXPO_PUBLIC_API_URL` value) when it names
+ * an allowed host over HTTPS, or a machine on the developer's network in a
+ * development build; otherwise the default. Never throws.
+ */
+export function resolveApiBaseUrl(
+  raw: string | undefined,
+  dev: boolean,
+): string {
+  const value = raw?.trim();
+  if (!value) return DEFAULT_API_BASE_URL;
+  const match = ORIGIN.exec(value);
+  if (!match) return DEFAULT_API_BASE_URL;
+  const scheme = match[1].toLowerCase();
+  const host = match[2].toLowerCase();
+  const origin = `${scheme}://${host}${match[3] ? `:${match[3]}` : ""}`;
+  if (scheme === "https" && !match[3] && ALLOWED_API_HOSTS.includes(host)) {
+    return origin;
+  }
+  if (dev && isLocalHost(host)) return origin;
+  return DEFAULT_API_BASE_URL;
+}
+
+export const API_BASE_URL: string = resolveApiBaseUrl(
+  process.env.EXPO_PUBLIC_API_URL,
+  __DEV__,
+);
 
 export type FetchOptions = Omit<RequestInit, "body"> & {
   /** Parsed JSON body. Will be JSON-stringified + Content-Type set. */
@@ -27,7 +148,49 @@ export type FetchOptions = Omit<RequestInit, "body"> & {
   token?: string | null;
   /** AbortController signal. */
   signal?: AbortSignal;
+  /**
+   * Longest wait for the whole answer (headers and body), in ms. A stalled
+   * connection (2G, a captive portal) otherwise waits as long as the OS lets
+   * it, which on iOS is a minute or more. Default `REQUEST_TIMEOUT_MS`.
+   */
+  timeoutMs?: number;
 };
+
+/** How long any one request may take before it is given up as a timeout. */
+export const REQUEST_TIMEOUT_MS = 15_000;
+
+/** What a failed answer says, whichever error format the API used. */
+export type ApiProblem = {
+  /** A stable machine code, for example `rate_limited`. */
+  code?: string;
+  /** Text written for the caller (not always fit for a screen). */
+  message?: string;
+};
+
+function text(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+/**
+ * Read an error body. Three formats exist and all are understood:
+ *   - the weather Worker: `{ error: "code", error_description: "text" }`
+ *   - the consumer API:   `{ error: { code, message }, requestId }`
+ *   - RFC 9457 problems:  `{ type, title, status, detail }`
+ * Anything else yields an empty problem.
+ */
+export function parseProblem(body: unknown): ApiProblem {
+  if (!body || typeof body !== "object") return {};
+  const b = body as Record<string, unknown>;
+  const error = b.error;
+  if (typeof error === "string") {
+    return { code: text(error), message: text(b.error_description) };
+  }
+  if (error && typeof error === "object") {
+    const e = error as Record<string, unknown>;
+    return { code: text(e.code), message: text(e.message) };
+  }
+  return { code: text(b.code), message: text(b.detail) ?? text(b.title) };
+}
 
 export class ApiError extends Error {
   constructor(
@@ -38,6 +201,30 @@ export class ApiError extends Error {
   ) {
     super(message);
     this.name = "ApiError";
+  }
+}
+
+/**
+ * The request never got an answer: the network is down or refused it
+ * (`offline`), or nothing came back within the timeout (`timeout`). Its
+ * message is for logs, never for a screen; `src/api/failure.ts` turns the kind
+ * into words.
+ */
+export class NetworkError extends Error {
+  constructor(
+    readonly kind: "offline" | "timeout",
+    readonly url: string,
+    /** What `fetch` threw, when it threw (its message is kept for logs). */
+    readonly cause?: unknown,
+  ) {
+    super(
+      cause instanceof Error && cause.message
+        ? cause.message
+        : kind === "timeout"
+          ? "The request timed out."
+          : "The request could not reach the server.",
+    );
+    this.name = "NetworkError";
   }
 }
 
@@ -65,11 +252,27 @@ export function buildUrl(path: string, query?: FetchOptions["query"]): string {
   return url.toString();
 }
 
-export async function apiFetch<T = unknown>(
+export type ApiResult<T> = {
+  data: T;
+  /** Response headers, for the few that describe the data (`X-Fetched-At`). */
+  headers: Headers;
+  status: number;
+};
+
+/** Like `apiFetch`, but also returns the response headers. */
+export async function apiRequest<T = unknown>(
   path: string,
   opts: FetchOptions = {},
-): Promise<T> {
-  const { json, query, headers, token, ...rest } = opts;
+): Promise<ApiResult<T>> {
+  const {
+    json,
+    query,
+    headers,
+    token,
+    signal: outer,
+    timeoutMs = REQUEST_TIMEOUT_MS,
+    ...rest
+  } = opts;
   const url = buildUrl(path, query);
 
   const finalHeaders: Record<string, string> = {
@@ -90,25 +293,73 @@ export async function apiFetch<T = unknown>(
     body = JSON.stringify(json);
   }
 
-  const response = await fetch(url, {
-    ...rest,
-    headers: finalHeaders,
-    body,
-  });
+  // One controller per request: the caller's signal (leaving the screen, a
+  // newer load) and the timeout both abort it. The timer runs until the body
+  // is read, since a stall can come after the headers too.
+  const controller = new AbortController();
+  const onOuterAbort = () => controller.abort();
+  if (outer?.aborted) controller.abort();
+  else outer?.addEventListener("abort", onOuterAbort);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
 
-  const contentType = response.headers.get("content-type") ?? "";
-  const parsed: unknown = contentType.includes("application/json")
-    ? await response.json().catch(() => undefined)
-    : await response.text().catch(() => undefined);
+  let response: Response;
+  let parsed: unknown;
+  try {
+    response = await fetch(url, {
+      ...rest,
+      headers: finalHeaders,
+      body,
+      signal: controller.signal,
+    });
+    const contentType = response.headers.get("content-type") ?? "";
+    // A body that is not JSON reads as nothing, as before. A body cut off on
+    // the way (the link dropped after the headers) is a network failure, not
+    // an empty answer: it must never replace good data.
+    parsed = contentType.includes("json")
+      ? await response.json().catch((err: unknown) => {
+          if ((err as Error | null)?.name === "SyntaxError") return undefined;
+          throw err;
+        })
+      : await response.text();
+  } catch (err) {
+    if (timedOut) throw new NetworkError("timeout", url);
+    // The caller gave up (their own abort, as before): not a failure.
+    if (outer?.aborted || (err as Error | null)?.name === "AbortError") {
+      throw err;
+    }
+    throw new NetworkError("offline", url, err);
+  } finally {
+    clearTimeout(timer);
+    outer?.removeEventListener("abort", onOuterAbort);
+  }
+  // A body cut off by the timeout reads as nothing; that is not an answer.
+  if (timedOut) throw new NetworkError("timeout", url);
 
   if (!response.ok) {
+    // The server's own sentence when it sent one; never the URL.
+    const problem = parseProblem(parsed);
     throw new ApiError(
-      `Request to ${url} failed: ${response.status}`,
+      problem.message ?? `Request failed (${response.status})`,
       response.status,
       url,
       parsed,
     );
   }
 
-  return parsed as T;
+  return {
+    data: parsed as T,
+    headers: response.headers,
+    status: response.status,
+  };
+}
+
+export async function apiFetch<T = unknown>(
+  path: string,
+  opts: FetchOptions = {},
+): Promise<T> {
+  return (await apiRequest<T>(path, opts)).data;
 }

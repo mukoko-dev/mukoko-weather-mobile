@@ -1,0 +1,26 @@
+{
+  "isNew": true,
+  "nearest": {
+    "country": "ZW",
+    "elevation": 0.0,
+    "lat": -17.8244259,
+    "lon": 31.0341301,
+    "name": "Milton Park",
+    "nominatimAddress": {
+      "city": "Harare",
+      "country": "Zimbabwe",
+      "countryCode": "ZW",
+      "county": "Harare",
+      "displayName": "Herbert Chitepo Avenue, Milton Park, Harare, Zimbabwe",
+      "road": "Herbert Chitepo Avenue",
+      "state": "Harare",
+      "suburb": "Milton Park"
+    },
+    "province": "Harare",
+    "provinceSlug": "harare-zw",
+    "slug": "milton-park--ksy4d5j",
+    "source": "geolocation",
+    "tags": ["city"]
+  },
+  "redirectTo": "/milton-park--ksy4d5j"
+}

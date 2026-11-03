@@ -1,0 +1,337 @@
+/**
+ * A place's detail page, for /location/[slug]/forecast and
+ * /location/[slug]/atmosphere (the web's `/[location]/forecast` and
+ * `/[location]/atmosphere`). One screen component, two bodies:
+ *
+ *   forecast    24-hour chart, the 7-day chart and rows, sunrise and sunset
+ *   atmosphere  the Conditions tiles, then humidity and cloud, wind and gusts,
+ *               pressure and UV over 24 hours
+ *
+ * It sits on the place's own sky, with the same top row as the location page
+ * (a Back control that names where it goes, the trail, Share, Settings), so a
+ * person never loses where they are and there is no native header. Every
+ * state is designed: `DetailSkeleton` while loading, `WeatherError` when the
+ * request fails or the answer has no hours, the page, and pull to refresh.
+ * Each card is in its own `ChartErrorBoundary`, so one crash never takes the
+ * page down.
+ *
+ * Hours are read in the PLACE's time (the forecast's UTC offset), never the
+ * phone's clock.
+ */
+
+import { Stack } from "expo-router";
+import { StyleSheet, View } from "react-native";
+
+import { type WeatherResponse } from "@/api/weather";
+import { useLocationWeather } from "@/hooks/useLocationWeather";
+import { recallPlaceName } from "@/hooks/weather-cache";
+import { useNow } from "@/hooks/useNow";
+import { skyFamily } from "@/shared/hero";
+import { weatherCodeToInfo } from "@/shared/weather";
+import { SPACE } from "@/theme/mzizi";
+import { SKY_FG, SKY_FG_DIM } from "@/theme/sky";
+
+import { AtmosphericDetailsCard } from "./AtmosphericDetailsCard";
+import { answerKey } from "./answer-key";
+import { ChartErrorBoundary } from "./ChartErrorBoundary";
+import { ConditionTiles } from "./ConditionTiles";
+import { DailyCard } from "./DailyCard";
+import { DetailSkeleton } from "./DetailSkeleton";
+import { HourlyForecastCard } from "./HourlyForecastCard";
+import {
+  type LocationSubRoute,
+  SUB_ROUTE_TITLE,
+  locationHref,
+  placeNameFromSlug,
+} from "./location-routes";
+import { SunTimesCard } from "./SunTimesCard";
+import { HeroTopRow } from "./SkyHero";
+import { WeatherScroll } from "./WeatherScroll";
+import { countryLabel } from "@/shared/place-info";
+import { subPageTrail } from "@/shared/place-trail";
+import { goHome } from "./navigation";
+import {
+  BackControl,
+  WeatherError,
+  openSettings,
+  shareWeather,
+} from "./WeatherPage";
+import { WxText } from "./WxText";
+
+/**
+ * "Harare · 1490m": the web's subtitle without the season (that is the place
+ * profile). An elevation of exactly 0 is the API's placeholder for a place it
+ * has not measured (a spot under a GPS fix), not a height, so it is left out
+ * rather than printed as "0m".
+ */
+export function detailSubtitle(
+  location: WeatherResponse["location"],
+): string | undefined {
+  const elevation = location?.elevation;
+  const parts = [
+    location?.province,
+    typeof elevation === "number" &&
+    Number.isFinite(elevation) &&
+    Math.round(elevation) !== 0
+      ? `${Math.round(elevation)}m`
+      : undefined,
+  ].filter((p): p is string => typeof p === "string" && p.length > 0);
+  return parts.length > 0 ? parts.join(" · ") : undefined;
+}
+
+type SectionProps = {
+  name: string;
+  color: string;
+  /** A section that failed draws again when this changes (a new answer). */
+  resetKey?: string;
+  children: React.ReactNode;
+};
+
+function Section({ name, color, resetKey, children }: SectionProps) {
+  return (
+    <ChartErrorBoundary name={name} color={color} resetKey={resetKey}>
+      {children}
+    </ChartErrorBoundary>
+  );
+}
+
+export type DetailPageProps = {
+  weather: WeatherResponse;
+  slug: string;
+  sub: LocationSubRoute;
+  name: string;
+  onRefresh?: () => void | Promise<void>;
+  refreshing?: boolean;
+  /** A refresh that failed: the page stays and says so. */
+  refreshError?: string;
+};
+
+export function DetailPage({
+  weather,
+  slug,
+  sub,
+  name,
+  onRefresh,
+  refreshing,
+  refreshError,
+}: DetailPageProps) {
+  const now = useNow();
+  const { current, forecast } = weather;
+  const code = current.weatherCode ?? 0;
+  const family = skyFamily(code, current.isDay ?? true);
+  const info = weatherCodeToInfo(code);
+  const title = SUB_ROUTE_TITLE[sub];
+  const subtitle = detailSubtitle(weather.location);
+  const offset = weather.utcOffsetSeconds;
+  // A new answer (refresh) gives a section that crashed on the last one another go.
+  const resetKey = answerKey(weather);
+
+  return (
+    <WeatherScroll
+      family={family}
+      onRefresh={onRefresh}
+      refreshing={refreshing}
+    >
+      <HeroTopRow
+        name={name}
+        // Home / Country / Province / Place / Forecast: the place is a step
+        // on the way here, and the detail page is the current one.
+        trail={subPageTrail(
+          {
+            name,
+            countryName: countryLabel(weather.location?.country),
+            province: weather.location?.province,
+          },
+          title,
+        )}
+        onHome={goHome}
+        leading={
+          <BackControl
+            label={`Back to ${name}`}
+            fallback={locationHref(slug)}
+          />
+        }
+        onShare={() => shareWeather(name, current.temperature, info.label)}
+        onSettings={openSettings}
+      />
+      <View style={styles.page}>
+        <View style={styles.title} testID="detail-title">
+          <WxText
+            type="h3"
+            weight={700}
+            family="serif"
+            color={SKY_FG}
+            accessibilityRole="header"
+          >
+            {`${name} ${title}`}
+          </WxText>
+          {subtitle ? (
+            <WxText type="body" color={SKY_FG_DIM}>
+              {subtitle}
+            </WxText>
+          ) : null}
+          {refreshError ? (
+            <WxText
+              type="body"
+              color={SKY_FG_DIM}
+              accessibilityRole="alert"
+              testID="detail-refresh-error"
+            >
+              {`Could not refresh: ${refreshError}`}
+            </WxText>
+          ) : null}
+        </View>
+        {forecast && sub === "forecast" ? (
+          <>
+            <Section
+              name="hourly forecast"
+              color={SKY_FG_DIM}
+              resetKey={resetKey}
+            >
+              <HourlyForecastCard
+                hourly={forecast.hourly}
+                utcOffsetSeconds={offset}
+                now={now}
+              />
+            </Section>
+            <Section
+              name="daily forecast"
+              color={SKY_FG_DIM}
+              resetKey={resetKey}
+            >
+              <DailyCard forecast={forecast} />
+            </Section>
+            <Section name="sun times" color={SKY_FG_DIM} resetKey={resetKey}>
+              <SunTimesCard
+                daily={forecast.daily}
+                utcOffsetSeconds={offset}
+                now={now}
+              />
+            </Section>
+          </>
+        ) : null}
+        {forecast && sub === "atmosphere" ? (
+          <>
+            <Section
+              name="atmospheric conditions"
+              color={SKY_FG_DIM}
+              resetKey={resetKey}
+            >
+              <ConditionTiles forecast={forecast} now={now} />
+            </Section>
+            <Section
+              name="atmospheric details"
+              color={SKY_FG_DIM}
+              resetKey={resetKey}
+            >
+              <AtmosphericDetailsCard
+                resetKey={resetKey}
+                hourly={forecast.hourly}
+                utcOffsetSeconds={offset}
+                now={now}
+              />
+            </Section>
+          </>
+        ) : null}
+      </View>
+    </WeatherScroll>
+  );
+}
+
+export type LocationDetailScreenProps = {
+  /** The route's `slug` param. */
+  slug: string | undefined;
+  sub: LocationSubRoute;
+};
+
+export function LocationDetailScreen({ slug, sub }: LocationDetailScreenProps) {
+  const { state, refreshError, refreshing, onRefresh, onRetry } =
+    useLocationWeather(slug);
+  // The answer's own name, else what the linking page called the place (a GPS
+  // place's answer has none), else words from the slug.
+  const fallbackName =
+    (slug ? recallPlaceName(slug) : undefined) ?? placeNameFromSlug(slug);
+  const name =
+    state.kind === "ready"
+      ? (state.weather.location?.name ?? fallbackName)
+      : fallbackName;
+  const back = (
+    <BackControl
+      label={`Back to ${name}`}
+      fallback={slug ? locationHref(slug) : "/"}
+    />
+  );
+  const screen = (
+    <Stack.Screen
+      options={{ headerShown: false, title: `${name} ${SUB_ROUTE_TITLE[sub]}` }}
+    />
+  );
+
+  if (!slug) {
+    return (
+      <>
+        {screen}
+        <WeatherError
+          message="No place was chosen."
+          onRetry={onRetry}
+          leading={back}
+        />
+      </>
+    );
+  }
+  if (state.kind === "loading") {
+    return (
+      <>
+        {screen}
+        <DetailSkeleton
+          leading={back}
+          what={SUB_ROUTE_TITLE[sub].toLowerCase()}
+          cards={sub === "forecast" ? 3 : 2}
+        />
+      </>
+    );
+  }
+  if (state.kind === "error") {
+    return (
+      <>
+        {screen}
+        <WeatherError
+          message={state.message}
+          onRetry={onRetry}
+          leading={back}
+        />
+      </>
+    );
+  }
+  if (!state.weather.forecast) {
+    return (
+      <>
+        {screen}
+        <WeatherError
+          message="The forecast for this place has no hours in it right now."
+          onRetry={onRetry}
+          leading={back}
+        />
+      </>
+    );
+  }
+  return (
+    <>
+      {screen}
+      <DetailPage
+        weather={state.weather}
+        slug={slug}
+        sub={sub}
+        name={name}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+        refreshError={refreshError}
+      />
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  page: { gap: SPACE.section },
+  title: { gap: SPACE.hair, paddingTop: SPACE.heroTop },
+});
