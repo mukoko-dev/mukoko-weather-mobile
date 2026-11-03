@@ -96,15 +96,15 @@ For a physical device, scan the QR code with the Expo Go app
 
 ## See it in Expo Go, without a computer
 
-Every push to `staging` publishes the app's JavaScript to EAS Update
-(`.eas/workflows/publish-preview-update.yml`, branch `staging`). To open the
-latest one on a phone:
+Every push to `main` (production) and to `staging` (pre-production) publishes the
+app's JavaScript to EAS Update (`.eas/workflows/publish-preview-update.yml`; the
+EAS branch has the git branch's name). To open the latest one on a phone:
 
 1. Install or update Expo Go to the SDK 58 version (`https://expo.dev/go`) and
    sign in to the Expo account that belongs to the `nyuchi-web-services` team.
 2. Open the project's Updates page on expo.dev
    (`https://expo.dev/accounts/nyuchi-web-services/projects/mukoko-weather/updates`),
-   pick the `staging` branch and the newest update, and scan the QR code or use
+   pick the `main` or `staging` branch and the newest update, and scan the QR code or use
    "Open in Expo Go".
 
 Expo Go carries only the native modules of its SDK, which is enough for this
