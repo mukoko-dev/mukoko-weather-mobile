@@ -1,4 +1,11 @@
-/* Open-Meteo weather API client */
+/* Weather types and pure helpers. No network: the app reads weather only through src/api. */
+
+import {
+  currentHourIndex,
+  currentWallHourMs,
+  resolveOffsetSeconds,
+  wallClockMs,
+} from "./location-time";
 
 export interface CurrentWeather {
   temperature_2m: number;
@@ -31,6 +38,8 @@ export interface HourlyWeather {
   wind_gusts_10m: number[];
   uv_index: number[];
   is_day: number[];
+  /** Present when the model supplies it (the web's type has it). */
+  dew_point_2m?: (number | null)[];
 }
 
 export interface DailyWeather {
@@ -56,6 +65,15 @@ export interface WeatherData {
   current_units: Record<string, string>;
   /** Activity-specific insights — only available when Tomorrow.io is the provider */
   insights?: WeatherInsights;
+  /**
+   * The place's UTC offset in seconds. Every "current hour" and hour label is
+   * read in the PLACE's time with this, never the phone's clock.
+   */
+  utc_offset_seconds?: number;
+  /** IANA time zone of the place, for example `Africa/Harare`. */
+  timezone?: string;
+  /** True when the offset was estimated from the longitude. */
+  utc_offset_estimated?: boolean;
 }
 
 /** Extended weather data from Tomorrow.io for activity-aware insight cards */
@@ -98,29 +116,11 @@ export function synthesizeOpenMeteoInsights(
   const currentUv = data.current.uv_index;
   const weatherCode = data.current.weather_code;
 
-  // WMO weather codes 95–99 indicate thunderstorm activity.
-  // Graduate probability by severity: 95 = moderate, 96/97 = with hail, 99 = heavy hail.
-  let thunderstormProbability = 0;
-  if (weatherCode >= 99) thunderstormProbability = 95;
-  else if (weatherCode >= 96) thunderstormProbability = 85;
-  else if (weatherCode >= 95) thunderstormProbability = 70;
-
-  // Derive precipitationType from WMO weather codes:
-  //   0=none, 1=rain, 2=snow, 3=freezing rain, 4=ice pellets
-  let precipitationType = 0;
-  if (
-    (weatherCode >= 71 && weatherCode <= 77) ||
-    (weatherCode >= 85 && weatherCode <= 86)
-  )
-    precipitationType = 2; // Snow + snow showers
-  else if (
-    weatherCode === 66 ||
-    weatherCode === 67 ||
-    weatherCode === 56 ||
-    weatherCode === 57
-  )
-    precipitationType = 3; // Freezing rain + freezing drizzle
-  else if (weatherCode >= 51) precipitationType = 1; // Rain/drizzle/thunderstorm
+  // The thunderstorm probability and precipitation type come from the weather
+  // code through ONE mapping (`wmoToInsightHazards`), shared with the per-hour
+  // insights of the activity lane, so the hero and the lane cannot disagree.
+  const { thunderstormProbability, precipitationType } =
+    wmoToInsightHazards(weatherCode);
 
   return {
     windSpeed: data.current.wind_speed_10m,
@@ -142,87 +142,43 @@ export interface FrostAlert {
   message: string;
 }
 
-const CURRENT_PARAMS = [
-  "temperature_2m",
-  "relative_humidity_2m",
-  "apparent_temperature",
-  "precipitation",
-  "weather_code",
-  "cloud_cover",
-  "wind_speed_10m",
-  "wind_direction_10m",
-  "wind_gusts_10m",
-  "uv_index",
-  "surface_pressure",
-  "is_day",
-].join(",");
-
-const HOURLY_PARAMS = [
-  "temperature_2m",
-  "apparent_temperature",
-  "relative_humidity_2m",
-  "precipitation_probability",
-  "precipitation",
-  "weather_code",
-  "visibility",
-  "cloud_cover",
-  "surface_pressure",
-  "wind_speed_10m",
-  "wind_direction_10m",
-  "wind_gusts_10m",
-  "uv_index",
-  "is_day",
-].join(",");
-
-const DAILY_PARAMS = [
-  "weather_code",
-  "temperature_2m_max",
-  "temperature_2m_min",
-  "apparent_temperature_max",
-  "apparent_temperature_min",
-  "sunrise",
-  "sunset",
-  "uv_index_max",
-  "precipitation_sum",
-  "precipitation_probability_max",
-  "wind_speed_10m_max",
-  "wind_gusts_10m_max",
-].join(",");
-
-export async function fetchWeather(
-  lat: number,
-  lon: number,
-): Promise<WeatherData> {
-  const params = new URLSearchParams({
-    latitude: lat.toString(),
-    longitude: lon.toString(),
-    current: CURRENT_PARAMS,
-    hourly: HOURLY_PARAMS,
-    daily: DAILY_PARAMS,
-    timezone: "auto",
-    forecast_days: "7",
-  });
-
-  const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, {
-    // Note: Next.js `next: { revalidate: 900 }` cache hint stripped — RN
-    // runtime doesn't honour it. Mobile relies on server-side caching via
-    // the mukoko-weather API gateway.
-    signal: AbortSignal.timeout(10_000), // 10s timeout
-  });
-
-  if (!res.ok) {
-    throw new Error(`Weather API error: ${res.status}`);
-  }
-
-  return res.json();
+/**
+ * The clock hour (0-23) of a forecast time in the PLACE's time zone, never the
+ * phone's. Open-Meteo sends naive wall-clock strings already in the place's
+ * zone, so their hour is read straight off the string. A zoned instant (`Z` or
+ * `+02:00`) is shifted by the place's UTC offset, and read as UTC when the
+ * offset is unknown. Returns null for a time it cannot read.
+ */
+export function placeHourOf(
+  time: string,
+  offsetSeconds?: number | null,
+): number | null {
+  const m = /^\d{4}-\d{2}-\d{2}T(\d{2})/.exec(time);
+  if (!m) return null;
+  if (!/(Z|[+-]\d{2}:?\d{2})$/.test(time)) return Number(m[1]);
+  const ms = Date.parse(time);
+  if (Number.isNaN(ms)) return null;
+  const offset = Number.isFinite(offsetSeconds) ? (offsetSeconds as number) : 0;
+  return new Date(ms + offset * 1000).getUTCHours();
 }
 
-export function checkFrostRisk(hourly: HourlyWeather): FrostAlert | null {
+export function checkFrostRisk(
+  hourly: HourlyWeather,
+  offsetSeconds?: number | null,
+): FrostAlert | null {
   const frostHours = hourly.temperature_2m
     .map((temp, i) => ({ temp, time: hourly.time[i] }))
     .filter((h) => {
-      const hour = new Date(h.time).getHours();
-      return (hour >= 22 || hour <= 8) && h.temp <= 3;
+      const hour = placeHourOf(h.time, offsetSeconds);
+      // A missing reading is not a frost hour: in JS `null <= 3` is true, so
+      // an hour the model left blank would raise "0°C expected" in a warm place.
+      return (
+        hour !== null &&
+        (hour >= 22 || hour <= 8) &&
+        typeof h.temp === "number" &&
+        Number.isFinite(h.temp) &&
+        h.temp <= 3
+      );
     });
 
   if (frostHours.length > 0) {
@@ -239,6 +195,35 @@ export function checkFrostRisk(hourly: HourlyWeather): FrostAlert | null {
     };
   }
   return null;
+}
+
+/**
+ * The frost banner's question: frost in the coming night, not anywhere in the
+ * series. The Worker's hourly series starts at the place's midnight and runs
+ * for days, so this morning's or Friday night's cold hour would otherwise
+ * raise "Frost risk tonight". Only the next `hours` from the place's current
+ * hour are read.
+ */
+export function checkFrostRiskAhead(
+  hourly: HourlyWeather,
+  offsetSeconds: number | null | undefined,
+  now: Date = new Date(),
+  hours = 24,
+): FrostAlert | null {
+  const offset = resolveOffsetSeconds(offsetSeconds, now);
+  const start = currentHourIndex(hourly.time, offset, now);
+  // A stale series (every hour already past) has no coming night to warn of.
+  const first = wallClockMs(hourly.time[start], offset);
+  if (first === null || first < currentWallHourMs(offset, now)) return null;
+  const end = start + hours;
+  return checkFrostRisk(
+    {
+      ...hourly,
+      time: hourly.time.slice(start, end),
+      temperature_2m: hourly.temperature_2m.slice(start, end),
+    },
+    offsetSeconds,
+  );
 }
 
 /** WMO Weather interpretation codes → label & icon */
@@ -547,4 +532,34 @@ export function createFallbackWeather(
       cloud_cover: "%",
     },
   };
+}
+
+/**
+ * Map a WMO weather code to the two hazard insights the suitability rules read,
+ * as the web's `wmoToInsightHazards` (mukoko-weather `src/lib/weather.ts`):
+ *
+ * - Thunderstorm: 95-99 graduated by severity (95 = 70, 96/97 = 85, 99 = 95).
+ * - precipitationType: 0=none, 1=rain, 2=snow, 3=freezing rain/drizzle,
+ *   4=ice pellets.
+ *
+ * Used for the per-hour insights of the activity lane and trend line, which
+ * only have the hour's weather code to go on.
+ */
+export function wmoToInsightHazards(code: number): {
+  thunderstormProbability: number;
+  precipitationType: number;
+} {
+  let thunderstormProbability = 0;
+  if (code >= 99) thunderstormProbability = 95;
+  else if (code >= 96) thunderstormProbability = 85;
+  else if (code >= 95) thunderstormProbability = 70;
+
+  let precipitationType = 0;
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86))
+    precipitationType = 2; // Snow + snow showers
+  else if (code === 66 || code === 67 || code === 56 || code === 57)
+    precipitationType = 3; // Freezing rain + freezing drizzle
+  else if (code >= 51) precipitationType = 1; // Rain/drizzle/thunderstorm
+
+  return { thunderstormProbability, precipitationType };
 }

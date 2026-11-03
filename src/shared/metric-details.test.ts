@@ -1,0 +1,287 @@
+/**
+ * Ported from mukoko-weather `src/lib/metric-details.test.ts` (same vectors). The web's last block reads its
+ * components' source; the mobile equivalents are in src/__tests__.
+ */
+
+import {
+  METRIC_CHART,
+  METRIC_KINDS,
+  METRIC_TITLES,
+  isMetricKind,
+  metricDetail,
+  metricSeries,
+  moonriseLabel,
+  uvForecastDays,
+} from "./metric-details";
+import { temperatureAverageInsight } from "./metric-insights";
+import type { WeatherData } from "./weather";
+
+const N = 48;
+const fill = <T>(v: T): T[] => Array.from({ length: N }, () => v);
+const times = Array.from({ length: N }, (_, i) => {
+  const day = 8 + Math.floor(i / 24);
+  return `2026-10-${String(day).padStart(2, "0")}T${String(i % 24).padStart(2, "0")}:00`;
+});
+const days = ["2026-10-08", "2026-10-09", "2026-10-10"];
+const f7 = <T>(v: T): T[] => Array.from({ length: 3 }, () => v);
+
+function weather(): WeatherData {
+  return {
+    current: {
+      temperature_2m: 25,
+      relative_humidity_2m: 60,
+      apparent_temperature: 28,
+      precipitation: 0,
+      weather_code: 1,
+      cloud_cover: 20,
+      wind_speed_10m: 12,
+      wind_direction_10m: 90,
+      wind_gusts_10m: 20,
+      uv_index: 6,
+      surface_pressure: 1012,
+      is_day: 1,
+    },
+    hourly: {
+      time: times,
+      temperature_2m: fill(25),
+      apparent_temperature: fill(28),
+      relative_humidity_2m: fill(60),
+      precipitation_probability: fill(10),
+      precipitation: fill(0.25),
+      weather_code: fill(1),
+      visibility: fill(12000),
+      cloud_cover: fill(20),
+      surface_pressure: fill(1012.4),
+      wind_speed_10m: fill(12),
+      wind_direction_10m: fill(90),
+      wind_gusts_10m: fill(20),
+      uv_index: fill(6),
+      is_day: fill(1),
+    },
+    daily: {
+      time: days,
+      weather_code: f7(1),
+      temperature_2m_max: f7(30),
+      temperature_2m_min: f7(18),
+      apparent_temperature_max: f7(32),
+      apparent_temperature_min: f7(17),
+      sunrise: days.map((d) => `${d}T05:20`),
+      sunset: days.map((d) => `${d}T17:45`),
+      uv_index_max: f7(10),
+      precipitation_sum: f7(0),
+      precipitation_probability_max: f7(0),
+      wind_speed_10m_max: f7(15),
+      wind_gusts_10m_max: f7(30),
+    },
+    current_units: {},
+    utc_offset_seconds: 0,
+  } as WeatherData;
+}
+
+// 14:00 local (offset 0), the same wall-clock hour as hourly index 14.
+const NOW = new Date("2026-10-08T14:00:00Z");
+
+describe("metric details", () => {
+  it("knows every tile and titles each one", () => {
+    expect(METRIC_KINDS).toHaveLength(10);
+    for (const k of METRIC_KINDS) {
+      expect(METRIC_TITLES[k]).toBeTruthy();
+      expect(k in METRIC_CHART).toBe(true);
+    }
+    expect(isMetricKind("wind")).toBe(true);
+    expect(isMetricKind("nope")).toBe(false);
+    expect(isMetricKind(null)).toBe(false);
+  });
+
+  it("builds 24 hourly points from the location's current hour", () => {
+    const series = metricSeries(weather().hourly, 0, NOW);
+    expect(series).toHaveLength(24);
+    expect(series[0].label).toBe("Now");
+    expect(series[1].label).toBe("15:00");
+  });
+
+  it("converts visibility metres to km and rounds pressure", () => {
+    const [p] = metricSeries(weather().hourly, 0, NOW);
+    expect(p.visibility).toBe(12);
+    expect(p.pressure).toBe(1012);
+    expect(p.precipitation).toBe(0.3);
+    expect(p.feelsLike).toBe(28);
+  });
+
+  it("keeps a missing reading as null, never a zero or a made-up value", () => {
+    const w = weather();
+    // NOW is 14:00 on the first day: hour index 14 is the series' first point.
+    const hole = (a: unknown[]) => a.map((v, i) => (i === 14 ? null : v));
+    const series = metricSeries(
+      {
+        ...w.hourly,
+        surface_pressure: hole(w.hourly.surface_pressure),
+        visibility: hole(w.hourly.visibility),
+        uv_index: hole(w.hourly.uv_index),
+        relative_humidity_2m: hole(w.hourly.relative_humidity_2m),
+        wind_speed_10m: hole(w.hourly.wind_speed_10m),
+        temperature_2m: hole(w.hourly.temperature_2m),
+        apparent_temperature: hole(w.hourly.apparent_temperature),
+      } as unknown as typeof w.hourly,
+      0,
+      NOW,
+    );
+    const [first, second] = series;
+    expect(first.pressure).toBeNull();
+    expect(first.visibility).toBeNull();
+    expect(first.uvIndex).toBeNull();
+    expect(first.humidity).toBeNull();
+    expect(first.windSpeed).toBeNull();
+    expect(first.temperature).toBeNull();
+    expect(first.feelsLike).toBeNull();
+    expect(first.dewPoint).toBeNull();
+    // The next hour is untouched.
+    expect(second.pressure).toBe(1012);
+    expect(second.humidity).not.toBeNull();
+  });
+
+  it("derives a dew point when the model does not supply one", () => {
+    const [p] = metricSeries(weather().hourly, 0, NOW);
+    expect(p.dewPoint).toBeGreaterThan(10);
+    expect(p.dewPoint).toBeLessThan(25);
+  });
+
+  it("returns no series for an empty forecast", () => {
+    const w = weather();
+    expect(metricSeries(undefined, 0, NOW)).toEqual([]);
+    expect(metricSeries({ ...w.hourly, time: [] }, 0, NOW)).toEqual([]);
+  });
+
+  it("gives every metric a headline, sentence, about text and stats", () => {
+    for (const k of METRIC_KINDS) {
+      const d = metricDetail(k, weather(), NOW, {
+        todayHigh: 31,
+        normalHigh: 28,
+        moonName: "Waning gibbous",
+        moonIlluminationPct: 73,
+      });
+      expect(d.kind).toBe(k);
+      expect(d.title).toBe(METRIC_TITLES[k]);
+      expect(d.headline.length).toBeGreaterThan(0);
+      expect(d.sentence.length).toBeGreaterThan(0);
+      expect(d.about.length).toBeGreaterThan(20);
+      expect(d.stats.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("states wind, uv and averages plainly", () => {
+    expect(metricDetail("wind", weather(), NOW).headline).toBe("12 km/h E");
+    expect(metricDetail("uv", weather(), NOW).headline).toContain("6");
+    const avg = metricDetail("averages", weather(), NOW, {
+      todayHigh: 31,
+      normalHigh: 28,
+    });
+    expect(avg.sentence).toContain("3° above");
+    expect(avg.stats[2].value).toBe("+3°");
+  });
+
+  it("the Averages sheet and the Averages tile say the same thing for the same numbers", () => {
+    // Today's high 25 (rounded) against a normal of 25.6: raw difference -0.6.
+    // The tile says "near the average"; the sheet used to round it to -1.
+    for (const [high, normal] of [
+      [25, 25.6],
+      [25, 24.4],
+      [25, 26.4],
+      [25, 23.6],
+      [31, 28],
+      [20, 20],
+    ] as const) {
+      const tile = temperatureAverageInsight(high, normal)!;
+      const sheet = metricDetail("averages", weather(), NOW, {
+        todayHigh: high,
+        normalHigh: normal,
+      });
+      expect(sheet.stats[2].value).toBe(
+        tile.delta === 0 ? "0°" : `${tile.delta > 0 ? "+" : ""}${tile.delta}°`,
+      );
+      expect(sheet.sentence.startsWith("Right at the average")).toBe(
+        tile.delta === 0,
+      );
+    }
+  });
+
+  it("never throws without a climate normal or moon data", () => {
+    const avg = metricDetail("averages", weather(), NOW, { todayHigh: 31 });
+    expect(avg.sentence).toContain("No climate average");
+    expect(metricDetail("moon", weather(), NOW).headline).toBe("-");
+  });
+});
+
+describe("moonrise", () => {
+  const HARARE = 2 * 3600; // UTC+2
+  const now = Date.parse("2026-10-31T10:00:00Z"); // 12:00 in Harare
+
+  it("reads the rise in the place's own clock, never the viewer's", () => {
+    expect(moonriseLabel(Date.parse("2026-10-31T17:42:00Z"), now, HARARE)).toBe(
+      "19:42",
+    );
+    // The same instant is 17:42 in London (UTC+0) and 01:42 next day in Singapore.
+    expect(moonriseLabel(Date.parse("2026-10-31T17:42:00Z"), now, 0)).toBe(
+      "17:42",
+    );
+    expect(
+      moonriseLabel(Date.parse("2026-10-31T17:42:00Z"), now, 8 * 3600),
+    ).toBe("01:42 tomorrow");
+  });
+
+  it("says tomorrow when the rise is on the next local day", () => {
+    expect(moonriseLabel(Date.parse("2026-10-31T23:30:00Z"), now, HARARE)).toBe(
+      "01:30 tomorrow",
+    );
+  });
+
+  it("is null when the moon does not rise", () => {
+    expect(moonriseLabel(null, now, HARARE)).toBeNull();
+    expect(moonriseLabel(undefined, now, HARARE)).toBeNull();
+    expect(moonriseLabel(Number.NaN, now, HARARE)).toBeNull();
+  });
+
+  it("appears in the moon sentence and stats when known", () => {
+    const d = metricDetail("moon", weather(), NOW, {
+      moonName: "Waning gibbous",
+      moonIlluminationPct: 73,
+      moonrise: "21:14",
+    });
+    expect(d.sentence).toBe("Waning gibbous, 73% lit. Moonrise 21:14.");
+    expect(d.stats.find((x) => x.label === "Moonrise")?.value).toBe("21:14");
+    const none = metricDetail("moon", weather(), NOW, {
+      moonName: "Full moon",
+      moonIlluminationPct: 100,
+    });
+    expect(none.sentence).toBe("Full moon, 100% lit.");
+    expect(none.stats.find((x) => x.label === "Moonrise")?.value).toBe("-");
+  });
+});
+
+describe("uvForecastDays", () => {
+  it("labels today, then the weekday from the date itself", () => {
+    const w = weather();
+    const days = uvForecastDays(w.daily);
+    expect(days).toHaveLength(3);
+    expect(days[0]).toMatchObject({
+      date: "2026-10-08",
+      label: "Today",
+      peak: 10,
+      category: "Very High",
+    });
+    expect(days[1].label).toBe("Fri"); // 2026-10-09 is a Friday
+    expect(days[2].label).toBe("Sat");
+  });
+
+  it("skips a day with no value instead of showing zero", () => {
+    const w = weather();
+    const daily = {
+      ...w.daily,
+      uv_index_max: [10, null, 3],
+    } as unknown as typeof w.daily;
+    const days = uvForecastDays(daily);
+    expect(days.map((d) => d.label)).toEqual(["Today", "Sat"]);
+    expect(days[1].category).toBe("Moderate");
+    expect(uvForecastDays(undefined)).toEqual([]);
+  });
+});

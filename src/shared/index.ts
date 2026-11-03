@@ -54,7 +54,6 @@ export type {
   Season,
 } from "./weather";
 export {
-  fetchWeather,
   checkFrostRisk,
   weatherCodeToInfo,
   getDefaultSeason,
@@ -63,3 +62,6 @@ export {
   createFallbackWeather,
   synthesizeOpenMeteoInsights,
 } from "./weather";
+
+export { dewPointFromTempHumidity } from "./dew-point";
+export { next24hPrecipSeries } from "./insight-series";
