@@ -31,6 +31,11 @@ import {
 type LoadState =
   | { kind: "loading" }
   | { kind: "ready"; weather: WeatherResponse }
+  /**
+   * The first paint: the copy kept on the phone, shown at once while the
+   * request is on its way. The fresh answer replaces it in place.
+   */
+  | { kind: "stored"; view: SavedView }
   /** The Worker could not be reached; the copy kept on the phone is shown. */
   | { kind: "saved"; view: SavedView; reason: string }
   | { kind: "error"; message: string };
@@ -76,9 +81,19 @@ export default function LocationScreen() {
   }, [slug]);
 
   useEffect(() => {
+    // The kept copy paints at once (a local read); only a screen still
+    // loading takes it, so a fresh answer is never replaced by an older one.
+    if (slug) {
+      void loadForecast(slug).then((kept) => {
+        if (!kept) return;
+        setState((prev) =>
+          prev.kind === "loading" ? { kind: "stored", view: kept } : prev,
+        );
+      });
+    }
     void load();
     return () => inFlight.current?.abort();
-  }, [load]);
+  }, [load, slug]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -87,8 +102,12 @@ export default function LocationScreen() {
   }, [load]);
 
   const onRetry = useCallback(() => {
-    // The saved copy stays on screen while it tries again.
-    setState((prev) => (prev.kind === "saved" ? prev : { kind: "loading" }));
+    // The kept copy stays on screen while it tries again.
+    setState((prev) =>
+      prev.kind === "saved" || prev.kind === "stored"
+        ? prev
+        : { kind: "loading" },
+    );
     void load();
   }, [load]);
 
@@ -96,7 +115,7 @@ export default function LocationScreen() {
   const name =
     state.kind === "ready"
       ? (state.weather.location?.name ?? fallbackName)
-      : state.kind === "saved"
+      : state.kind === "saved" || state.kind === "stored"
         ? (state.view.name ?? fallbackName)
         : fallbackName;
 
@@ -116,6 +135,15 @@ export default function LocationScreen() {
           message={state.message}
           onRetry={onRetry}
           leading={<BackControl />}
+        />
+      ) : state.kind === "stored" ? (
+        <WeatherPage
+          weather={state.view.weather}
+          name={name}
+          slug={slug}
+          leading={<BackControl />}
+          onRefresh={onRefresh}
+          refreshing
         />
       ) : state.kind === "saved" ? (
         <WeatherPage
