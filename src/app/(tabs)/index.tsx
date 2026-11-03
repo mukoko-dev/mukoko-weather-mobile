@@ -88,6 +88,11 @@ type LoadOutcome = "ready" | "saved" | "error" | "aborted";
 type LoadState =
   | { kind: "loading" }
   | { kind: "ready"; weather: WeatherResponse }
+  /**
+   * The first paint: the copy kept on the phone, shown at once while the fix
+   * and the request are on their way. The fresh answer replaces it in place.
+   */
+  | { kind: "stored"; view: SavedView }
   /** The Worker could not be reached; the copy kept on the phone is shown. */
   | { kind: "saved"; view: SavedView; reason: string }
   | { kind: "error"; message: string };
@@ -282,6 +287,16 @@ export default function WeatherHome() {
   );
 
   useEffect(() => {
+    // First paint: the forecast kept on the phone, if there is one, appears at
+    // once (a local read) and the screen never waits on the fix or the network.
+    // Only a screen still loading takes it; a fresh answer that beat the read
+    // is never replaced by an older one.
+    void loadForecast(HOME_KEY).then((kept) => {
+      if (!kept) return;
+      setState((prev) =>
+        prev.kind === "loading" ? { kind: "stored", view: kept } : prev,
+      );
+    });
     void (async () => {
       const [loc, putOff] = await Promise.all([
         resolveLocation(),
@@ -388,8 +403,12 @@ export default function WeatherHome() {
 
   const onRetry = useCallback(() => {
     if (!coords) return;
-    // The saved copy stays on screen while it tries again.
-    setState((prev) => (prev.kind === "saved" ? prev : { kind: "loading" }));
+    // The kept copy stays on screen while it tries again.
+    setState((prev) =>
+      prev.kind === "saved" || prev.kind === "stored"
+        ? prev
+        : { kind: "loading" },
+    );
     void load(coords);
   }, [coords, load]);
 
@@ -419,6 +438,23 @@ export default function WeatherHome() {
         leading={brand}
         inTabs
         onRetry={coords ? onRetry : undefined}
+      />
+    );
+  }
+  if (state.kind === "stored") {
+    const { view } = state;
+    // The refresh is on its way: the pull spinner says so, and no banner
+    // speaks of a failure that has not happened.
+    return (
+      <WeatherPage
+        weather={view.weather}
+        name={view.name ?? view.weather.location?.name ?? "Your last place"}
+        slug={view.slug}
+        leading={brand}
+        onRefresh={onRefresh}
+        refreshing
+        inTabs
+        notice={notice}
       />
     );
   }
