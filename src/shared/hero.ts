@@ -155,8 +155,8 @@ export function skyTexture(family: SkyFamily): SkyTexture | null {
 
 /**
  * Index of the LOCATION's current hour in an hourly series (same rule as
- * feasibility). `offsetSeconds` is the payload's `utc_offset_seconds`; the
- * viewer's clock is only a fallback for payloads that predate it.
+ * feasibility). `offsetSeconds` is the payload's `utc_offset_seconds`, which
+ * the API edge always sets (never the phone's clock; see location-time.ts).
  */
 export function currentHourIndex(
   times: string[],

@@ -16,7 +16,7 @@ import {
 
 const HOUR = 3_600_000;
 // Fixed clock: 10:30 local. The current hour starts at 10:00.
-const NOW = new Date(2026, 9, 8, 10, 30, 0);
+const NOW = new Date(Date.UTC(2026, 9, 8, 10, 30, 0));
 const BASE = laneBaseMs(NOW);
 
 /** Hourly forecast covering the full lane window, with a per-hour weather code. */
@@ -83,14 +83,16 @@ const farming = { id: "crop-farming", category: "farming" as const };
 
 describe("laneBaseMs / formatLaneHour", () => {
   it("starts the lane 12 whole hours before the current hour", () => {
-    expect(BASE).toBe(new Date(2026, 9, 7, 22, 0, 0).getTime());
+    expect(BASE).toBe(new Date(Date.UTC(2026, 9, 7, 22, 0, 0)).getTime());
   });
 
   it("formats local HH:00", () => {
-    expect(formatLaneHour(new Date(2026, 9, 8, 6, 0).getTime())).toBe("06:00");
-    expect(formatLaneHour(new Date(2026, 9, 8, 15, 45).getTime())).toBe(
-      "15:00",
+    expect(formatLaneHour(new Date(Date.UTC(2026, 9, 8, 6, 0)).getTime())).toBe(
+      "06:00",
     );
+    expect(
+      formatLaneHour(new Date(Date.UTC(2026, 9, 8, 15, 45)).getTime()),
+    ).toBe("15:00");
   });
 });
 
@@ -103,7 +105,9 @@ describe("buildLaneCells", () => {
       NOW,
     );
     expect(cells).toHaveLength(LANE_HOURS);
-    expect(cells[LANE_PAST_HOURS].at).toBe(new Date(2026, 9, 8, 10).getTime());
+    expect(cells[LANE_PAST_HOURS].at).toBe(
+      new Date(Date.UTC(2026, 9, 8, 10)).getTime(),
+    );
     expect(cells[LANE_PAST_HOURS - 1].isPast).toBe(true);
     expect(cells[LANE_PAST_HOURS].isPast).toBe(false);
   });
@@ -204,7 +208,8 @@ describe("laneSummary", () => {
 
 describe("groupReportsByHour", () => {
   it("groups by hour and type, most frequent type first", () => {
-    const at = (h: number, m = 0) => new Date(2026, 9, 8, h, m).toISOString();
+    const at = (h: number, m = 0) =>
+      new Date(Date.UTC(2026, 9, 8, h, m)).toISOString();
     const groups = groupReportsByHour(
       [
         { id: "a", reportType: "hail", reportedAt: at(15, 5) },
@@ -214,7 +219,7 @@ describe("groupReportsByHour", () => {
         {
           id: "old",
           reportType: "fog",
-          reportedAt: new Date(2026, 9, 7, 20, 0).toISOString(),
+          reportedAt: new Date(Date.UTC(2026, 9, 7, 20, 0)).toISOString(),
         },
       ],
       NOW,

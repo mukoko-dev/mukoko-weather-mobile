@@ -28,6 +28,10 @@
     "production": {
       "autoIncrement": true,
       "channel": "production",
+      "distribution": "store",
+      "ios": {
+        "simulator": false
+      },
       "android": {
         "buildType": "app-bundle"
       }
@@ -38,6 +42,10 @@
       "android": {
         "track": "internal",
         "releaseStatus": "draft"
+      },
+      "ios": {
+        "ascAppId": "OWNER-FILL-numeric-Apple-ID-from-App-Store-Connect",
+        "appleTeamId": "OWNER-FILL-10-character-Team-ID"
       }
     }
   }

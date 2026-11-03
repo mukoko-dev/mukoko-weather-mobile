@@ -10,10 +10,11 @@
  */
 
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { coarsePlace, track } from "@/analytics";
-import { fetchWeather, type WeatherResponse } from "@/api/weather";
+import { failureMessage } from "@/api/failure";
+import { fetchWeatherRecord, type WeatherResponse } from "@/api/weather";
 import {
   BackControl,
   WeatherError,
@@ -21,10 +22,17 @@ import {
 } from "@/components/weather/WeatherPage";
 import { placeNameFromSlug } from "@/components/weather/location-routes";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
+import {
+  type SavedView,
+  loadForecast,
+  saveForecast,
+} from "@/state/forecast-store";
 
 type LoadState =
   | { kind: "loading" }
   | { kind: "ready"; weather: WeatherResponse }
+  /** The Worker could not be reached; the copy kept on the phone is shown. */
+  | { kind: "saved"; view: SavedView; reason: string }
   | { kind: "error"; message: string };
 
 export default function LocationScreen() {
@@ -32,39 +40,45 @@ export default function LocationScreen() {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [refreshing, setRefreshing] = useState(false);
 
-  // Every update lands after the awaited fetch, never synchronously in the
-  // mount effect.
-  const load = useCallback(
-    async (signal?: AbortSignal) => {
-      try {
-        const weather = await fetchWeather({ slug }, signal);
-        setState({ kind: "ready", weather });
-        track("forecast_shown", {
-          surface: "place",
-          place: coarsePlace(weather.location ?? {}),
-        });
-      } catch (err) {
-        if (signal?.aborted) return;
-        setState({
-          kind: "error",
-          message:
-            err instanceof Error
-              ? err.message
-              : "We could not load the weather.",
-        });
-      }
-    },
-    [slug],
-  );
+  // One load at a time: a new load, or leaving the screen, aborts the last,
+  // and only the latest may set the screen. Every update lands after the
+  // awaited fetch, never synchronously in the mount effect.
+  const inFlight = useRef<AbortController | null>(null);
+  const load = useCallback(async () => {
+    if (!slug) return;
+    inFlight.current?.abort();
+    const controller = new AbortController();
+    inFlight.current = controller;
+    const { signal } = controller;
+    try {
+      const { weather, record } = await fetchWeatherRecord({ slug }, signal);
+      if (signal.aborted) return;
+      setState({ kind: "ready", weather });
+      void saveForecast(slug, record, { name: weather.location?.name, slug });
+      track("forecast_shown", {
+        surface: "place",
+        place: coarsePlace(weather.location ?? {}),
+      });
+    } catch (err) {
+      if (signal.aborted) return;
+      // The forecast this phone kept for the place, with its age, beats an
+      // error face.
+      const view = await loadForecast(slug);
+      if (signal.aborted) return;
+      setState(
+        view
+          ? { kind: "saved", view, reason: failureMessage(err) }
+          : { kind: "error", message: failureMessage(err) },
+      );
+    } finally {
+      if (inFlight.current === controller) inFlight.current = null;
+    }
+  }, [slug]);
 
   useEffect(() => {
-    if (!slug) return;
-    const controller = new AbortController();
-    void (async () => {
-      await load(controller.signal);
-    })();
-    return () => controller.abort();
-  }, [load, slug]);
+    void load();
+    return () => inFlight.current?.abort();
+  }, [load]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -73,7 +87,8 @@ export default function LocationScreen() {
   }, [load]);
 
   const onRetry = useCallback(() => {
-    setState({ kind: "loading" });
+    // The saved copy stays on screen while it tries again.
+    setState((prev) => (prev.kind === "saved" ? prev : { kind: "loading" }));
     void load();
   }, [load]);
 
@@ -81,7 +96,9 @@ export default function LocationScreen() {
   const name =
     state.kind === "ready"
       ? (state.weather.location?.name ?? fallbackName)
-      : fallbackName;
+      : state.kind === "saved"
+        ? (state.view.name ?? fallbackName)
+        : fallbackName;
 
   return (
     <>
@@ -93,12 +110,27 @@ export default function LocationScreen() {
           leading={<BackControl />}
         />
       ) : state.kind === "loading" ? (
-        <WeatherSkeleton leading={<BackControl />} />
+        <WeatherSkeleton leading={<BackControl />} onRetry={onRetry} />
       ) : state.kind === "error" ? (
         <WeatherError
           message={state.message}
           onRetry={onRetry}
           leading={<BackControl />}
+        />
+      ) : state.kind === "saved" ? (
+        <WeatherPage
+          weather={state.view.weather}
+          name={name}
+          slug={slug}
+          leading={<BackControl />}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
+          saved={{
+            fetchedAt: state.view.fetchedAt,
+            forecastOnly: state.view.freshness === "forecast",
+            reason: state.reason,
+            onRetry,
+          }}
         />
       ) : (
         <WeatherPage

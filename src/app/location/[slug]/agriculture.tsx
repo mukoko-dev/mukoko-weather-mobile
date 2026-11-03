@@ -9,6 +9,7 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
 
+import { failureMessage } from "@/api/failure";
 import { fetchLocation } from "@/api/locations";
 import { AgricultureScreen } from "@/components/weather/AgricultureScreen";
 import { goHome } from "@/components/weather/navigation";
@@ -41,7 +42,7 @@ export default function AgricultureRoute() {
     body = (
       <SubPageError
         title="This place did not load"
-        message="Mukoko could not be reached or does not know this place. Check your connection, then try again."
+        message={failureMessage(state.error)}
         onRetry={state.reload}
         onBack={goBack}
       />

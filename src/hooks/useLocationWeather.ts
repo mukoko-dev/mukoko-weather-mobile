@@ -13,18 +13,28 @@
  * - The seasonal estimate (`source: "fallback"`) is not a forecast, so it is
  *   never drawn as one: it is an error the person can retry.
  * - A refresh that fails keeps the page on screen and says so
- *   (`refreshError`); only a first load that fails shows the error face.
+ *   (`refreshError`). A first load that fails shows the forecast kept on the
+ *   phone (src/state/forecast-store.ts) when there is one, saying so, and
+ *   only otherwise the error face. Every message follows the cause
+ *   (src/api/failure.ts), never the error's own text.
  * - One request at a time: a new load, or leaving the screen, aborts the last.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import {
+  FAILURE_COPY,
+  ProviderFallbackError,
+  failureMessage,
+} from "@/api/failure";
 import { fetchWeather, type WeatherResponse } from "@/api/weather";
 import {
   recallPlaceName,
   recallWeather,
   rememberWeather,
 } from "@/hooks/weather-cache";
+import { updatedAgoLabel } from "@/shared/device-weather";
+import { loadForecast } from "@/state/forecast-store";
 
 export type DetailLoad =
   | { kind: "loading" }
@@ -32,8 +42,7 @@ export type DetailLoad =
   | { kind: "error"; message: string };
 
 /** Said instead of drawing the seasonal estimate as a forecast. */
-export const FALLBACK_MESSAGE =
-  "The live forecast for this place is unavailable right now. Try again in a few minutes.";
+export const FALLBACK_MESSAGE = FAILURE_COPY.provider;
 
 /** What a place shows before its own answer arrives. */
 function initialLoad(slug: string | undefined): DetailLoad {
@@ -41,15 +50,19 @@ function initialLoad(slug: string | undefined): DetailLoad {
   return hit ? { kind: "ready", weather: hit } : { kind: "loading" };
 }
 
-function messageOf(err: unknown): string {
-  return err instanceof Error ? err.message : "We could not load the weather.";
-}
-
 type Held = {
   slug: string | undefined;
   load: DetailLoad;
   refreshError?: string;
+  /** Set while `load` is the copy kept on the phone: when it was fetched. */
+  savedAt?: number;
 };
+
+/** What the page says over the copy kept on the phone. */
+function savedNote(reason: string, savedAt: number): string {
+  const age = updatedAgoLabel(savedAt).toLowerCase();
+  return `${reason} Showing what is saved on this device, ${age}.`;
+}
 
 export function useLocationWeather(slug: string | undefined) {
   const [held, setHeld] = useState<Held>(() => ({
@@ -66,6 +79,9 @@ export function useLocationWeather(slug: string | undefined) {
   }
   const [refreshing, setRefreshing] = useState(false);
   const inFlight = useRef<AbortController | null>(null);
+  // Whether something is drawn for this slug, for the failure path below.
+  const drawn = useRef(false);
+  drawn.current = current.slug === slug && current.load.kind === "ready";
 
   // Every update lands after the awaited fetch, never synchronously in the
   // mount effect.
@@ -78,16 +94,38 @@ export function useLocationWeather(slug: string | undefined) {
     try {
       const weather = await fetchWeather({ slug }, signal);
       if (signal.aborted) return;
-      if (weather.source === "fallback") throw new Error(FALLBACK_MESSAGE);
+      if (weather.source === "fallback") throw new ProviderFallbackError();
       rememberWeather(slug, weather, Date.now(), recallPlaceName(slug));
       setHeld({ slug, load: { kind: "ready", weather } });
     } catch (err) {
       if (signal.aborted) return;
-      setHeld((prev) =>
-        prev.slug === slug && prev.load.kind === "ready"
-          ? { ...prev, refreshError: messageOf(err) }
-          : { slug, load: { kind: "error", message: messageOf(err) } },
-      );
+      const reason = failureMessage(err);
+      // Nothing on screen yet: the copy the phone kept for this place, with
+      // its age, beats an error face. (A page already drawn keeps itself and
+      // never reads the disk.)
+      const saved = drawn.current ? null : await loadForecast(slug);
+      if (signal.aborted) return;
+      setHeld((prev) => {
+        if (prev.slug === slug && prev.load.kind === "ready") {
+          // A copy from the phone stays marked as one, with its age.
+          return {
+            ...prev,
+            refreshError:
+              prev.savedAt === undefined
+                ? reason
+                : savedNote(reason, prev.savedAt),
+          };
+        }
+        if (saved) {
+          return {
+            slug,
+            load: { kind: "ready", weather: saved.weather },
+            refreshError: savedNote(reason, saved.fetchedAt),
+            savedAt: saved.fetchedAt,
+          };
+        }
+        return { slug, load: { kind: "error", message: reason } };
+      });
     } finally {
       if (inFlight.current === controller) inFlight.current = null;
     }

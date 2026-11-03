@@ -33,24 +33,20 @@ export interface HasUtcOffset {
   utc_offset_seconds?: number | null;
 }
 
-/** The viewer's own UTC offset — only a last-resort fallback. */
-export function viewerOffsetSeconds(now: Date = new Date()): number {
-  return -now.getTimezoneOffset() * 60;
-}
-
 /**
  * The offset to read a forecast with. A finite `offset` (the location's,
- * from the weather payload) always wins; without one we fall back to the
- * viewer's clock — the pre-fix behaviour, kept only so a payload cached
- * before the backend guaranteed the field still renders.
+ * from the weather payload) always wins. The phone's own zone is NEVER used
+ * (issue #64): the API edge (`src/api/weather.ts`) stamps a longitude
+ * estimate on any answer that came without an offset, as the Worker's
+ * `ensure_utc_offset` does, so a missing one here means nothing at all is
+ * known and the hours are read as UTC rather than as wherever the phone is.
+ * `now` is unused and kept so callers need not change.
  */
 export function resolveOffsetSeconds(
   offset: number | null | undefined,
-  now: Date = new Date(),
+  _now?: Date,
 ): number {
-  return typeof offset === "number" && Number.isFinite(offset)
-    ? offset
-    : viewerOffsetSeconds(now);
+  return typeof offset === "number" && Number.isFinite(offset) ? offset : 0;
 }
 
 /** Offset for a weather payload (see `resolveOffsetSeconds`). */
@@ -202,9 +198,9 @@ export function locationHourNow(
 
 /**
  * Solar-meridian estimate of a UTC offset from longitude (15° per hour,
- * rounded to the quarter hour). Only for paths with no provider offset at
- * all — the seasonal fallback. `location-card.resolveUtcOffsetSeconds` adds
- * a fixed-offset country table on top of the same estimate.
+ * rounded to the quarter hour), exactly the Worker's `estimate_utc_offset`
+ * (weather-core `blend.rs`), so the app and the Worker give one answer. Only
+ * for answers with no provider offset at all (the seasonal fallback).
  */
 export function longitudeOffsetSeconds(lon: number): number {
   if (!Number.isFinite(lon)) return 0;

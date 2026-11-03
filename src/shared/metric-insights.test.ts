@@ -155,8 +155,8 @@ function emptyWeather(): WeatherData {
   };
 }
 
-/** Local date-time at the given hour and minute on 2026-10-08. */
-const at = (h: number, m = 0) => new Date(2026, 9, 8, h, m);
+/** Wall-clock time at the given hour and minute on 2026-10-08 (no offset in the fixture: read as UTC). */
+const at = (h: number, m = 0) => new Date(Date.UTC(2026, 9, 8, h, m));
 /** Default "now": 14:30 on 2026-10-08 (hourly index 14). */
 const NOW = at(14, 30);
 
@@ -274,6 +274,31 @@ describe("windInsight", () => {
 // ---------------------------------------------------------------------------
 
 describe("uvInsight", () => {
+  it("shows the index as a whole number, as the WHO scale and the web do (issue #73)", () => {
+    const w = makeWeather({
+      current: { uv_index: 0.4 },
+      hourly: {
+        uv_index: fill(HOURS, 0.4).map((v, i) => (i === 12 ? 7.6 : v)),
+      },
+    });
+    const r = uvInsight(w, NOW);
+    expect(r.value).toBe(0);
+    expect(r.peakToday).toBe(8);
+    expect(Number.isInteger(r.value)).toBe(true);
+    // The gauge sits at the number shown.
+    expect(r.positionPct).toBe(0);
+  });
+
+  it("gives the sentence the tile's label, from the same whole number", () => {
+    const w = makeWeather({
+      current: { uv_index: 2.4 },
+      hourly: { uv_index: fill(HOURS, 2.4) },
+    });
+    const r = uvInsight(w, NOW);
+    expect(r.label).toBe("Low");
+    expect(r.sentence).toBe("Low for the rest of the day.");
+  });
+
   it("says low for the rest of the day when UV stays under 3", () => {
     const w = makeWeather({
       current: { uv_index: 1 },
@@ -328,7 +353,7 @@ describe("uvInsight", () => {
     ).toBe(100);
     expect(
       uvInsight(makeWeather({ current: { uv_index: 5.5 } }), NOW).positionPct,
-    ).toBe(39);
+    ).toBe(43); // the whole number shown, 6 (issue #73)
   });
 
   it("reports unavailable data without throwing", () => {
@@ -931,7 +956,7 @@ describe("robustness across every insight", () => {
 
   it("does not throw when now precedes the forecast", () => {
     const w = makeWeather({ hourly: { uv_index: uvProfile() } });
-    const r = uvInsight(w, new Date(2020, 0, 1));
+    const r = uvInsight(w, new Date(Date.UTC(2020, 0, 1)));
     expect(r.peakToday).toBe(0);
     expect(r.sentence).toBe("Low for the rest of the day.");
   });

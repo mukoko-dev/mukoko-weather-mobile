@@ -381,9 +381,12 @@ export function uvInsight(w: WeatherData, now: Date): UvInsight {
   const c = w?.current;
   const hourly = w?.hourly;
   const idx = currentIndex(hourly, now);
-  const value = Math.max(
-    0,
-    finite(c?.uv_index) ?? at(hourly?.uv_index, idx) ?? 0,
+  // The UV index is a whole number (WHO), so the tile, the gauge, the
+  // sentence and the protection window all read the rounded value and never
+  // disagree or say "0.4" (issue #73); the blended models average to
+  // fractions.
+  const value = Math.round(
+    Math.max(0, finite(c?.uv_index) ?? at(hourly?.uv_index, idx) ?? 0),
   );
   const positionPct = Math.round(
     Math.min(100, Math.max(0, (value / UV_SCALE_MAX) * 100)),
@@ -399,8 +402,9 @@ export function uvInsight(w: WeatherData, now: Date): UvInsight {
   let hasHourlyUv = false;
 
   for (const i of today) {
-    const uv = at(hourly?.uv_index, i);
-    if (uv === null) continue;
+    const raw = at(hourly?.uv_index, i);
+    if (raw === null) continue;
+    const uv = Math.round(raw);
     hasHourlyUv = true;
     if (uv > peakToday) {
       peakToday = uv;
@@ -418,7 +422,7 @@ export function uvInsight(w: WeatherData, now: Date): UvInsight {
     if (endKey !== null) protectUntil = hhmmFromKey(endKey + HOUR_MS);
   }
 
-  const roundedPeak = round1(peakToday);
+  const roundedPeak = peakToday;
   let sentence: string;
   if (finite(c?.uv_index) === null && !hasHourlyUv) {
     sentence = "UV data unavailable.";
@@ -433,7 +437,7 @@ export function uvInsight(w: WeatherData, now: Date): UvInsight {
   }
 
   return {
-    value: round1(value),
+    value,
     label: uvLabel(value),
     peakToday: roundedPeak,
     peakTime,

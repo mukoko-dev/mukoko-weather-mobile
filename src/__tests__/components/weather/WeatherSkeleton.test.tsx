@@ -3,11 +3,12 @@
  * busy to VoiceOver, no spinner screen and no text, still under Reduce Motion.
  */
 
-import { act, render } from "@testing-library/react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
 import { AccessibilityInfo } from "react-native";
 
 import {
   SKELETON,
+  SLOW_LOAD_AFTER_MS,
   WeatherSkeleton,
 } from "@/components/weather/WeatherSkeleton";
 import { SkyHero } from "@/components/weather/SkyHero";
@@ -164,5 +165,35 @@ describe("shimmer motion", () => {
     expect(after).toEqual(before);
     jest.useRealTimers();
     jest.restoreAllMocks();
+  });
+
+  describe("a load that is taking too long (issue #70)", () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it("says it is still trying after SLOW_LOAD_AFTER_MS and offers Try again", async () => {
+      const onRetry = jest.fn();
+      const tree = await render(<WeatherSkeleton inTabs onRetry={onRetry} />);
+      await act(async () => {
+        jest.advanceTimersByTime(SLOW_LOAD_AFTER_MS - 1);
+      });
+      expect(tree.queryByTestId("still-trying")).toBeNull();
+      await act(async () => {
+        jest.advanceTimersByTime(1);
+      });
+      expect(
+        tree.getByText("Still trying to reach the weather service…"),
+      ).toBeTruthy();
+      await fireEvent.press(tree.getByRole("button", { name: "Try again" }));
+      expect(onRetry).toHaveBeenCalledTimes(1);
+    });
+
+    it("stays silent without a way to retry", async () => {
+      const tree = await render(<WeatherSkeleton inTabs />);
+      await act(async () => {
+        jest.advanceTimersByTime(SLOW_LOAD_AFTER_MS * 2);
+      });
+      expect(tree.queryByTestId("still-trying")).toBeNull();
+    });
   });
 });

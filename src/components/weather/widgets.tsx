@@ -69,53 +69,12 @@ export function Scaled({
   );
 }
 
-/**
- * Centred SVG text with a halo in the card colour, so it stays readable over
- * the needle. The halo is drawn first and the text over it (the web's
- * `paint-order: stroke`; SVG itself paints the stroke over the fill).
- */
-function HaloText({
-  x,
-  y,
-  fontSize,
-  family,
-  color,
-  halo,
-  haloWidth,
-  children,
-}: {
-  x: number;
-  y: number;
-  fontSize: number;
-  family: string;
-  color: string;
-  halo: string;
-  haloWidth: number;
-  children: ReactNode;
-}) {
-  const common = {
-    x,
-    y,
-    textAnchor: "middle",
-    fontSize,
-    fontFamily: family,
-  } as const;
-  return (
-    <>
-      <SvgText {...common} fill={halo} stroke={halo} strokeWidth={haloWidth}>
-        {children}
-      </SvgText>
-      <SvgText {...common} fill={color}>
-        {children}
-      </SvgText>
-    </>
-  );
-}
-
 // --- wind compass -------------------------------------------------------------
 
 const CENTER = 50;
 const RING = 40;
+/** The readout's disc: wide enough for "gusts 100" at its size. */
+export const DIAL_DISC = 22;
 
 export function CompassDial({
   directionDeg,
@@ -137,7 +96,6 @@ export function CompassDial({
     { label: "S", x: CENTER, y: CENTER + RING + 6 },
     { label: "W", x: CENTER - RING - 6, y: CENTER },
   ];
-  const sub = gust != null ? `${unit} · gusts ${gust}` : unit;
   return (
     <Scaled
       viewBox="-12 -12 124 124"
@@ -176,7 +134,7 @@ export function CompassDial({
           x1={CENTER}
           y1={CENTER - RING + 8}
           x2={CENTER}
-          y2={CENTER + 8}
+          y2={CENTER + RING - 12}
           strokeWidth={2.4}
           strokeLinecap="round"
           stroke={colors.primary}
@@ -188,32 +146,52 @@ export function CompassDial({
           fill={colors.primary}
         />
         <Polygon
-          points={`${CENTER},${CENTER + 16} ${CENTER - 5},${CENTER + 6} ${CENTER + 5},${CENTER + 6}`}
+          points={`${CENTER},${CENTER + RING - 4} ${CENTER - 5},${CENTER + RING - 14} ${CENTER + 5},${CENTER + RING - 14}`}
           fill={colors.primary}
         />
       </G>
-      <HaloText
+      {/* The readout sits on a solid disc the needle never crosses (issue
+          #60): the needle runs ring to ring, the disc covers its middle. */}
+      <Circle
+        cx={CENTER}
+        cy={CENTER}
+        r={DIAL_DISC}
+        fill={colors.card}
+        stroke={withAlpha(colors.textTertiary, 0.35)}
+        strokeWidth={0.6}
+      />
+      <SvgText
         x={CENTER}
-        y={CENTER + 1.5}
-        fontSize={13}
-        family={FONT_FILE.sans[700]}
-        color={colors.textPrimary}
-        halo={colors.card}
-        haloWidth={3}
+        y={gust != null ? CENTER + 1 : CENTER + 4}
+        textAnchor="middle"
+        fontSize={15}
+        fontFamily={FONT_FILE.sans[700]}
+        fill={colors.textPrimary}
       >
         {speed}
-      </HaloText>
-      <HaloText
+      </SvgText>
+      <SvgText
         x={CENTER}
-        y={CENTER + 10.5}
-        fontSize={8.5}
-        family={FONT_FILE.sans[400]}
-        color={colors.textTertiary}
-        halo={colors.card}
-        haloWidth={2}
+        y={gust != null ? CENTER + 10 : CENTER + 13}
+        textAnchor="middle"
+        fontSize={8}
+        fontFamily={FONT_FILE.sans[400]}
+        fill={colors.textTertiary}
       >
-        {sub}
-      </HaloText>
+        {unit}
+      </SvgText>
+      {gust != null ? (
+        <SvgText
+          x={CENTER}
+          y={CENTER + 18}
+          textAnchor="middle"
+          fontSize={7}
+          fontFamily={FONT_FILE.sans[400]}
+          fill={colors.textTertiary}
+        >
+          {`gusts ${gust}`}
+        </SvgText>
+      ) : null}
     </Scaled>
   );
 }

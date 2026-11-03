@@ -15,18 +15,37 @@ jest.mock("@/analytics", () => ({
   track: (...args: unknown[]) => mockTrack(...args),
 }));
 jest.mock("expo-location", () => ({
-  requestForegroundPermissionsAsync: async () => ({ status: "denied" }),
+  // Never decided: home shows the default city without asking.
+  getForegroundPermissionsAsync: async () => ({
+    status: "undetermined",
+    canAskAgain: true,
+    granted: false,
+    expires: "never",
+  }),
+  requestForegroundPermissionsAsync: jest.fn(),
   getCurrentPositionAsync: jest.fn(),
   Accuracy: { High: 4 },
 }));
 jest.mock("@/api/weather", () => ({
   ...jest.requireActual("@/api/weather"),
-  fetchWeather: jest.fn(async () => {
+  fetchWeatherRecord: jest.fn(async () => {
     const { harareWeather } = jest.requireActual<
       typeof import("@/test-utils/weather-fixtures")
     >("@/test-utils/weather-fixtures");
-    return { ...harareWeather(), location: undefined };
+    return {
+      weather: { ...harareWeather(), location: undefined },
+      record: { raw: {}, meta: {} },
+    };
   }),
+}));
+jest.mock("@/state/forecast-store", () => ({
+  ...jest.requireActual("@/state/forecast-store"),
+  saveForecast: jest.fn(async () => undefined),
+  loadForecast: jest.fn(async () => null),
+}));
+jest.mock("@/state/location-ask", () => ({
+  locationAskPutOff: jest.fn(async () => false),
+  putOffLocationAsk: jest.fn(async () => undefined),
 }));
 jest.mock("@/api/locations", () => ({
   ...jest.requireActual("@/api/locations"),
@@ -45,7 +64,7 @@ describe("home tab analytics", () => {
     await waitFor(() => expect(mockTrack).toHaveBeenCalled());
     expect(mockTrack).toHaveBeenCalledWith("forecast_shown", {
       surface: "home",
-      // Location denied: the Harare default, as a country and a cell.
+      // Location not asked: the Harare default, as a country and a cell.
       place: { country: "ZW", cell: "ksy4" },
     });
     expect(JSON.stringify(mockTrack.mock.calls)).not.toMatch(/-17\.|31\./);

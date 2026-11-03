@@ -143,7 +143,7 @@ export function RecentReports({
         {status === "failed" ? (
           <View style={styles.block} accessibilityRole="alert">
             <WxText type="body" color={colors.textSecondary}>
-              Could not load the reports. Check your connection and try again.
+              Could not load the reports just now. Try again in a moment.
             </WxText>
             <PillButton label="Try again" variant="outline" onPress={reload} />
           </View>

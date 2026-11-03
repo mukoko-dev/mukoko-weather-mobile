@@ -4,8 +4,8 @@
  * `next24hPrecipSeries` is ported verbatim from mukoko-weather
  * `src/components/weather/AtmosphericSummary.tsx`: hourly precipitation (mm)
  * for the next 24 slots from the place's current hour (the payload's
- * `utc_offset_seconds`; the phone's clock is only a fallback for a payload that
- * has no offset).
+ * `utc_offset_seconds`, which the API edge always sets; never the phone's
+ * clock).
  */
 
 import type { HourlyWeather } from "./weather";

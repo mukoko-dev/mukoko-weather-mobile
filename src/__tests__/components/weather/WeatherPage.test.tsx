@@ -63,8 +63,10 @@ describe("WeatherPage", () => {
     ).toBeTruthy();
     expect(tree.getByTestId("sky-hero")).toBeTruthy();
     expect(tree.getByText("My Location")).toBeTruthy();
-    // The Conditions card on the sky and the Conditions section of tiles.
-    expect(tree.getAllByText("Conditions")).toHaveLength(2);
+    // The hourly card on the sky and the Conditions section of tiles: one
+    // name each (issue #61).
+    expect(tree.getByText("Hourly forecast")).toBeTruthy();
+    expect(tree.getAllByText("Conditions")).toHaveLength(1);
     expect(tree.getByText("Wind")).toBeTruthy();
     expect(tree.queryByText("7-Day Forecast")).toBeNull();
     // The cards under the tiles: farm weather and the El Niño outlook (loading
@@ -188,15 +190,57 @@ describe("WeatherPage", () => {
     expect(countryLabel(undefined)).toBeUndefined();
   });
 
-  it("falls back to the code where the runtime has no region names", () => {
+  it("names the country where the runtime has no region names, as Hermes (issue #72)", () => {
     const spy = jest.spyOn(Intl, "DisplayNames").mockImplementation(() => {
       throw new TypeError("Intl.DisplayNames is not supported");
     });
     try {
-      expect(countryLabel("ZW")).toBe("ZW");
+      expect(countryLabel("ZW")).toBe("Zimbabwe");
+      expect(countryLabel("sg")).toBe("Singapore");
+      expect(countryLabel("CD")).toBe("DR Congo");
+      // A code no table knows is still shown, never nothing.
+      expect(countryLabel("QQ")).toBe("QQ");
     } finally {
       spy.mockRestore();
     }
+  });
+});
+
+describe("the forecast kept on the phone (issue #69)", () => {
+  it("says it could not refresh, how old the copy is and why, and offers Try again", async () => {
+    const onRetry = jest.fn();
+    const tree = await render(
+      <WeatherPage
+        weather={harareWeather()}
+        name="Harare"
+        inTabs
+        saved={{
+          fetchedAt: Date.now() - 3 * 3_600_000,
+          forecastOnly: true,
+          reason:
+            "Mukoko could not be reached. Check your connection, then try again.",
+          onRetry,
+        }}
+      />,
+    );
+    expect(tree.getByTestId("saved-forecast-banner")).toBeTruthy();
+    expect(
+      tree.getByText("Couldn't refresh the weather for Harare"),
+    ).toBeTruthy();
+    expect(
+      tree.getByText(
+        "Showing what is saved on this device. Updated 3 h ago. Conditions are the forecast for this hour.",
+      ),
+    ).toBeTruthy();
+    await fireEvent.press(tree.getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows no such notice on a live page", async () => {
+    const tree = await render(
+      <WeatherPage weather={harareWeather()} name="Harare" inTabs />,
+    );
+    expect(tree.queryByTestId("saved-forecast-banner")).toBeNull();
   });
 });
 
@@ -224,9 +268,11 @@ describe("WeatherError", () => {
     );
     expect(tree.getByText("Weather unavailable")).toBeTruthy();
     expect(tree.getByText("The weather service did not answer.")).toBeTruthy();
-    expect(
-      tree.getByText("Check your connection, then try again."),
-    ).toBeTruthy();
+    // The cause is the message's to say: no fixed "check your connection"
+    // under a failure that may not be the connection's (issue #74).
+    expect(tree.queryByText(/Check your connection/)).toBeNull();
+    // Nothing to share on an error face.
+    expect(tree.queryByRole("button", { name: /Share weather/ })).toBeNull();
     await fireEvent.press(tree.getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
     // A person can still go back or open Settings.

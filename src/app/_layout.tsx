@@ -33,6 +33,7 @@ import { initAuth } from "@/api/auth";
 import { BRAND_FONTS } from "@/brand/fonts";
 import { BrandStripe } from "@/components/BrandStripe";
 import { AppChrome } from "@/components/shell/AppChrome";
+import { ModalGuard } from "@/components/shell/ModalGuard";
 import { registerDevice } from "@/device/register";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -113,6 +114,7 @@ export default function RootLayout() {
                     }}
                   />
                 </Stack>
+                <ModalGuard />
               </AppChrome>
             </View>
           </View>

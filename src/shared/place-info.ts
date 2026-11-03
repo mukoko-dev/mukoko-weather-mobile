@@ -8,6 +8,7 @@
  * out, never filled with a guess.
  */
 
+import { countryName } from "./countries";
 import { type ResolvedSeason, seasonRowValue } from "./season";
 
 /** The place a weather page is showing. */
@@ -36,6 +37,10 @@ export interface PlaceInfo {
 export function countryLabel(code: string | undefined): string | undefined {
   if (!code) return undefined;
   if (!/^[A-Za-z]{2}$/.test(code)) return code;
+  const known = countryName(code);
+  if (known) return known;
+  // A code the table does not hold: the runtime's name where it has one
+  // (not on Hermes), else the code itself, never nothing.
   try {
     return (
       new Intl.DisplayNames(["en"], { type: "region" }).of(

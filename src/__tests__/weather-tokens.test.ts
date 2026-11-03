@@ -142,14 +142,17 @@ describe("the weather screens and components use tokens, not numbers", () => {
     }
   });
 
-  it("gives the agriculture page the SAME gutter and insets: SubPage reads WeatherScroll's pagePadding, the route sets none", () => {
+  it("gives the agriculture page the SAME gutter and insets: every SubPage face is a WeatherScroll, the route sets none", () => {
     const sub = readFileSync(
       join(root, "components", "weather", "SubPage.tsx"),
       "utf8",
     );
-    expect(sub).toContain('import { pagePadding } from "./WeatherScroll"');
-    expect(sub).toContain("pagePadding(insets, false)");
+    // The loaded, loading and failure faces are all WeatherScroll (issue
+    // #79), which applies the one pagePadding.
+    expect(sub).toContain('import { WeatherScroll } from "./WeatherScroll"');
+    expect(sub.match(/<WeatherScroll family=/g)?.length).toBe(3);
     expect(sub).not.toMatch(/\bSPACE\.gutter\b/);
+    expect(sub).not.toMatch(/\bScrollView\b/);
     const route = readFileSync(
       join(root, "app", "location", "[slug]", "agriculture.tsx"),
       "utf8",

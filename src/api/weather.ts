@@ -16,6 +16,7 @@ import { apiRequest, ROUTES } from "@/api/client";
 import { fetchLocation, type LocationSummary } from "@/api/locations";
 import { type ModelForecast } from "@/shared/model-comparison";
 import { type MinutelyData } from "@/shared/nowcast";
+import { longitudeOffsetSeconds } from "@/shared/location-time";
 import { type WeatherData, weatherCodeToInfo } from "@/shared/weather";
 
 export type DailyForecast = {
@@ -98,18 +99,25 @@ export type WeatherResponse = {
   /** IANA time zone of the place, for example `Africa/Harare`. */
   timezone?: string;
   utcOffsetSeconds?: number;
+  /**
+   * True when the Worker sent no offset and `utcOffsetSeconds` is the
+   * longitude estimate (the seasonal fallback), as the web's
+   * `utc_offset_estimated`.
+   */
+  utcOffsetEstimated?: boolean;
 };
 
 export type WeatherQuery = { slug: string } | { lat: number; lon: number };
 
 /** The Worker's answer. Everything is read defensively. */
-type WireWeather = {
+export type WireWeather = {
   current?: Record<string, unknown>;
   insights?: Record<string, unknown>;
   hourly?: Record<string, unknown>;
   daily?: Record<string, unknown>;
   timezone?: unknown;
   utc_offset_seconds?: unknown;
+  utc_offset_estimated?: unknown;
   elevation?: unknown;
   minutely?: unknown;
   models?: unknown;
@@ -251,6 +259,7 @@ export function toForecast(raw: WireWeather): WeatherData | undefined {
     insights: raw.insights,
     timezone: typeof raw.timezone === "string" ? raw.timezone : undefined,
     utc_offset_seconds: offset ?? undefined,
+    utc_offset_estimated: raw.utc_offset_estimated === true || undefined,
   };
   return forecast as unknown as WeatherData;
 }
@@ -332,12 +341,35 @@ export function alignHourly(
   return out;
 }
 
+/**
+ * The Worker's `ensure_utc_offset`, applied again at the app's edge: every
+ * screen reads "now" and the hour labels in the PLACE's time, so an answer
+ * without `utc_offset_seconds` (the seasonal fallback today) gets the
+ * longitude estimate, marked `utc_offset_estimated`, and is never read in the
+ * phone's own zone (issue #64). A provider offset always wins.
+ */
+export function ensureUtcOffset(
+  raw: WireWeather,
+  lon: number | undefined,
+): WireWeather {
+  if (num(raw.utc_offset_seconds) !== null) return raw;
+  if (typeof lon !== "number" || !Number.isFinite(lon)) return raw;
+  return {
+    ...raw,
+    utc_offset_seconds: longitudeOffsetSeconds(lon),
+    utc_offset_estimated: true,
+  };
+}
+
 /** Convert the Worker's answer into the model the screens use. */
 export function toWeatherResponse(
-  raw: WireWeather,
+  wire: WireWeather,
   meta: WeatherMeta = {},
   place?: LocationSummary,
+  /** The longitude asked about, for the offset estimate; else the place's. */
+  lon?: number,
 ): WeatherResponse {
+  const raw = ensureUtcOffset(wire, lon ?? place?.lon);
   const current = toCurrent(raw.current);
   const offset = num(raw.utc_offset_seconds);
   return {
@@ -366,6 +398,7 @@ export function toWeatherResponse(
     fetchedAt: meta.fetchedAt ?? undefined,
     timezone: typeof raw.timezone === "string" ? raw.timezone : undefined,
     utcOffsetSeconds: offset ?? undefined,
+    utcOffsetEstimated: raw.utc_offset_estimated === true || undefined,
   };
 }
 
@@ -378,39 +411,75 @@ export function roundCoord(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
-async function fetchWeatherAt(
+/**
+ * Everything one answer is rebuilt from: the Worker's body as it came, its
+ * provider headers, and what was asked (a place, or a bare point). This is
+ * what the device keeps (src/state/forecast-store.ts), so a stored forecast is
+ * converted by exactly the code a live one is.
+ */
+export type WeatherRecord = {
+  raw: WireWeather;
+  meta: WeatherMeta;
+  place?: LocationSummary;
+  /** The rounded point, when the weather was asked for by coordinate. */
+  coordinates?: { lat: number; lon: number };
+};
+
+/** The screens' model for a record (live or stored). */
+export function weatherFromRecord(record: WeatherRecord): WeatherResponse {
+  const weather = toWeatherResponse(
+    record.raw,
+    record.meta,
+    record.place,
+    record.coordinates?.lon,
+  );
+  return record.place || !record.coordinates
+    ? weather
+    : { ...weather, coordinates: record.coordinates };
+}
+
+async function fetchRecordAt(
   lat: number,
   lon: number,
   signal?: AbortSignal,
   place?: LocationSummary,
-): Promise<WeatherResponse> {
+): Promise<WeatherRecord> {
   const { data, headers } = await apiRequest<WireWeather>(ROUTES.weather, {
     query: { lat: roundCoord(lat), lon: roundCoord(lon) },
     signal,
   });
-  const weather = toWeatherResponse(
-    data ?? {},
-    {
+  return {
+    // Stamped before it is kept, so the stored copy's freshness and re-basing
+    // (src/shared/device-weather.ts) read the same offset the screen does.
+    raw: ensureUtcOffset(data ?? {}, place?.lon ?? lon),
+    meta: {
       provider: headers.get("X-Weather-Provider"),
       fetchedAt: headers.get("X-Fetched-At"),
     },
     place,
-  );
-  return place
-    ? weather
-    : {
-        ...weather,
-        coordinates: { lat: roundCoord(lat), lon: roundCoord(lon) },
-      };
+    coordinates: place
+      ? undefined
+      : { lat: roundCoord(lat), lon: roundCoord(lon) },
+  };
+}
+
+/** The weather and the record it was converted from (to keep on the device). */
+export async function fetchWeatherRecord(
+  query: WeatherQuery,
+  signal?: AbortSignal,
+): Promise<{ weather: WeatherResponse; record: WeatherRecord }> {
+  const record =
+    "slug" in query
+      ? await fetchLocation(query.slug, signal).then((place) =>
+          fetchRecordAt(place.lat, place.lon, signal, place),
+        )
+      : await fetchRecordAt(query.lat, query.lon, signal);
+  return { weather: weatherFromRecord(record), record };
 }
 
 export async function fetchWeather(
   query: WeatherQuery,
   signal?: AbortSignal,
 ): Promise<WeatherResponse> {
-  if ("slug" in query) {
-    const place = await fetchLocation(query.slug, signal);
-    return fetchWeatherAt(place.lat, place.lon, signal, place);
-  }
-  return fetchWeatherAt(query.lat, query.lon, signal);
+  return (await fetchWeatherRecord(query, signal)).weather;
 }
