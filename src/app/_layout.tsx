@@ -23,7 +23,7 @@
 import { useFonts } from "expo-font";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useColorScheme, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -40,9 +40,21 @@ SplashScreen.preventAutoHideAsync().catch(() => {
   /* already hidden — fine */
 });
 
+/**
+ * The most the native splash waits for the brand fonts. The shell below is
+ * mounted at once either way (screens and their first requests start while the
+ * fonts load); this only bounds how long the splash can cover it.
+ */
+const FONT_WAIT_MS = 400;
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(BRAND_FONTS);
   const colorScheme = useColorScheme();
+  // True once the splash has gone without the brand fonts.
+  const [gaveUp, setGaveUp] = useState(false);
+  // Bumped when the fonts arrive after the splash went (see below).
+  const [lateFonts, setLateFonts] = useState(false);
+  const shownWithoutFonts = useRef(false);
 
   useEffect(() => {
     initAuth();
@@ -53,20 +65,40 @@ export default function RootLayout() {
     recordAppOpen();
   }, []);
 
+  // The app never waits on fonts: the shell renders on the first frame in the
+  // system font, and the splash hides as soon as the brand fonts are ready or
+  // FONT_WAIT_MS has passed, whichever is first.
+  const fontsSettled = Boolean(fontsLoaded || fontError);
+  const fontsSettledRef = useRef(fontsSettled);
+  fontsSettledRef.current = fontsSettled;
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    const timer = setTimeout(() => {
+      if (!fontsSettledRef.current) shownWithoutFonts.current = true;
+      setGaveUp(true);
+    }, FONT_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (fontsSettled || gaveUp) {
       SplashScreen.hideAsync().catch(() => {
         /* noop */
       });
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsSettled, gaveUp]);
 
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
+  // Text laid out in the system font stays in it, so a brand font that only
+  // arrives after the splash went re-keys the shell once to pick it up. The
+  // usual case (fonts ready within FONT_WAIT_MS) never does.
+  useEffect(() => {
+    if (fontsLoaded && shownWithoutFonts.current) setLateFonts(true);
+  }, [fontsLoaded]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView
+      key={lateFonts ? "brand-fonts" : "first"}
+      style={{ flex: 1 }}
+    >
       <SafeAreaProvider>
         <ThemeProvider
           value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
