@@ -1,5 +1,5 @@
 /**
- * Brand header — Seed of Life mark + "mukoko" wordmark with optional
+ * Brand header — Seed of Life mark + "weather" wordmark with optional
  * subtitle and trailing action. The 7-mineral BrandStripe runs flush
  * along the bottom edge, mirroring the web Header layout.
  *
@@ -20,9 +20,9 @@ import { usePalette } from "@/hooks/usePalette";
 
 export type HeaderProps = ViewProps & {
   /**
-   * Optional page label rendered below the mukoko wordmark in subtitle
+   * Optional page label rendered below the wordmark in subtitle
    * weight. Use this for the current page name (e.g. "Explore", "Shamwari").
-   * The wordmark itself is always "mukoko" per brand doctrine.
+   * The wordmark is "weather", as the web header says it.
    */
   title?: string;
   /** Tertiary subtitle — typically a status line (location, count, etc.). */

@@ -6,7 +6,7 @@
  * the bottom tab nav. On the empty state we greet the user and offer
  * suggested-prompt chips.
  *
- * Wiring: POST /api/py/chat via the typed client in src/api/chat.ts. Loading,
+ * Wiring: POST /v1/ai/chat via the typed client in src/api/chat.ts. Loading,
  * errors and rate-limits degrade gracefully to an on-brand fallback reply.
  *
  * Surface mineral: sodalite (Mzizi — AI / deep-reasoning). See the chat
@@ -25,7 +25,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 
 import {
   sendChatMessage,
@@ -41,6 +41,7 @@ import { DEFAULT_SUGGESTED_PROMPTS } from "@/components/chat/prompts";
 import { SuggestedPrompts } from "@/components/chat/SuggestedPrompts";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { usePalette } from "@/hooks/usePalette";
+import { isFeatureEnabled } from "@/shared/feature-flags";
 
 /** Cap rendered turns to keep memory bounded in long conversations. */
 const MAX_RENDERED_MESSAGES = 30;
@@ -51,7 +52,17 @@ function nextId(prefix: string): string {
   return `${prefix}-${Date.now()}-${messageSeq}`;
 }
 
-export default function ShamwariScreen() {
+/**
+ * Shamwari is PAUSED, as on the web (`FLAGS.shamwari_chat` is false): the
+ * route sends you to My Location and nothing in the shell links here. Flip
+ * the flag to bring the chat back.
+ */
+export default function ShamwariRoute() {
+  if (!isFeatureEnabled("shamwari_chat")) return <Redirect href="/" />;
+  return <ShamwariScreen />;
+}
+
+function ShamwariScreen() {
   const palette = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -177,7 +188,7 @@ export default function ShamwariScreen() {
           ListEmptyComponent={
             <EmptyState onSelect={sendMessage} disabled={loading} />
           }
-          ListFooterComponent={loading ? <TypingIndicator /> : null}
+          ListFooterComponent={loading ? <TypingIndicator /> : undefined}
         />
         <View
           style={[

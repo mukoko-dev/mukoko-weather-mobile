@@ -1,101 +1,53 @@
 /**
- * Bottom tab navigator — Weather, Explore, Shamwari, My.
+ * The home group: My Location (index), Locations, Explore, My and the paused
+ * Shamwari. A tab navigator keeps each screen mounted, so going to Explore and
+ * back leaves the home forecast where it was, but its own tab bar is NOT
+ * drawn: the one bottom bar is the web's floating Map / places / Locations
+ * bar, mounted once by AppChrome over every weather page.
  *
- * Uses expo-router's standard `<Tabs>` (powered by @react-navigation/bottom-tabs)
- * rather than `NativeTabs`, because:
- *   - it renders a real bottom tab bar on web (NativeTabs is iOS/Android only),
- *   - we control active/inactive tint exactly (cobalt active, text-tertiary
- *     inactive), matching the web Header's mobile bottom nav.
+ * (The old four-tab bar collapsed to a sliver on iOS: its style set
+ * `height` and `paddingBottom` to `undefined`, which overrides the
+ * navigator's own height and safe-area padding. See #56.)
  *
- * Active tab pill uses cobalt (`palette.primary`). Tab bar background uses
- * `palette.surface` with a hairline top border in `palette.border`.
+ * The lists (Locations, Explore, My) leave the bar's clearance at the bottom;
+ * the weather page leaves it itself (WeatherScroll), so its sky runs to the
+ * edge behind the floating bar.
  */
 
 import { Tabs } from "expo-router";
-import { Platform, useColorScheme } from "react-native";
 
-import { FONT_FAMILY } from "@/brand/tokens";
-import { TabIcon } from "@/components/TabIcon";
-import { paletteFor } from "@/theme/colors";
+import { useShell } from "@/components/shell/ShellContext";
+import { usePageColors } from "@/hooks/usePageColors";
+import { isFeatureEnabled } from "@/shared/feature-flags";
 
 export default function TabsLayout() {
-  const scheme = useColorScheme();
-  const palette = paletteFor(scheme === "dark" ? "dark" : "light");
+  const { clearance } = useShell();
+  const { colors } = usePageColors();
+  const listScene = {
+    paddingBottom: clearance,
+    backgroundColor: colors.background,
+  };
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: palette.primary,
-        tabBarInactiveTintColor: palette.textTertiary,
-        tabBarStyle: {
-          backgroundColor: palette.surface,
-          borderTopColor: palette.border,
-          borderTopWidth: 1,
-          // Slightly taller on web so it reads as a real nav bar, not a strip.
-          height: Platform.OS === "web" ? 64 : undefined,
-          paddingTop: 6,
-          paddingBottom: Platform.OS === "web" ? 8 : undefined,
-        },
-        tabBarLabelStyle: {
-          fontFamily: FONT_FAMILY.bodyBold,
-          fontSize: 11,
-          letterSpacing: 0.1,
-        },
-        tabBarItemStyle: {
-          paddingVertical: 4,
-        },
-      }}
-    >
+    <Tabs tabBar={() => null} screenOptions={{ headerShown: false }}>
+      <Tabs.Screen name="index" options={{ title: "My Location" }} />
       <Tabs.Screen
-        name="index"
-        options={{
-          title: "Weather",
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon
-              name="weather"
-              color={color}
-              size={size}
-              focused={focused}
-            />
-          ),
-        }}
+        name="locations"
+        options={{ title: "Locations", sceneStyle: listScene }}
       />
       <Tabs.Screen
         name="explore"
-        options={{
-          title: "Explore",
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon
-              name="explore"
-              color={color}
-              size={size}
-              focused={focused}
-            />
-          ),
-        }}
+        options={{ title: "Explore", sceneStyle: listScene }}
+      />
+      <Tabs.Screen
+        name="my"
+        options={{ title: "My Weather", sceneStyle: listScene }}
       />
       <Tabs.Screen
         name="shamwari"
         options={{
           title: "Shamwari",
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon
-              name="shamwari"
-              color={color}
-              size={size}
-              focused={focused}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="my"
-        options={{
-          title: "My",
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="my" color={color} size={size} focused={focused} />
-          ),
+          href: isFeatureEnabled("shamwari_chat") ? undefined : null,
         }}
       />
     </Tabs>

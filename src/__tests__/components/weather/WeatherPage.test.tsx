@@ -1,0 +1,295 @@
+/**
+ * The whole page from a recorded answer, in every state: ready (clear night,
+ * rain, storm), loading, error and the first screen's eyebrow.
+ */
+
+import { fireEvent, render } from "@testing-library/react-native";
+import { Share } from "react-native";
+import { router } from "expo-router";
+
+import {
+  BackControl,
+  WeatherError,
+  WeatherPage,
+  shareMessage,
+  trailOf,
+} from "@/components/weather/WeatherPage";
+import { countryLabel } from "@/shared/place-info";
+import { trailText } from "@/shared/place-trail";
+
+import { pendingFetch } from "@/test-utils/farm-fetch";
+import {
+  IPHONE_INSETS,
+  PHONE_WIDTHS,
+  setInsets,
+  setWindow,
+} from "@/test-utils/mocks";
+import {
+  HAS_EMOJI,
+  allText,
+  harareWeather,
+  withCondition,
+} from "@/test-utils/weather-fixtures";
+
+jest.mock("expo-router", () => require("@/test-utils/mocks").routerMock());
+jest.mock("expo-status-bar", () =>
+  require("@/test-utils/mocks").statusBarMock(),
+);
+jest.mock("react-native-safe-area-context", () =>
+  require("@/test-utils/mocks").safeAreaMock(),
+);
+
+beforeEach(() => {
+  pendingFetch();
+  setInsets(IPHONE_INSETS);
+  setWindow(393, 852);
+  jest.clearAllMocks();
+});
+
+describe("WeatherPage", () => {
+  it("renders the whole page: sky, hero, Conditions card and tiles (the week is on /forecast, as on the web)", async () => {
+    const tree = await render(
+      <WeatherPage
+        weather={harareWeather()}
+        name="Harare"
+        isCurrentLocation
+        inTabs
+      />,
+    );
+    expect(
+      tree.getByTestId("weather-sky-clear-night", {
+        includeHiddenElements: true,
+      }),
+    ).toBeTruthy();
+    expect(tree.getByTestId("sky-hero")).toBeTruthy();
+    expect(tree.getByText("My Location")).toBeTruthy();
+    // The hourly card on the sky and the Conditions section of tiles: one
+    // name each (issue #61).
+    expect(tree.getByText("Hourly forecast")).toBeTruthy();
+    expect(tree.getAllByText("Conditions")).toHaveLength(1);
+    expect(tree.getByText("Wind")).toBeTruthy();
+    expect(tree.queryByText("7-Day Forecast")).toBeNull();
+    // The cards under the tiles: farm weather and the El Niño outlook (loading
+    // here), the map's honest placeholder, and the About card.
+    expect(tree.getByTestId("agriculture-snapshot")).toBeTruthy();
+    expect(tree.getByTestId("enso-card")).toBeTruthy();
+    expect(tree.getByText("The map is coming")).toBeTruthy();
+    expect(tree.getByText("About Harare")).toBeTruthy();
+    expect(HAS_EMOJI.test(allText(tree.toJSON()))).toBe(false);
+  });
+
+  it.each([
+    [61, true, "rain"],
+    [95, true, "storm"],
+    [0, true, "clear-day"],
+    [73, false, "snow"],
+    [45, false, "fog"],
+    [3, false, "cloudy-night"],
+  ] as const)(
+    "paints the %i / day=%s page on the %s sky",
+    async (code, isDay, family) => {
+      const tree = await render(
+        <WeatherPage
+          weather={withCondition(code, isDay ? 1 : 0)}
+          name="Harare"
+          inTabs
+        />,
+      );
+      expect(
+        tree.getByTestId(`weather-sky-${family}`, {
+          includeHiddenElements: true,
+        }),
+      ).toBeTruthy();
+    },
+  );
+
+  it.each(PHONE_WIDTHS)(
+    "renders at %i pt with the largest text size",
+    async (width) => {
+      setWindow(width, 852, 2);
+      const tree = await render(
+        <WeatherPage
+          weather={harareWeather()}
+          name="Singapore American School"
+          inTabs
+        />,
+      );
+      // The name is the hero's heading and the last crumb of the trail.
+      expect(
+        tree.getAllByText("Singapore American School").length,
+      ).toBeGreaterThanOrEqual(1);
+    },
+  );
+
+  it("shows the hero alone when the forecast has no hours", async () => {
+    const weather = { ...harareWeather(), forecast: undefined };
+    const tree = await render(
+      <WeatherPage weather={weather} name="Harare" inTabs />,
+    );
+    expect(tree.getAllByText("Harare").length).toBeGreaterThanOrEqual(1);
+    expect(tree.queryAllByText("Conditions")).toHaveLength(0);
+  });
+
+  it("shares a plain-text line, with no link and no site name", async () => {
+    const share = jest
+      .spyOn(Share, "share")
+      .mockResolvedValue({ action: "sharedAction", activityType: undefined });
+    const tree = await render(
+      <WeatherPage weather={harareWeather()} name="Harare" inTabs />,
+    );
+    await fireEvent.press(
+      tree.getByRole("button", { name: "Share weather for Harare" }),
+    );
+    expect(share).toHaveBeenCalledWith({
+      message: "Harare: 16°, Clear sky. Shared from mukoko weather.",
+    });
+    expect(shareMessage("Harare", null, undefined)).toBe(
+      "Harare. Shared from mukoko weather.",
+    );
+  });
+
+  it("opens the menu (settings, sign in, places) from the top row", async () => {
+    const tree = await render(
+      <WeatherPage weather={harareWeather()} name="Harare" inTabs />,
+    );
+    await fireEvent.press(
+      tree.getByRole("button", { name: "Settings and sign in" }),
+    );
+    expect(router.push).toHaveBeenCalledWith("/menu");
+  });
+
+  it("builds the trail the web's way: Home, country, province, place", () => {
+    expect(
+      trailText(
+        trailOf(
+          { lat: 0, lon: 0, country: "ZW", province: "Mashonaland East" },
+          "Marondera",
+        ),
+      ),
+    ).toBe("Home / Zimbabwe / Mashonaland East / Marondera");
+    // The province is skipped when it is the place's own name.
+    expect(
+      trailText(
+        trailOf(
+          { lat: 0, lon: 0, country: "ZW", province: "Harare" },
+          "Harare",
+        ),
+      ),
+    ).toBe("Home / Zimbabwe / Harare");
+    // A place that is not known yet still has a trail.
+    expect(trailText(trailOf(undefined, "Current location"))).toBe(
+      "Home / Current location",
+    );
+  });
+
+  it("says the country's name, not its ISO code, as the web does", () => {
+    expect(countryLabel("ZW")).toBe("Zimbabwe");
+    expect(countryLabel("zw")).toBe("Zimbabwe");
+    // Not a code: shown as given. Missing: nothing.
+    expect(countryLabel("Zimbabwe")).toBe("Zimbabwe");
+    expect(countryLabel(undefined)).toBeUndefined();
+  });
+
+  it("names the country where the runtime has no region names, as Hermes (issue #72)", () => {
+    const spy = jest.spyOn(Intl, "DisplayNames").mockImplementation(() => {
+      throw new TypeError("Intl.DisplayNames is not supported");
+    });
+    try {
+      expect(countryLabel("ZW")).toBe("Zimbabwe");
+      expect(countryLabel("sg")).toBe("Singapore");
+      expect(countryLabel("CD")).toBe("DR Congo");
+      // A code no table knows is still shown, never nothing.
+      expect(countryLabel("QQ")).toBe("QQ");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
+describe("the forecast kept on the phone (issue #69)", () => {
+  it("says it could not refresh, how old the copy is and why, and offers Try again", async () => {
+    const onRetry = jest.fn();
+    const tree = await render(
+      <WeatherPage
+        weather={harareWeather()}
+        name="Harare"
+        inTabs
+        saved={{
+          fetchedAt: Date.now() - 3 * 3_600_000,
+          forecastOnly: true,
+          reason:
+            "Mukoko could not be reached. Check your connection, then try again.",
+          onRetry,
+        }}
+      />,
+    );
+    expect(tree.getByTestId("saved-forecast-banner")).toBeTruthy();
+    expect(
+      tree.getByText("Couldn't refresh the weather for Harare"),
+    ).toBeTruthy();
+    expect(
+      tree.getByText(
+        "Showing what is saved on this device. Updated 3 h ago. Conditions are the forecast for this hour.",
+      ),
+    ).toBeTruthy();
+    await fireEvent.press(tree.getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows no such notice on a live page", async () => {
+    const tree = await render(
+      <WeatherPage weather={harareWeather()} name="Harare" inTabs />,
+    );
+    expect(tree.queryByTestId("saved-forecast-banner")).toBeNull();
+  });
+});
+
+describe("Back control", () => {
+  it("goes back when there is somewhere to go, else home", async () => {
+    const tree = await render(<BackControl />);
+    await fireEvent.press(tree.getByRole("button", { name: "Back" }));
+    expect(router.back).toHaveBeenCalledTimes(1);
+    (router.canGoBack as jest.Mock).mockReturnValueOnce(false);
+    await fireEvent.press(tree.getByRole("button", { name: "Back" }));
+    expect(router.replace).toHaveBeenCalledWith("/");
+  });
+});
+
+describe("WeatherError", () => {
+  it("says what happened, what to do, and offers one primary action", async () => {
+    const onRetry = jest.fn();
+    const tree = await render(
+      <WeatherError
+        message="The weather service did not answer."
+        onRetry={onRetry}
+        leading={<BackControl />}
+        inTabs
+      />,
+    );
+    expect(tree.getByText("Weather unavailable")).toBeTruthy();
+    expect(tree.getByText("The weather service did not answer.")).toBeTruthy();
+    // The cause is the message's to say: no fixed "check your connection"
+    // under a failure that may not be the connection's (issue #74).
+    expect(tree.queryByText(/Check your connection/)).toBeNull();
+    // Nothing to share on an error face.
+    expect(tree.queryByRole("button", { name: /Share weather/ })).toBeNull();
+    await fireEvent.press(tree.getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    // A person can still go back or open Settings.
+    expect(tree.getByRole("button", { name: "Back" })).toBeTruthy();
+    expect(
+      tree.getByRole("button", { name: "Settings and sign in" }),
+    ).toBeTruthy();
+  });
+
+  it("is a 56 dp pill, not a blank screen", async () => {
+    const tree = await render(
+      <WeatherError message="x" onRetry={jest.fn()} inTabs />,
+    );
+    const style = JSON.stringify(
+      tree.getByRole("button", { name: "Try again" }).props.style,
+    );
+    expect(style).toContain('"minHeight":56');
+    expect(tree.getByTestId("weather-error")).toBeTruthy();
+  });
+});
