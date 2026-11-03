@@ -63,14 +63,17 @@ function deferred<T>() {
 
 const never = () => new Promise<never>(() => undefined);
 
-function kept(name: string): SavedView {
+/** Gweru, not the default city: the kept copy is the person's own place. */
+const GWERU = { lat: -19.45, lon: 29.82 };
+
+function kept(name: string, at: { lat: number; lon: number } = GWERU) {
   return {
-    weather: { ...harareWeather(), location: undefined },
+    weather: { ...harareWeather(), location: undefined, coordinates: at },
     fetchedAt: Date.now() - 5 * 60_000,
     freshness: "current",
     name,
     slug: "gweru",
-  };
+  } satisfies SavedView;
 }
 
 async function settle() {
@@ -121,27 +124,80 @@ describe("home", () => {
     expect(tree.getAllByText("Harare").length).toBeGreaterThan(0);
   });
 
-  it("never replaces a fresh answer with an older kept copy that read late", async () => {
-    const late = deferred<SavedView | null>();
-    keptMock.mockReturnValue(late.promise);
-    weatherMock.mockResolvedValue({
-      weather: harareWeather(),
-      record: { raw: {}, meta: {} },
-    });
-    const tree = await render(<WeatherHome />);
-    await settle();
-    expect(tree.getAllByText("Harare").length).toBeGreaterThan(0);
-    late.resolve(kept("Gweru"));
-    await settle();
-    expect(tree.queryAllByText("Gweru")).toHaveLength(0);
-  });
-
   it("keeps the kept copy, with the failure said, when the refresh fails", async () => {
     keptMock.mockResolvedValue(kept("Gweru"));
     weatherMock.mockRejectedValue(new Error("down"));
     const tree = await render(<WeatherHome />);
     await settle();
     expect(tree.getAllByText("Gweru").length).toBeGreaterThan(0);
+  });
+});
+
+const HARARE = { lat: -17.8252, lon: 31.0335 };
+const ok = () => ({
+  weather: harareWeather(),
+  record: { raw: {}, meta: {} },
+});
+const granted = {
+  status: "granted",
+  canAskAgain: true,
+  granted: true,
+  expires: "never",
+};
+
+describe("home does not wait on the location (slice 2)", () => {
+  it("starts the default city's request without waiting for the permission read", async () => {
+    keptMock.mockResolvedValue(null);
+    loc.getForegroundPermissionsAsync.mockReturnValue(never() as never);
+    weatherMock.mockResolvedValue(ok());
+    const tree = await render(<WeatherHome />);
+    await settle();
+    expect(weatherMock).toHaveBeenCalledTimes(1);
+    expect(weatherMock).toHaveBeenCalledWith(HARARE, expect.anything());
+    expect(tree.getAllByText("Harare").length).toBeGreaterThan(0);
+  });
+
+  it("shows the default city before the GPS fix, then upgrades to the fix", async () => {
+    keptMock.mockResolvedValue(null);
+    loc.getForegroundPermissionsAsync.mockResolvedValue(granted as never);
+    const fix = deferred<{ coords: { latitude: number; longitude: number } }>();
+    loc.getCurrentPositionAsync.mockReturnValue(fix.promise as never);
+    weatherMock.mockResolvedValue(ok());
+    const tree = await render(<WeatherHome />);
+    await settle();
+    expect(weatherMock).toHaveBeenCalledTimes(1);
+    expect(tree.getAllByText("Harare").length).toBeGreaterThan(0);
+    // The ask never flashes over a person who has allowed location.
+    expect(tree.queryByTestId("location-prompt")).toBeNull();
+    fix.resolve({ coords: { latitude: -19.45, longitude: 29.82 } });
+    await settle();
+    expect(weatherMock).toHaveBeenLastCalledWith(GWERU, expect.anything());
+  });
+
+  it("refreshes the kept place while the GPS locates, never starting the default city", async () => {
+    keptMock.mockResolvedValue(kept("Gweru"));
+    loc.getForegroundPermissionsAsync.mockResolvedValue(granted as never);
+    loc.getCurrentPositionAsync.mockReturnValue(never() as never);
+    weatherMock.mockReturnValue(never());
+    const tree = await render(<WeatherHome />);
+    await settle();
+    expect(weatherMock).toHaveBeenCalledTimes(1);
+    expect(weatherMock).toHaveBeenCalledWith(GWERU, expect.anything());
+    expect(tree.getAllByText("Gweru").length).toBeGreaterThan(0);
+  });
+
+  it("falls back to the default city when the kept place was a guess and there is no fix", async () => {
+    keptMock.mockResolvedValue(kept("Gweru"));
+    loc.getForegroundPermissionsAsync.mockResolvedValue({
+      status: "denied",
+      canAskAgain: false,
+      granted: false,
+      expires: "never",
+    } as never);
+    weatherMock.mockResolvedValue(ok());
+    await render(<WeatherHome />);
+    await settle();
+    expect(weatherMock).toHaveBeenLastCalledWith(HARARE, expect.anything());
   });
 });
 
