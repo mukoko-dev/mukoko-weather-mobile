@@ -54,6 +54,7 @@ import {
 } from "@/components/weather/LocationPromptCard";
 import { WeatherError, WeatherPage } from "@/components/weather/WeatherPage";
 import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
+import { haversineKm } from "@/shared/icao-codes";
 import {
   HOME_KEY,
   type SavedView,
@@ -88,6 +89,11 @@ type LoadOutcome = "ready" | "saved" | "error" | "aborted";
 type LoadState =
   | { kind: "loading" }
   | { kind: "ready"; weather: WeatherResponse }
+  /**
+   * The first paint: the copy kept on the phone, shown at once while the fix
+   * and the request are on their way. The fresh answer replaces it in place.
+   */
+  | { kind: "stored"; view: SavedView }
   /** The Worker could not be reached; the copy kept on the phone is shown. */
   | { kind: "saved"; view: SavedView; reason: string }
   | { kind: "error"; message: string };
@@ -104,6 +110,9 @@ export default function WeatherHome() {
     problem: LocationProblem | null;
   }>({ busy: false, problem: null });
   const [askDismissed, setAskDismissed] = useState(true);
+  // True until the permission read (and the fix, if allowed) has finished: the
+  // ask waits for it, so it never flashes over a person who has said yes.
+  const [locating, setLocating] = useState(true);
 
   /** A fine fix, or null when the phone could not give one. */
   const takeFix = useCallback(async (): Promise<Coords | null> => {
@@ -120,12 +129,13 @@ export default function WeatherHome() {
   }, []);
 
   /**
-   * Where to start without asking anything: the fix when location is already
-   * allowed (silent, as the web refreshes when the browser already granted
-   * it), else the default city at once. The system prompt only ever follows a
-   * tap on "Use my location" (issue #65).
+   * The person's fix, when location is already allowed (silent, as the web
+   * refreshes when the browser already granted it), else null. Never asks:
+   * the system prompt only ever follows a tap on "Use my location" (issue
+   * #65). The screen does not wait for this: the weather is already on its
+   * way (issue #94) and the fix upgrades it in place.
    */
-  const resolveLocation = useCallback(async (): Promise<Coords> => {
+  const resolveFix = useCallback(async (): Promise<Coords | null> => {
     let status: Location.PermissionStatus | undefined;
     let canAskAgain = true;
     try {
@@ -138,14 +148,14 @@ export default function WeatherHome() {
       const fix = await takeFix();
       if (fix) return fix;
       setAsk({ busy: false, problem: "no-location" });
-      return { ...FALLBACK, fallback: true };
+      return null;
     }
     // Denied: say so with a way forward (issue #66). Never asked: offer the
     // ask, unless it was put off recently.
     if (status === "denied" && !canAskAgain) {
       setAsk({ busy: false, problem: "denied" });
     }
-    return { ...FALLBACK, fallback: true };
+    return null;
   }, [takeFix]);
 
   /**
@@ -281,16 +291,41 @@ export default function WeatherHome() {
     [load, resolvePlace],
   );
 
+  // Nothing here waits on the location or the GPS fix (issue #94). The kept
+  // copy paints first (a local read), the request starts at once for the place
+  // that copy was for (else the default city), and the fix, when there is one,
+  // upgrades it in place. With a kept copy the default city is never started,
+  // so a person's own place is never replaced by Harare while the GPS locates.
   useEffect(() => {
+    void locationAskPutOff().then(setAskDismissed);
     void (async () => {
-      const [loc, putOff] = await Promise.all([
-        resolveLocation(),
-        locationAskPutOff(),
-      ]);
-      setAskDismissed(putOff);
-      await start(loc);
+      const kept = await loadForecast(HOME_KEY);
+      if (kept) {
+        setState((prev) =>
+          prev.kind === "loading" ? { kind: "stored", view: kept } : prev,
+        );
+      }
+      const first = (kept && keptCoords(kept)) || {
+        ...FALLBACK,
+        fallback: true,
+      };
+      void start(first);
+      const fix = await resolveFix();
+      setLocating(false);
+      if (fix) {
+        // The person's place did not load and nothing is kept for it: back to
+        // the default city's weather, saying why, rather than an error face.
+        if ((await start(fix)) === "error") {
+          setAsk({ busy: false, problem: "no-weather" });
+          await start({ ...FALLBACK, fallback: true });
+        }
+      } else if (!first.fallback) {
+        // No fix after all (denied, off, or none came): the kept place was a
+        // guess, so the default city stands in, as it always did.
+        await start({ ...FALLBACK, fallback: true });
+      }
     })();
-  }, [resolveLocation, start]);
+  }, [resolveFix, start]);
 
   // Leaving home with the default city shown: the bar's My Location is not
   // standing in for anything any more.
@@ -388,8 +423,12 @@ export default function WeatherHome() {
 
   const onRetry = useCallback(() => {
     if (!coords) return;
-    // The saved copy stays on screen while it tries again.
-    setState((prev) => (prev.kind === "saved" ? prev : { kind: "loading" }));
+    // The kept copy stays on screen while it tries again.
+    setState((prev) =>
+      prev.kind === "saved" || prev.kind === "stored"
+        ? prev
+        : { kind: "loading" },
+    );
     void load(coords);
   }, [coords, load]);
 
@@ -399,7 +438,7 @@ export default function WeatherHome() {
   const brand = <MukokoLogo onSky showWordmark={false} testID="home-brand" />;
   // Over the default city: say it is a stand-in, why, and the ways forward
   // (issues #65, #66). Gone once the person's own place is on screen.
-  const showAsk = Boolean(coords?.fallback) && !askDismissed;
+  const showAsk = Boolean(coords?.fallback) && !askDismissed && !locating;
   const notice = showAsk ? (
     <LocationPromptCard
       placeName={standInName(coords)}
@@ -419,6 +458,23 @@ export default function WeatherHome() {
         leading={brand}
         inTabs
         onRetry={coords ? onRetry : undefined}
+      />
+    );
+  }
+  if (state.kind === "stored") {
+    const { view } = state;
+    // The refresh is on its way: the pull spinner says so, and no banner
+    // speaks of a failure that has not happened.
+    return (
+      <WeatherPage
+        weather={view.weather}
+        name={view.name ?? view.weather.location?.name ?? "Your last place"}
+        slug={view.slug}
+        leading={brand}
+        onRefresh={onRefresh}
+        refreshing
+        inTabs
+        notice={notice}
       />
     );
   }
@@ -470,6 +526,20 @@ export default function WeatherHome() {
       notice={notice}
     />
   );
+}
+
+/**
+ * Where the kept home copy was for, to refresh it at once. The default city is
+ * recognised (it is not the person's own place), and a copy with no point has
+ * nothing to refresh.
+ */
+function keptCoords(kept: SavedView): Coords | null {
+  const at = kept.weather.location ?? kept.weather.coordinates;
+  if (!at) return null;
+  const isDefault = haversineKm(at.lat, at.lon, FALLBACK.lat, FALLBACK.lon) < 5;
+  return isDefault
+    ? { ...FALLBACK, fallback: true }
+    : { lat: at.lat, lon: at.lon, label: kept.name, slug: kept.slug };
 }
 
 /** The name the default city is shown under. */
