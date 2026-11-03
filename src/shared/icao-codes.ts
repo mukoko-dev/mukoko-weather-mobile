@@ -97,7 +97,7 @@ const ICAO_MAP: Record<string, string> = {
   "colombo-lk": "VCBI",
 };
 
-function haversineKm(
+export function haversineKm(
   lat1: number,
   lon1: number,
   lat2: number,

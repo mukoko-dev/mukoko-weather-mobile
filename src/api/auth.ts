@@ -11,20 +11,19 @@
  *
  * Flow:
  *   1. User taps "Sign in" on /sign-in
- *   2. App constructs `${AUTHKIT_DOMAIN}/oauth2/authorize?client_id=...
+ *   2. App constructs `${authkitDomain()}/oauth2/authorize?client_id=...
  *      &redirect_uri=mukoko://sign-in-callback&response_type=code
  *      &code_challenge=<sha256(verifier)>&code_challenge_method=S256
  *      &provider=authkit`
  *   3. expo-web-browser opens it; user signs in / signs up
  *   4. WorkOS redirects to mukoko://sign-in-callback?code=<authcode>
- *   5. We POST the code to mukoko-weather's `/callback` (or
- *      a dedicated `/api/py/auth/mobile/exchange` once it exists) and
- *      receive a session JWT (or access token + refresh token).
- *   6. JWT goes into SecureStore; setAuthTokenResolver wires it into apiFetch.
- *
- * TODO: the mobile-specific code-exchange route on mukoko-weather is not yet
- * built — see Phase 1B notes in README. Until then `completeSignIn` will
- * persist the raw `code` and resolve so the rest of the flow can be tested.
+ *   5. The code must be exchanged for a session by a server route that holds
+ *      the WorkOS secret. No such route exists on the Cloudflare backend yet
+ *      (needs a Cloudflare route first: a token exchange on the Mukoko or
+ *      Nyuchi API, designed in issue #41), so sign-in is switched off
+ *      (`SIGN_IN_AVAILABLE`) and the app never pretends to hold a session.
+ *   6. Once it exists, the session goes into SecureStore and
+ *      setAuthTokenResolver wires it into apiFetch.
  */
 
 import * as AuthSession from "expo-auth-session";
@@ -33,18 +32,62 @@ import * as SecureStore from "expo-secure-store";
 import * as WebBrowser from "expo-web-browser";
 import { Platform } from "react-native";
 
-import { apiFetch, setAuthTokenResolver } from "@/api/client";
+import { setAuthTokenResolver } from "@/api/client";
 
 WebBrowser.maybeCompleteAuthSession();
 
 const SESSION_KEY = "mukoko.session";
 const PKCE_VERIFIER_KEY = "mukoko.pkceVerifier";
 
-const AUTHKIT_DOMAIN =
-  process.env.EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN ?? "https://auth.mukoko.com";
+/**
+ * The WorkOS AuthKit domain, from configuration only
+ * (EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN, set per build environment). There is no
+ * default in code: an unset value fails sign-in with a clear error rather than
+ * sending users to a guessed host. Accepts a bare host or an https origin.
+ */
+export const AUTHKIT_DOMAIN_MISSING =
+  "EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN is not configured";
+
+export function authkitDomain(): string {
+  const raw = (process.env.EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN ?? "").trim();
+  if (!raw) throw new Error(AUTHKIT_DOMAIN_MISSING);
+  // Parse rather than concatenate: only an https origin is accepted, and any
+  // path, query, fragment or credentials in the value are dropped, so the
+  // authorize URL is always <origin>/oauth2/authorize.
+  let url: URL;
+  try {
+    url = new URL(
+      /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`,
+    );
+  } catch {
+    throw new Error(`${AUTHKIT_DOMAIN_MISSING} (not a valid host or URL)`);
+  }
+  if (url.protocol !== "https:" || url.username || url.password) {
+    throw new Error(`${AUTHKIT_DOMAIN_MISSING} (must be an https origin)`);
+  }
+  return url.origin;
+}
 const WORKOS_CLIENT_ID = process.env.EXPO_PUBLIC_WORKOS_CLIENT_ID ?? "";
 const REDIRECT_SCHEME = "mukoko";
 const REDIRECT_PATH = "sign-in-callback";
+
+/**
+ * Sign-in is off until the Cloudflare backend has a route that exchanges the
+ * authorization code for a session. Nothing here may fake a session while it
+ * is false.
+ */
+export const SIGN_IN_AVAILABLE: boolean = false;
+
+/** What the person is told while sign-in is off. */
+export const SIGN_IN_UNAVAILABLE_MESSAGE =
+  "Sign-in isn't available yet. Mukoko Weather works without an account, and your saved places stay on this device.";
+
+export class SignInUnavailableError extends Error {
+  constructor() {
+    super(SIGN_IN_UNAVAILABLE_MESSAGE);
+    this.name = "SignInUnavailableError";
+  }
+}
 
 export type Session = {
   accessToken: string;
@@ -83,15 +126,19 @@ async function deleteItem(key: string): Promise<void> {
 export async function getSession(): Promise<Session | null> {
   const raw = await getItem(SESSION_KEY);
   if (!raw) return null;
+  let session: Session;
   try {
-    return JSON.parse(raw) as Session;
+    session = JSON.parse(raw) as Session;
   } catch {
     return null;
   }
-}
-
-async function persistSession(session: Session): Promise<void> {
-  await setItem(SESSION_KEY, JSON.stringify(session));
+  // An earlier build stored a made-up "stub." session when the code exchange
+  // did not exist. It is not a session: drop it.
+  if (session.accessToken?.startsWith("stub.")) {
+    await deleteItem(SESSION_KEY);
+    return null;
+  }
+  return session;
 }
 
 export async function clearSession(): Promise<void> {
@@ -147,13 +194,23 @@ export function getRedirectUri(): string {
 export async function startSignIn(): Promise<
   | { type: "success"; code: string }
   | { type: "cancel" }
+  | { type: "unavailable"; message: string }
   | { type: "error"; message: string }
 > {
+  if (!SIGN_IN_AVAILABLE) {
+    return { type: "unavailable", message: SIGN_IN_UNAVAILABLE_MESSAGE };
+  }
   if (!WORKOS_CLIENT_ID) {
     return {
       type: "error",
       message: "Missing EXPO_PUBLIC_WORKOS_CLIENT_ID — set it in your .env",
     };
+  }
+  let authkitOrigin: string;
+  try {
+    authkitOrigin = authkitDomain();
+  } catch {
+    return { type: "error", message: AUTHKIT_DOMAIN_MISSING };
   }
 
   const verifier = randomVerifier();
@@ -171,7 +228,7 @@ export async function startSignIn(): Promise<
     provider: "authkit",
   });
 
-  const authorizeUrl = `${AUTHKIT_DOMAIN}/oauth2/authorize?${params.toString()}`;
+  const authorizeUrl = `${authkitOrigin}/oauth2/authorize?${params.toString()}`;
 
   const result = await WebBrowser.openAuthSessionAsync(
     authorizeUrl,
@@ -201,40 +258,13 @@ export async function startSignIn(): Promise<
 /**
  * Exchange the authorization code for a session.
  *
- * STATUS: stubbed exchange. The web app's /callback route is HTTP-only-cookie
- * based and not directly callable from native. Once mukoko-weather exposes
- * POST /api/py/auth/mobile/exchange { code, codeVerifier, redirectUri },
- * flip EXCHANGE_ENABLED to true.
+ * There is no Cloudflare route for this yet, so it always fails with
+ * `SignInUnavailableError` and stores nothing. The PKCE verifier is removed so
+ * it cannot linger.
  */
-const EXCHANGE_ENABLED = false;
-
-export async function completeSignIn(code: string): Promise<Session> {
-  const verifier = (await getItem(PKCE_VERIFIER_KEY)) ?? "";
+export async function completeSignIn(_code: string): Promise<Session> {
   await deleteItem(PKCE_VERIFIER_KEY);
-
-  if (!EXCHANGE_ENABLED) {
-    const stub: Session = {
-      accessToken: `stub.${code.slice(0, 12)}`,
-      expiresAt: Date.now() + 60 * 60 * 1000,
-    };
-    await persistSession(stub);
-    if (__DEV__) {
-      // eslint-disable-next-line no-console
-      console.log("[auth] code exchange stubbed; persisted stub session");
-    }
-    return stub;
-  }
-
-  const session = await apiFetch<Session>("/api/py/auth/mobile/exchange", {
-    method: "POST",
-    json: {
-      code,
-      codeVerifier: verifier,
-      redirectUri: getRedirectUri(),
-    },
-  });
-  await persistSession(session);
-  return session;
+  throw new SignInUnavailableError();
 }
 
 export async function signOut(): Promise<void> {

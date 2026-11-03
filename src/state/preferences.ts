@@ -21,24 +21,32 @@ const STORAGE_KEY = "mukoko.preferences";
 /** Theme selection. `system` follows the OS color scheme. */
 export type ThemePreference = "light" | "dark" | "system";
 
-/** Activity interests — drive contextual weather advice + mineral accents. */
-export type ActivityId =
-  | "farming"
-  | "mining"
-  | "travel"
-  | "tourism"
-  | "sports"
-  | "casual";
+/**
+ * An activity the person follows, by the stable id the Worker and the web use
+ * (`crop-farming`, `football`, `drone-flying`, ...; see `src/shared/activities.ts`).
+ * The selection is kept on this device only: it is never sent to the API, a
+ * device profile or an AI route. Order is the order they were picked in, which
+ * is the order the Community lane shows them.
+ */
+export type ActivityId = string;
 
-/** Ordered, canonical list of selectable activities. */
-export const ACTIVITY_IDS: readonly ActivityId[] = [
+/** A bound, not a limit anyone reaches: the catalogue holds 55 activities. */
+export const MAX_ACTIVITIES = 60;
+
+const ACTIVITY_ID = /^[a-z0-9-]{1,40}$/;
+
+/**
+ * The six category names an earlier build stored here, before the app had the
+ * web's 55 activities. They are not activity ids (except `mining`, which is
+ * both), so they are dropped on load rather than shown as nothing.
+ */
+const LEGACY_CATEGORY_IDS = new Set([
   "farming",
-  "mining",
   "travel",
   "tourism",
   "sports",
   "casual",
-] as const;
+]);
 
 /** A location the user has pinned to their "My" screen. */
 export type SavedLocation = {
@@ -110,9 +118,15 @@ function normalize(input: unknown): Preferences {
     ? (raw.theme as ThemePreference)
     : DEFAULT_PREFERENCES.theme;
 
-  const activities = Array.isArray(raw.activities)
-    ? ACTIVITY_IDS.filter((id) => (raw.activities as unknown[]).includes(id))
-    : [];
+  const activities: ActivityId[] = [];
+  if (Array.isArray(raw.activities)) {
+    for (const id of raw.activities) {
+      if (typeof id !== "string" || !ACTIVITY_ID.test(id)) continue;
+      if (LEGACY_CATEGORY_IDS.has(id) || activities.includes(id)) continue;
+      activities.push(id);
+      if (activities.length >= MAX_ACTIVITIES) break;
+    }
+  }
 
   const savedLocationsRaw = Array.isArray(raw.savedLocations)
     ? raw.savedLocations
@@ -127,7 +141,7 @@ function normalize(input: unknown): Preferences {
     if (savedLocations.length >= MAX_SAVED_LOCATIONS) break;
   }
 
-  return { theme, activities: [...activities], savedLocations };
+  return { theme, activities, savedLocations };
 }
 
 // --- observable store ------------------------------------------------------
@@ -195,12 +209,22 @@ export function setThemePreference(theme: ThemePreference): void {
   commit({ ...state, theme });
 }
 
+/**
+ * Add or remove an activity. A new pick goes to the end, so the lane shows
+ * them in the order they were chosen (as the web). An id that is not an
+ * activity id is ignored.
+ */
 export function toggleActivity(id: ActivityId): void {
-  const has = state.activities.includes(id);
-  const activities = has
-    ? state.activities.filter((a) => a !== id)
-    : ACTIVITY_IDS.filter((a) => a === id || state.activities.includes(a));
-  commit({ ...state, activities });
+  if (!ACTIVITY_ID.test(id)) return;
+  if (state.activities.includes(id)) {
+    commit({
+      ...state,
+      activities: state.activities.filter((a) => a !== id),
+    });
+    return;
+  }
+  if (state.activities.length >= MAX_ACTIVITIES) return;
+  commit({ ...state, activities: [...state.activities, id] });
 }
 
 /** Pin a location. Returns why the add did or didn't happen. */
