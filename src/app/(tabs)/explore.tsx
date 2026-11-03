@@ -2,7 +2,7 @@
  * Explore tab — browse + search locations.
  *
  * Two modes in one screen:
- *   - Search: a debounced query hits GET /api/py/search via `searchLocations`
+ *   - Search: a debounced query hits GET /v1/search via `searchLocations`
  *     and renders location result cards.
  *   - Browse (empty query): category chips (mineral-coloured) and country chips
  *     filter the static `LOCATIONS` catalog, mirroring the web `/explore`.
@@ -282,7 +282,7 @@ export default function ExploreScreen() {
           No locations found. Try another search.
         </BrandText>
       </View>
-    ) : null;
+    ) : undefined;
 
   return (
     <SafeAreaView

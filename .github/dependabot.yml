@@ -1,0 +1,61 @@
+version: 2
+# One grouped pull request per ecosystem per week, against `staging`.
+#
+# Dependabot used to open one pull request per package against `main`, which
+# takes releases only, so each of them failed the branch gate. Version updates
+# below target `staging` and reach `main` with the next release.
+#
+# Security updates are different: GitHub raises them against the default branch
+# only and ignores `target-branch` for an ecosystem that sets it. Retarget one
+# with `gh pr edit <n> --base staging`.
+#
+# Majors are not proposed here: a major upgrade is planned work with its own
+# issue. Security fixes for a major still arrive as security updates.
+#
+# No `labels:` on purpose: a label that does not exist makes Dependabot report
+# an error on every run.
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "staging"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 2
+    # Wait a week before proposing a newly published version: new releases can
+    # be malicious or unstable (the scan job's dependabot-missing-cooldown rule).
+    cooldown:
+      default-days: 7
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # Expo pins these to the SDK. They move with `npx expo install --fix`
+      # when the SDK is upgraded, not one package at a time.
+      - dependency-name: "expo"
+      - dependency-name: "expo-*"
+      - dependency-name: "@expo/*"
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-*"
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "staging"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 1
+    # Wait a week before proposing a newly published version: new releases can
+    # be malicious or unstable (the scan job's dependabot-missing-cooldown rule).
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns:
+          - "*"

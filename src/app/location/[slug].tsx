@@ -1,86 +1,79 @@
 /**
- * Location detail screen — a full weather page for a saved/community location,
- * driven by a `slug` route param instead of GPS.
+ * A place's weather page, driven by a `slug` route param instead of GPS. It is
+ * the same `WeatherPage` as the Weather tab (sky, hero, Conditions card, tiles,
+ * the week), with a Back control at the left of the top row; this screen only
+ * loads the place and designs the states: loading skeleton, failure with a way
+ * to try again, ready, and pull to refresh.
  *
- * Layout (mirrors the web location page's hierarchy, on the Mukoko brand kit):
- *   - Brand Header (mark + wordmark + location name / country)
- *   - Hero current conditions  → HeroConditions (BaobabCard + WeatherIcon)
- *   - 24-hour forecast          → HourlyForecast (horizontal scroll)
- *   - Atmospheric conditions    → AtmosphericMetrics (MetricCard grid)
- *   - 7-day forecast            → DailyForecast
- *
- * States: loading skeleton, error + retry, pull-to-refresh. Content fades in on
- * load unless the OS "reduce motion" preference is set (then it appears
- * instantly). All spacing/radii/colours come from brand tokens + the palette.
+ * There is no native header: the hero's own top row carries Back, the trail,
+ * Share and Settings, as the web's does.
  */
 
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import { Animated, RefreshControl, ScrollView, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { fetchWeather, type WeatherResponse } from "@/api/weather";
-import { SPACING } from "@/brand/tokens";
-import { Header } from "@/components/Header";
-import { AtmosphericMetrics } from "@/components/detail/AtmosphericMetrics";
-import { DailyForecast } from "@/components/detail/DailyForecast";
-import { DetailError } from "@/components/detail/DetailError";
-import { DetailSkeleton } from "@/components/detail/DetailSkeleton";
-import { HeroConditions } from "@/components/detail/HeroConditions";
-import { HourlyForecast } from "@/components/detail/HourlyForecast";
-import { extractHourly } from "@/components/detail/hourly";
-import { useReducedMotion } from "@/components/detail/useReducedMotion";
-import { usePalette } from "@/hooks/usePalette";
+import { failureMessage } from "@/api/failure";
+import { fetchWeatherRecord, type WeatherResponse } from "@/api/weather";
+import {
+  BackControl,
+  WeatherError,
+  WeatherPage,
+} from "@/components/weather/WeatherPage";
+import { placeNameFromSlug } from "@/components/weather/location-routes";
+import { WeatherSkeleton } from "@/components/weather/WeatherSkeleton";
+import {
+  type SavedView,
+  loadForecast,
+  saveForecast,
+} from "@/state/forecast-store";
 
 type LoadState =
   | { kind: "loading" }
   | { kind: "ready"; weather: WeatherResponse }
+  /** The Worker could not be reached; the copy kept on the phone is shown. */
+  | { kind: "saved"; view: SavedView; reason: string }
   | { kind: "error"; message: string };
 
-function titleCaseSlug(slug: string | undefined): string {
-  if (!slug) return "Location";
-  return slug
-    .split(/[-_]/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
 export default function LocationScreen() {
-  const palette = usePalette();
-  const reduceMotion = useReducedMotion();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [refreshing, setRefreshing] = useState(false);
 
-  // Never calls setState synchronously — every update lands after the awaited
-  // fetch, keeping the mount effect free of the react-hooks/set-state-in-effect
-  // cascade warning.
-  const load = useCallback(
-    async (signal?: AbortSignal) => {
-      try {
-        const weather = await fetchWeather({ slug }, signal);
-        setState({ kind: "ready", weather });
-      } catch (err) {
-        if (signal?.aborted) return;
-        setState({
-          kind: "error",
-          message:
-            err instanceof Error ? err.message : "Unable to load weather",
-        });
-      }
-    },
-    [slug],
-  );
+  // One load at a time: a new load, or leaving the screen, aborts the last,
+  // and only the latest may set the screen. Every update lands after the
+  // awaited fetch, never synchronously in the mount effect.
+  const inFlight = useRef<AbortController | null>(null);
+  const load = useCallback(async () => {
+    if (!slug) return;
+    inFlight.current?.abort();
+    const controller = new AbortController();
+    inFlight.current = controller;
+    const { signal } = controller;
+    try {
+      const { weather, record } = await fetchWeatherRecord({ slug }, signal);
+      if (signal.aborted) return;
+      setState({ kind: "ready", weather });
+      void saveForecast(slug, record, { name: weather.location?.name, slug });
+    } catch (err) {
+      if (signal.aborted) return;
+      // The forecast this phone kept for the place, with its age, beats an
+      // error face.
+      const view = await loadForecast(slug);
+      if (signal.aborted) return;
+      setState(
+        view
+          ? { kind: "saved", view, reason: failureMessage(err) }
+          : { kind: "error", message: failureMessage(err) },
+      );
+    } finally {
+      if (inFlight.current === controller) inFlight.current = null;
+    }
+  }, [slug]);
 
   useEffect(() => {
-    if (!slug) return;
-    const controller = new AbortController();
-    void (async () => {
-      await load(controller.signal);
-    })();
-    return () => controller.abort();
-  }, [load, slug]);
+    void load();
+    return () => inFlight.current?.abort();
+  }, [load]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -89,97 +82,60 @@ export default function LocationScreen() {
   }, [load]);
 
   const onRetry = useCallback(() => {
-    setState({ kind: "loading" });
+    // The saved copy stays on screen while it tries again.
+    setState((prev) => (prev.kind === "saved" ? prev : { kind: "loading" }));
     void load();
   }, [load]);
 
-  const fallbackTitle = titleCaseSlug(slug);
-  const title =
+  const fallbackName = placeNameFromSlug(slug);
+  const name =
     state.kind === "ready"
-      ? (state.weather.location?.name ?? fallbackTitle)
-      : fallbackTitle;
-  const subtitle =
-    state.kind === "ready"
-      ? [state.weather.location?.province, state.weather.location?.country]
-          .filter(Boolean)
-          .join(", ") || undefined
-      : undefined;
+      ? (state.weather.location?.name ?? fallbackName)
+      : state.kind === "saved"
+        ? (state.view.name ?? fallbackName)
+        : fallbackName;
 
   return (
-    <SafeAreaView
-      style={[styles.safe, { backgroundColor: palette.background }]}
-      edges={["top"]}
-    >
-      <Stack.Screen options={{ title }} />
-      <Header title={title} subtitle={subtitle} />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={palette.primary}
-            colors={[palette.primary]}
-          />
-        }
-      >
-        {!slug ? (
-          <DetailError message="No location was specified." onRetry={onRetry} />
-        ) : state.kind === "loading" ? (
-          <DetailSkeleton />
-        ) : state.kind === "error" ? (
-          <DetailError message={state.message} onRetry={onRetry} />
-        ) : (
-          <ReadyContent weather={state.weather} reduceMotion={reduceMotion} />
-        )}
-      </ScrollView>
-    </SafeAreaView>
+    <>
+      <Stack.Screen options={{ headerShown: false, title: name }} />
+      {!slug ? (
+        <WeatherError
+          message="No place was chosen."
+          onRetry={onRetry}
+          leading={<BackControl />}
+        />
+      ) : state.kind === "loading" ? (
+        <WeatherSkeleton leading={<BackControl />} onRetry={onRetry} />
+      ) : state.kind === "error" ? (
+        <WeatherError
+          message={state.message}
+          onRetry={onRetry}
+          leading={<BackControl />}
+        />
+      ) : state.kind === "saved" ? (
+        <WeatherPage
+          weather={state.view.weather}
+          name={name}
+          slug={slug}
+          leading={<BackControl />}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
+          saved={{
+            fetchedAt: state.view.fetchedAt,
+            forecastOnly: state.view.freshness === "forecast",
+            reason: state.reason,
+            onRetry,
+          }}
+        />
+      ) : (
+        <WeatherPage
+          weather={state.weather}
+          name={name}
+          leading={<BackControl />}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
+        />
+      )}
+    </>
   );
 }
-
-function ReadyContent({
-  weather,
-  reduceMotion,
-}: {
-  weather: WeatherResponse;
-  reduceMotion: boolean;
-}) {
-  const [opacity] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
-
-  useEffect(() => {
-    if (reduceMotion) {
-      opacity.setValue(1);
-      return;
-    }
-    const anim = Animated.timing(opacity, {
-      toValue: 1,
-      duration: 350,
-      useNativeDriver: true,
-    });
-    anim.start();
-    return () => anim.stop();
-  }, [opacity, reduceMotion]);
-
-  const hours = extractHourly(weather);
-
-  return (
-    <Animated.View style={[styles.content, { opacity }]}>
-      <HeroConditions weather={weather} />
-      <HourlyForecast hours={hours} />
-      <AtmosphericMetrics weather={weather} />
-      <DailyForecast weather={weather} />
-    </Animated.View>
-  );
-}
-
-const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  scroll: {
-    padding: SPACING.md,
-    gap: SPACING.md,
-    paddingBottom: SPACING.xxl,
-  },
-  content: {
-    gap: SPACING.md,
-  },
-});

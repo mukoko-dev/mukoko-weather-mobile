@@ -4,9 +4,9 @@
  *   - Lists saved locations (up to MAX_SAVED_LOCATIONS); tap a row to open its
  *     forecast at /location/[slug]; the trash affordance removes it.
  *   - "Use my current location" requests foreground location permission, reads
- *     GPS, and resolves it against /api/py/geo (autoCreate) via the shared API
- *     client. The backend now creates fine-grained locations (roads / shops),
- *     so we surface the specific returned name.
+ *     GPS, and resolves it against /v1/geo (autoCreate) via the shared API
+ *     client. The Worker names the exact spot (roads / shops), so we surface
+ *     the specific returned name.
  *   - A search field queries the shared location index; tapping a result pins
  *     it. Adds respect the 10-location cap and de-duplicate by slug.
  */

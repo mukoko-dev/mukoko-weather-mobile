@@ -1,62 +1,85 @@
 /**
- * authkitDomain() turns EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN into the origin the
- * authorize URL is built on. It must never guess a host, and must never let
- * anything but an https origin through.
+ * Sign-in is switched off until the API can exchange the authorization code
+ * for a session. While it is, the app must say so, open no browser, store no
+ * session, and drop the made-up "stub." session an earlier build wrote.
  */
 
-jest.mock("expo-auth-session", () => ({}));
-jest.mock("expo-crypto", () => ({}));
-jest.mock("expo-secure-store", () => ({}));
-jest.mock("expo-web-browser", () => ({ maybeCompleteAuthSession: jest.fn() }));
+import * as SecureStore from "expo-secure-store";
+import * as WebBrowser from "expo-web-browser";
 
-import { AUTHKIT_DOMAIN_MISSING, authkitDomain } from "@/api/auth";
+import {
+  SIGN_IN_AVAILABLE,
+  SIGN_IN_UNAVAILABLE_MESSAGE,
+  SignInUnavailableError,
+  clearSession,
+  completeSignIn,
+  getSession,
+  signOut,
+  startSignIn,
+} from "@/api/auth";
+import { mockFetch } from "@/api/mock-fetch";
 
-const KEY = "EXPO_PUBLIC_WORKOS_AUTHKIT_DOMAIN";
-const original = process.env[KEY];
+const SESSION_KEY = "mukoko.session";
 
-function withDomain(value: string | undefined): string {
-  if (value === undefined) delete process.env[KEY];
-  else process.env[KEY] = value;
-  return authkitDomain();
-}
-
-afterEach(() => {
-  if (original === undefined) delete process.env[KEY];
-  else process.env[KEY] = original;
+beforeEach(async () => {
+  await clearSession();
 });
 
-describe("authkitDomain", () => {
-  it("fails closed when the variable is unset or blank", () => {
-    expect(() => withDomain(undefined)).toThrow(AUTHKIT_DOMAIN_MISSING);
-    expect(() => withDomain("   ")).toThrow(AUTHKIT_DOMAIN_MISSING);
+describe("while sign-in is switched off", () => {
+  it("is off", () => {
+    expect(SIGN_IN_AVAILABLE).toBe(false);
+    expect(SIGN_IN_UNAVAILABLE_MESSAGE).toMatch(/isn't available yet/i);
   });
 
-  it("accepts a bare host or an https origin, and returns the origin", () => {
-    expect(withDomain("auth.example.test")).toBe("https://auth.example.test");
-    expect(withDomain("https://auth.example.test/")).toBe(
-      "https://auth.example.test",
-    );
-    expect(withDomain("HTTPS://Auth.Example.Test")).toBe(
-      "https://auth.example.test",
-    );
+  it("starts nothing: no browser, an honest message", async () => {
+    const open = jest.spyOn(WebBrowser, "openAuthSessionAsync");
+    const result = await startSignIn();
+    expect(result).toEqual({
+      type: "unavailable",
+      message: SIGN_IN_UNAVAILABLE_MESSAGE,
+    });
+    expect(open).not.toHaveBeenCalled();
+    open.mockRestore();
   });
 
-  it("drops any path, query or fragment", () => {
-    expect(withDomain("https://auth.example.test/x/y?z=1#f")).toBe(
-      "https://auth.example.test",
+  it("completes nothing: it throws, stores no session and makes no request", async () => {
+    const calls = mockFetch();
+    await expect(completeSignIn("code_abcdef123456")).rejects.toBeInstanceOf(
+      SignInUnavailableError,
     );
+    expect(await getSession()).toBeNull();
+    expect(await SecureStore.getItemAsync(SESSION_KEY)).toBeNull();
+    expect(calls).toHaveLength(0);
+  });
+});
+
+describe("getSession", () => {
+  it("drops the made-up session an earlier build stored", async () => {
+    await SecureStore.setItemAsync(
+      SESSION_KEY,
+      JSON.stringify({ accessToken: "stub.code_abcdef", expiresAt: 1 }),
+    );
+    expect(await getSession()).toBeNull();
+    expect(await SecureStore.getItemAsync(SESSION_KEY)).toBeNull();
   });
 
-  it("rejects anything that is not an https origin", () => {
-    expect(() => withDomain("http://auth.example.test")).toThrow(
-      AUTHKIT_DOMAIN_MISSING,
+  it("returns a real session untouched", async () => {
+    const session = { accessToken: "eyJ.real.token", email: "a@example.org" };
+    await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(session));
+    expect(await getSession()).toEqual(session);
+  });
+
+  it("ignores a stored value that is not JSON", async () => {
+    await SecureStore.setItemAsync(SESSION_KEY, "not json");
+    expect(await getSession()).toBeNull();
+  });
+
+  it("is cleared by sign out", async () => {
+    await SecureStore.setItemAsync(
+      SESSION_KEY,
+      JSON.stringify({ accessToken: "eyJ.real.token" }),
     );
-    expect(() => withDomain("javascript://auth.example.test")).toThrow(
-      AUTHKIT_DOMAIN_MISSING,
-    );
-    expect(() => withDomain("https://user:pass@auth.example.test")).toThrow(
-      AUTHKIT_DOMAIN_MISSING,
-    );
-    expect(() => withDomain("https://")).toThrow(AUTHKIT_DOMAIN_MISSING);
+    await signOut();
+    expect(await getSession()).toBeNull();
   });
 });
