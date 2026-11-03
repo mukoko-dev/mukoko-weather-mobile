@@ -7,6 +7,7 @@
  *     or from GPS ("Use my current location").
  *   - Theme: light / dark / system.
  *   - Activities: the picked activities and a button to the shared picker.
+ *   - Privacy: the anonymous-usage switch and the id reset (src/analytics).
  *   - Device: install id + app version (support / debugging).
  *
  * Preferences persist locally via src/state/preferences.ts (expo-secure-store).
@@ -30,6 +31,7 @@ import { BaobabCard } from "@/components/BaobabCard";
 import { BrandText } from "@/components/BrandText";
 import { Header } from "@/components/Header";
 import { ActivitySelector } from "@/components/settings/ActivitySelector";
+import { AnalyticsSection } from "@/components/settings/AnalyticsSection";
 import { SavedLocationsSection } from "@/components/settings/SavedLocationsSection";
 import { SectionCard } from "@/components/settings/SectionCard";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
@@ -148,6 +150,13 @@ export default function MyScreen() {
           hint="Pick what you follow the weather for. The advice on each place's page is made for these, and your picks stay on this device."
         >
           <ActivitySelector />
+        </SectionCard>
+
+        <SectionCard
+          title="Privacy"
+          hint="Anonymous counts that help us see whether Mukoko is useful. Kept on this phone for now: nothing is sent yet."
+        >
+          <AnalyticsSection />
         </SectionCard>
 
         <BaobabCard>
