@@ -33,6 +33,7 @@ import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, Linking } from "react-native";
 
+import { coarsePlace, track } from "@/analytics";
 import { failureMessage } from "@/api/failure";
 import { geoLookup, type LocationSummary } from "@/api/locations";
 import {
@@ -197,6 +198,18 @@ export default function WeatherHome() {
       void saveForecast(HOME_KEY, record, {
         name: named.current?.name ?? loc.label ?? record.place?.name,
         slug: named.current?.slug ?? loc.slug,
+      });
+      // Coarse place only: the fix's ~39 x 20 km cell and the country code.
+      track("forecast_shown", {
+        surface: "home",
+        place: coarsePlace({
+          lat: loc.lat,
+          lon: loc.lon,
+          country:
+            weather.location?.country ??
+            loc.place?.country ??
+            (loc.fallback ? FALLBACK.country : undefined),
+        }),
       });
       return "ready";
     } catch (err) {
