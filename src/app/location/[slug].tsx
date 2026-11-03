@@ -12,6 +12,7 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { coarsePlace, track } from "@/analytics";
 import { failureMessage } from "@/api/failure";
 import { fetchWeatherRecord, type WeatherResponse } from "@/api/weather";
 import {
@@ -54,6 +55,10 @@ export default function LocationScreen() {
       if (signal.aborted) return;
       setState({ kind: "ready", weather });
       void saveForecast(slug, record, { name: weather.location?.name, slug });
+      track("forecast_shown", {
+        surface: "place",
+        place: coarsePlace(weather.location ?? {}),
+      });
     } catch (err) {
       if (signal.aborted) return;
       // The forecast this phone kept for the place, with its age, beats an

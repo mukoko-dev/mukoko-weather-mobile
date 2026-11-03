@@ -13,7 +13,7 @@
 
 import { router } from "expo-router";
 import * as Location from "expo-location";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -22,6 +22,7 @@ import {
   View,
 } from "react-native";
 
+import { coarsePlace, track } from "@/analytics";
 import { ApiError } from "@/api/client";
 import {
   geoLookup,
@@ -86,28 +87,55 @@ export function SavedLocationsSection() {
     };
   }, [query]);
 
-  const pin = useCallback((loc: SavedLocation): boolean => {
-    const result = addSavedLocation(loc);
-    if (result === "full") {
-      setNotice(`You can save up to ${MAX_SAVED_LOCATIONS} locations.`);
-      return false;
-    }
-    if (result === "duplicate") {
-      setNotice(`${loc.name} is already saved.`);
+  // Read at pin time, not captured: the GPS path awaits for seconds, and a
+  // search pin may land meanwhile.
+  const savedCount = useRef(savedLocations.length);
+  useEffect(() => {
+    savedCount.current = savedLocations.length;
+  }, [savedLocations.length]);
+
+  /**
+   * Pin a place. `coords` and `method` only feed the place_saved event, which
+   * keeps a ~39 x 20 km cell and the country code, never the place itself.
+   */
+  const pin = useCallback(
+    (
+      loc: SavedLocation,
+      method: "search" | "gps",
+      coords: { lat: number; lon: number },
+    ): boolean => {
+      const result = addSavedLocation(loc);
+      if (result === "full") {
+        setNotice(`You can save up to ${MAX_SAVED_LOCATIONS} locations.`);
+        return false;
+      }
+      if (result === "duplicate") {
+        setNotice(`${loc.name} is already saved.`);
+        return true;
+      }
+      setNotice(null);
+      track("place_saved", {
+        method,
+        savedCount: Math.min(++savedCount.current, MAX_SAVED_LOCATIONS),
+        place: coarsePlace({ ...coords, country: loc.country }),
+      });
       return true;
-    }
-    setNotice(null);
-    return true;
-  }, []);
+    },
+    [],
+  );
 
   const onAddResult = useCallback(
     (loc: LocationSummary) => {
-      const ok = pin({
-        slug: loc.slug,
-        name: loc.name,
-        province: loc.province,
-        country: loc.country,
-      });
+      const ok = pin(
+        {
+          slug: loc.slug,
+          name: loc.name,
+          province: loc.province,
+          country: loc.country,
+        },
+        "search",
+        loc,
+      );
       if (ok) {
         setQuery("");
         setResults([]);
@@ -137,12 +165,16 @@ export function SavedLocationsSection() {
         setNotice("We could not match your position to a location.");
         return;
       }
-      pin({
-        slug: location.slug,
-        name: location.name,
-        province: location.province,
-        country: location.country,
-      });
+      pin(
+        {
+          slug: location.slug,
+          name: location.name,
+          province: location.province,
+          country: location.country,
+        },
+        "gps",
+        location,
+      );
       router.push(`/location/${location.slug}`);
     } catch (err) {
       if (err instanceof ApiError && err.status === 429) {
