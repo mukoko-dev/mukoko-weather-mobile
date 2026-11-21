@@ -1,7 +1,7 @@
 # Store privacy answers
 
 Answers for Apple's App Privacy questionnaire (the "nutrition label") and
-Google Play's Data safety form, for the build on `staging` as of 2026-11-02.
+Google Play's Data safety form, for the build on `main` as of 2026-11-02.
 Refs #54.
 
 Every answer below was checked against the code, not against intentions. If a
