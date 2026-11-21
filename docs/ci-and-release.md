@@ -6,7 +6,7 @@ Trunk-based: pull requests go straight to `main`. There is no staging branch.
 
 | Workflow                                    | Runs on                          | Where      | What it does                                                                                             |
 | ------------------------------------------- | -------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
-| `.github/workflows/ci.yml`                  | PRs, merge queue, push to `main` | GitHub     | `quality` (typecheck, tests, one-backend guard), `expo-doctor`, `bundle` (Android and iOS JS export)     |
+| `.github/workflows/ci.yml`                  | PRs, merge queue, push to `main` | GitHub     | `quality` (typecheck, tests, one-backend guard), `expo-doctor` (advisory until Expo patch drift is fixed), `bundle` (Android and iOS JS export)     |
 | `.eas/workflows/publish-preview-update.yml` | push to every branch             | Expo (EAS) | Publishes the JavaScript to the EAS Update branch named after the git branch                             |
 | `.eas/workflows/preview-build.yml`          | PRs to `main`                    | Expo (EAS) | Fingerprints the native code; builds the `preview` profile per platform only if no matching build exists |
 | `.eas/workflows/release-main.yml`           | push to `main`                   | Expo (EAS) | Per platform: matching production build exists, publish OTA to `production`; else build `production`     |
