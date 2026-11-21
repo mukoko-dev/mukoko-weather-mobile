@@ -18,16 +18,22 @@ updates:
     cooldown:
       default-days: 7
     groups:
+      # Expo packages move together. Their versions are pinned to the SDK, so
+      # only patch updates inside the pinned range are proposed; an SDK upgrade
+      # is planned work (`npx expo install --fix`).
+      expo:
+        patterns:
+          - "expo"
+          - "expo-*"
+          - "@expo/*"
+        update-types:
+          - "patch"
       npm-minor-and-patch:
         update-types:
           - "minor"
           - "patch"
     ignore:
-      # Expo pins these to the SDK. They move with `npx expo install --fix`
-      # when the SDK is upgraded, not one package at a time.
-      - dependency-name: "expo"
-      - dependency-name: "expo-*"
-      - dependency-name: "@expo/*"
+      # React and React Native are pinned to the SDK as well.
       - dependency-name: "react"
       - dependency-name: "react-dom"
       - dependency-name: "react-native"

@@ -1,0 +1,73 @@
+# Runs on every push to main. Per platform: if a production build already exists
+# for the current native fingerprint, publish the JavaScript as an OTA update to
+# the `production` branch/channel; otherwise build the production app (no store
+# submit; see submit-stores.yml). Needs the EAS GitHub app linked to the repo.
+name: Release main
+
+on:
+  push:
+    branches: ['main']
+
+concurrency:
+  group: release-main
+  queue: max
+
+jobs:
+  fingerprint:
+    name: Fingerprint
+    type: fingerprint
+    environment: production
+
+  android_get_build:
+    name: Find Android production build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: android
+      profile: production
+      fingerprint_hash: ${{ needs.fingerprint.outputs.android_fingerprint_hash }}
+
+  android_update:
+    name: Publish Android update
+    needs: [android_get_build]
+    if: ${{ needs.android_get_build.outputs.build_id }}
+    type: update
+    params:
+      platform: android
+      branch: production
+
+  android_build:
+    name: Build Android production
+    needs: [android_get_build]
+    if: ${{ !needs.android_get_build.outputs.build_id }}
+    type: build
+    params:
+      platform: android
+      profile: production
+
+  ios_get_build:
+    name: Find iOS production build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: ios
+      profile: production
+      fingerprint_hash: ${{ needs.fingerprint.outputs.ios_fingerprint_hash }}
+
+  ios_update:
+    name: Publish iOS update
+    needs: [ios_get_build]
+    if: ${{ needs.ios_get_build.outputs.build_id }}
+    type: update
+    params:
+      platform: ios
+      branch: production
+
+  ios_build:
+    name: Build iOS production
+    needs: [ios_get_build]
+    if: ${{ !needs.ios_get_build.outputs.build_id }}
+    type: build
+    params:
+      platform: ios
+      profile: production

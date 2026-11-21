@@ -1,0 +1,55 @@
+# Preview builds for a pull request to main, only when the native fingerprint
+# changed: if a preview build already matches the fingerprint, nothing is built
+# (JavaScript-only changes reach devices through publish-preview-update.yml).
+# Runs on Expo's infrastructure and needs the EAS GitHub app linked to the repo.
+name: Preview build
+
+on:
+  pull_request:
+    branches: ['main']
+
+concurrency:
+  group: preview-build-${{ github.event.pull_request.number || github.ref }}
+  cancel_in_progress: true
+
+jobs:
+  fingerprint:
+    name: Fingerprint
+    type: fingerprint
+    environment: preview
+
+  android_get_build:
+    name: Find Android preview build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: android
+      profile: preview
+      fingerprint_hash: ${{ needs.fingerprint.outputs.android_fingerprint_hash }}
+
+  android_build:
+    name: Build Android preview
+    needs: [android_get_build]
+    if: ${{ !needs.android_get_build.outputs.build_id }}
+    type: build
+    params:
+      platform: android
+      profile: preview
+
+  ios_get_build:
+    name: Find iOS preview build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: ios
+      profile: preview
+      fingerprint_hash: ${{ needs.fingerprint.outputs.ios_fingerprint_hash }}
+
+  ios_build:
+    name: Build iOS preview
+    needs: [ios_get_build]
+    if: ${{ !needs.ios_get_build.outputs.build_id }}
+    type: build
+    params:
+      platform: ios
+      profile: preview

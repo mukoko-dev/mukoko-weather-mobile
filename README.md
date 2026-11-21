@@ -54,8 +54,9 @@ neither store: [`docs/store/`](docs/store/README.md) has the readiness notes,
 listing text, privacy answers and the owner's checklist, and
 [`docs/payments.md`](docs/payments.md) the payments design. EAS Update is set up
 (`expo-updates`, `runtimeVersion` policy `appVersion`, `updates.url`), and a
-workflow publishes the JavaScript of every push to `staging` (see "See it in
-Expo Go").
+workflow publishes the JavaScript of every push to every branch (see "See it in
+Expo Go"). CI and release workflows are described in
+[`docs/ci-and-release.md`](docs/ci-and-release.md).
 
 ## Setup
 
@@ -96,7 +97,7 @@ For a physical device, scan the QR code with the Expo Go app
 
 ## See it in Expo Go, without a computer
 
-Every push to `main` (production) and to `staging` (pre-production) publishes the
+Every push to any branch publishes the
 app's JavaScript to EAS Update (`.eas/workflows/publish-preview-update.yml`; the
 EAS branch has the git branch's name). To open the latest one on a phone:
 
@@ -104,7 +105,7 @@ EAS branch has the git branch's name). To open the latest one on a phone:
    sign in to the Expo account that belongs to the `nyuchi-web-services` team.
 2. Open the project's Updates page on expo.dev
    (`https://expo.dev/accounts/nyuchi-web-services/projects/mukoko-weather/updates`),
-   pick the `main` or `staging` branch and the newest update, and scan the QR code or use
+   pick your branch (the update branch has the git branch's name) and the newest update, and scan the QR code or use
    "Open in Expo Go".
 
 Expo Go carries only the native modules of its SDK, which is enough for this
