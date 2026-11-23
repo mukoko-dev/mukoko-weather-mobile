@@ -16,6 +16,7 @@ import {
   STREAKS,
   skyReach,
   skyStops,
+  statusBarStyleOn,
 } from "@/theme/sky";
 import { streakPath } from "@/components/weather/WeatherSky";
 
@@ -153,5 +154,20 @@ describe("sky box and texture", () => {
       STREAKS.height * Math.tan((15 * Math.PI) / 180),
       0,
     );
+  });
+});
+
+describe("statusBarStyleOn", () => {
+  it("is light on every sky stop, in light and dark", () => {
+    for (const family of SKY_FAMILIES)
+      for (const dark of [false, true]) {
+        const s = skyStops(family, dark);
+        for (const c of [s.top, s.mid, s.bottom])
+          expect(statusBarStyleOn(c)).toBe("light");
+      }
+  });
+  it("is dark on a light page", () => {
+    expect(statusBarStyleOn("#ffffff")).toBe("dark");
+    expect(statusBarStyleOn("#0b1026")).toBe("light");
   });
 });
