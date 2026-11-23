@@ -91,11 +91,14 @@ const FORBIDDEN_PACKAGES = new Set([
 ]);
 const FORBIDDEN_PREFIXES = ["@vercel/", "@neondatabase/", "@prisma/adapter-"];
 
-// Never read: this guard and its test (they name the forbidden things), and
-// everything that is not the project's own text.
+// Never read: this guard and its test (they name the forbidden things), the
+// org-standard docs that list prohibited dependencies (Couchbase etc.) in order
+// to forbid them, and everything that is not the project's own text.
 const SKIP_FILES = new Set([
   "scripts/check-cloudflare-only.mjs",
   "src/__tests__/cloudflare-only.test.ts",
+  ".github/PULL_REQUEST_TEMPLATE.md",
+  "CONTRIBUTING.md",
   "package-lock.json",
 ]);
 const SKIP_DIRS = new Set([
