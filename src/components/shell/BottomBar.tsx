@@ -191,6 +191,8 @@ const styles = StyleSheet.create({
   item: {
     minWidth: TOUCH.min,
     minHeight: TOUCH.min,
+    // Pinned: the places lane yields room to these, never the reverse.
+    flexShrink: 0,
     paddingHorizontal: SPACE.snug,
     borderRadius: RADIUS.pill,
     alignItems: "center",
