@@ -68,6 +68,8 @@ import { locationAskPutOff, putOffLocationAsk } from "@/state/location-ask";
 
 /** Harare, Mukoko's editorial default, used when there is no location fix. */
 const FALLBACK = HARARE_DEFAULT;
+/** How long to wait for the phone's GPS fix before treating it as none. */
+const FIX_TIMEOUT_MS = 15_000;
 const DEFAULT_PLACE_NAME = FALLBACK.label ?? "Harare";
 
 type Coords = {
@@ -114,15 +116,40 @@ export default function WeatherHome() {
   // ask waits for it, so it never flashes over a person who has said yes.
   const [locating, setLocating] = useState(true);
 
-  /** A fine fix, or null when the phone could not give one. */
+  /**
+   * A fine fix, or null when the phone could not give one. A phone with no GPS
+   * location (a simulator with none set, indoors with location services
+   * struggling) can leave `getCurrentPositionAsync` pending for ever, which
+   * would hold the ask back for good: give up after `FIX_TIMEOUT_MS`, and take
+   * the phone's last known position if it has one.
+   */
   const takeFix = useCallback(async (): Promise<Coords | null> => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       // High accuracy so the API can name a road, shop or suburb rather than
       // the nearest city centre.
-      const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
+      const timeout = new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), FIX_TIMEOUT_MS);
       });
-      return { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      const pos = await Promise.race([
+        Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        }),
+        timeout,
+      ]);
+      if (pos) {
+        return { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      }
+    } catch {
+      /* fall through to the last known position */
+    } finally {
+      clearTimeout(timer);
+    }
+    try {
+      const last = await Location.getLastKnownPositionAsync();
+      return last
+        ? { lat: last.coords.latitude, lon: last.coords.longitude }
+        : null;
     } catch {
       return null;
     }

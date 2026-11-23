@@ -38,6 +38,9 @@ import {
 } from "@/theme/mzizi";
 import { BAR, chipColorsFor } from "@/theme/shell";
 
+/** The smallest a chip's name shrinks to before it is cut with an ellipsis. */
+export const CHIP_MIN_FONT_SCALE = 0.75;
+
 export type PlaceLaneProps = {
   chips: readonly LaneChip[];
   /** Index of the current page's chip, -1 when none is current. */
@@ -186,6 +189,11 @@ function Chip({
           weight={600}
           color={fg}
           numberOfLines={1}
+          // Fit rather than cut mid-word ("My Locati…"): shrink the text to
+          // the room the chip has, down to a still-readable floor; a longer
+          // name then ends in an ellipsis. Large text sizes still apply.
+          adjustsFontSizeToFit
+          minimumFontScale={CHIP_MIN_FONT_SCALE}
           maxFontSizeMultiplier={TEXT_SCALE_MAX.chrome}
           style={styles.chipText}
         >
@@ -215,7 +223,10 @@ const styles = StyleSheet.create({
     minHeight: TOUCH.min,
     minWidth: TOUCH.min,
     maxWidth: BAR.chipMax,
-    paddingHorizontal: SPACE.card,
+    // The chip gives way before the pinned Map and Locations do, and its text
+    // fits to what is left.
+    flexShrink: 1,
+    paddingHorizontal: SPACE.cozy,
     borderRadius: RADIUS.pill,
     flexDirection: "row",
     alignItems: "center",

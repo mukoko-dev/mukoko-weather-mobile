@@ -89,6 +89,25 @@ describe("BottomBar", () => {
     expect(tree.getByRole("button", { name: "Nairobi" })).toBeTruthy();
   });
 
+  it("fits a lone My Location label to its room instead of cutting it", async () => {
+    const lone = laneChips(pagerSequence([]), () => "");
+    const tree = await render(
+      <BottomBar
+        chips={lone}
+        activeIndex={0}
+        activeId="none"
+        hasMapLocation
+        onChipPress={jest.fn()}
+        onMap={jest.fn()}
+        onLocations={jest.fn()}
+      />,
+    );
+    const label = tree.getByText("My Location");
+    expect(label.props.adjustsFontSizeToFit).toBe(true);
+    expect(label.props.numberOfLines).toBe(1);
+    expect(label.props.minimumFontScale).toBeGreaterThan(0);
+  });
+
   it("never says My Location over the default city when home has no fix (#66)", async () => {
     const lone = laneChips(pagerSequence([]), () => "");
     setHomeStandIn("Harare");
