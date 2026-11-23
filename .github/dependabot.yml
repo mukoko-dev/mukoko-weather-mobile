@@ -1,13 +1,5 @@
 version: 2
-# One grouped pull request per ecosystem per week, against `staging`.
-#
-# Dependabot used to open one pull request per package against `main`, which
-# takes releases only, so each of them failed the branch gate. Version updates
-# below target `staging` and reach `main` with the next release.
-#
-# Security updates are different: GitHub raises them against the default branch
-# only and ignores `target-branch` for an ecosystem that sets it. Retarget one
-# with `gh pr edit <n> --base staging`.
+# Pull requests target the default branch.
 #
 # Majors are not proposed here: a major upgrade is planned work with its own
 # issue. Security fixes for a major still arrive as security updates.
@@ -17,7 +9,6 @@ version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/"
-    target-branch: "staging"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -27,16 +18,22 @@ updates:
     cooldown:
       default-days: 7
     groups:
+      # Expo packages move together. Their versions are pinned to the SDK, so
+      # only patch updates inside the pinned range are proposed; an SDK upgrade
+      # is planned work (`npx expo install --fix`).
+      expo:
+        patterns:
+          - "expo"
+          - "expo-*"
+          - "@expo/*"
+        update-types:
+          - "patch"
       npm-minor-and-patch:
         update-types:
           - "minor"
           - "patch"
     ignore:
-      # Expo pins these to the SDK. They move with `npx expo install --fix`
-      # when the SDK is upgraded, not one package at a time.
-      - dependency-name: "expo"
-      - dependency-name: "expo-*"
-      - dependency-name: "@expo/*"
+      # React and React Native are pinned to the SDK as well.
       - dependency-name: "react"
       - dependency-name: "react-dom"
       - dependency-name: "react-native"
@@ -46,7 +43,6 @@ updates:
 
   - package-ecosystem: "github-actions"
     directory: "/"
-    target-branch: "staging"
     schedule:
       interval: "weekly"
       day: "monday"

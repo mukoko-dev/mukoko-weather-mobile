@@ -1,6 +1,6 @@
 # Store readiness
 
-What stands between `staging` and the App Store and Google Play, what this
+What stands between `main` and the App Store and Google Play, what this
 repository now holds for it, and the steps only the owner can take. Nothing
 here has been built, signed or submitted. Refs #54.
 
@@ -46,7 +46,7 @@ native step. EAS installs dev dependencies too, which is why a test-only
 package broke a store build. Fast failure (24 s) and the phase named in the
 error both match.
 
-**Still relevant on SDK 58? No.** On `staging` today:
+**Still relevant on SDK 58? No.** On `main` today:
 
 - `npm ci` from a clean worktree installs 1,355 packages with no ERESOLVE
   (Node 24.15; deprecation warnings only).
