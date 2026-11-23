@@ -40,6 +40,9 @@ updates:
       - dependency-name: "react-native-*"
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # Until Astro and typescript-eslint support TS 7; remove then.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
