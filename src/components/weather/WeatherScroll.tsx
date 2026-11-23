@@ -16,8 +16,8 @@
  * - Sky overscroll: pulling down past the top shows the sky's top colour.
  */
 
-import { setStatusBarStyle } from "expo-status-bar";
-import { useFocusEffect } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useIsFocused } from "expo-router";
 import {
   type ComponentRef,
   type ReactNode,
@@ -42,7 +42,7 @@ import { useShell } from "@/components/shell/ShellContext";
 import { usePageColors } from "@/hooks/usePageColors";
 import { type SkyFamily } from "@/shared/hero";
 import { SIZE, SPACE } from "@/theme/mzizi";
-import { SKY_FG, SKY_REACH, skyStops } from "@/theme/sky";
+import { SKY_FG, SKY_REACH, skyStops, statusBarStyleOn } from "@/theme/sky";
 
 import { SkyExtentContext } from "./SkyExtent";
 import { WeatherSky } from "./WeatherSky";
@@ -142,14 +142,12 @@ export function WeatherScroll({
     },
   );
 
-  // White status text while it sits on the sky, the page's own once cards
-  // scroll under it; handed back to the system when the screen loses focus.
-  useFocusEffect(
-    useCallback(() => {
-      setStatusBarStyle(onSky ? "light" : "auto");
-      return () => setStatusBarStyle("auto");
-    }, [onSky]),
-  );
+  // The status text follows the colour under it: the sky's top stop while the
+  // sky is there, the page background once cards scroll under it. Drawn only
+  // while this screen is focused, declaratively, so a screen pushed or popped
+  // over it (or the native stack's own default) cannot leave the wrong style.
+  const focused = useIsFocused();
+  const statusStyle = statusBarStyleOn(onSky ? stops.top : colors.background);
 
   const scrimOpacity = scrollY.interpolate({
     inputRange: [STATUS_SCRIM.start, STATUS_SCRIM.end],
@@ -219,6 +217,7 @@ export function WeatherScroll({
       ]}
     />
   );
+  const statusBar = focused ? <StatusBar style={statusStyle} /> : null;
   const rootStyle = [styles.root, { backgroundColor: colors.background }];
 
   // Inside the shell the page is always framed for swiping (SwipeFrame), so
@@ -231,11 +230,13 @@ export function WeatherScroll({
       style={rootStyle}
       scroll={scroll}
     >
+      {statusBar}
       {scrim}
     </SwipeFrame>
   ) : (
     <View style={rootStyle}>
       {scroll}
+      {statusBar}
       {scrim}
     </View>
   );

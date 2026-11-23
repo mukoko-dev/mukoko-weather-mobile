@@ -5,7 +5,7 @@
 
 import { render } from "@testing-library/react-native";
 import { Text } from "react-native";
-import { setStatusBarStyle } from "expo-status-bar";
+import { StatusBar } from "expo-status-bar";
 
 import {
   WeatherScroll,
@@ -102,7 +102,7 @@ describe.each(PHONE_WIDTHS)("WeatherScroll at %i pt", (width) => {
   beforeEach(() => {
     setInsets(IPHONE_INSETS);
     setWindow(width, 852);
-    (setStatusBarStyle as jest.Mock).mockClear();
+    (StatusBar as unknown as jest.Mock).mockClear();
   });
 
   it("puts the page gutter on both sides of the column, nothing flush to an edge", async () => {
@@ -147,9 +147,9 @@ describe.each(PHONE_WIDTHS)("WeatherScroll at %i pt", (width) => {
         includeHiddenElements: true,
       }),
     ).toBeTruthy();
-    expect(setStatusBarStyle).toHaveBeenCalledWith("light");
-    await tree.unmount();
-    expect(setStatusBarStyle).toHaveBeenLastCalledWith("auto");
+    expect((StatusBar as unknown as jest.Mock).mock.calls[0][0]).toEqual({
+      style: "light",
+    });
   });
 });
 
