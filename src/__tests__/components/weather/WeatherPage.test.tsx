@@ -4,7 +4,7 @@
  */
 
 import { fireEvent, render } from "@testing-library/react-native";
-import { Share } from "react-native";
+import { Share, Text } from "react-native";
 import { router } from "expo-router";
 
 import {
@@ -158,7 +158,7 @@ describe("WeatherPage", () => {
     expect(router.push).toHaveBeenCalledWith("/menu");
   });
 
-  it("builds the trail the web's way: Home, country, province, place", () => {
+  it("shows only the place in the trail", () => {
     expect(
       trailText(
         trailOf(
@@ -166,20 +166,59 @@ describe("WeatherPage", () => {
           "Marondera",
         ),
       ),
-    ).toBe("Home / Zimbabwe / Mashonaland East / Marondera");
-    // The province is skipped when it is the place's own name.
-    expect(
-      trailText(
-        trailOf(
-          { lat: 0, lon: 0, country: "ZW", province: "Harare" },
-          "Harare",
-        ),
-      ),
-    ).toBe("Home / Zimbabwe / Harare");
-    // A place that is not known yet still has a trail.
+    ).toBe("Marondera");
     expect(trailText(trailOf(undefined, "Current location"))).toBe(
-      "Home / Current location",
+      "Current location",
     );
+  });
+
+  describe("fixed (the home)", () => {
+    it("shows the place, temperature, conditions, High/Low and the hourly strip, and does not scroll vertically", async () => {
+      const tree = await render(
+        <WeatherPage weather={harareWeather()} name="Harare" inTabs fixed />,
+      );
+      expect(tree.getByTestId("weather-fixed")).toBeTruthy();
+      expect(tree.getByTestId("sky-hero")).toBeTruthy();
+      expect(tree.getByTestId("home-hourly-strip")).toBeTruthy();
+      expect(tree.getAllByText("Now").length).toBeGreaterThanOrEqual(1);
+      // No vertical scroll view, so no pull to refresh either.
+      const verticals: unknown[] = [];
+      const walk = (n: unknown) => {
+        if (!n || typeof n !== "object") return;
+        const node = n as {
+          type?: string;
+          props?: { horizontal?: boolean };
+          children?: unknown[] | null;
+        };
+        if (node.type === "RCTScrollView" && !node.props?.horizontal)
+          verticals.push(node);
+        node.children?.forEach(walk);
+      };
+      walk(tree.toJSON());
+      expect(verticals).toHaveLength(0);
+    });
+
+    it("leaves off every other card", async () => {
+      const tree = await render(
+        <WeatherPage weather={harareWeather()} name="Harare" inTabs fixed />,
+      );
+      expect(tree.queryByTestId("conditions-card")).toBeNull();
+      expect(tree.queryByText("Full forecast")).toBeNull();
+      expect(tree.queryByTestId("hero-activity-line")).toBeNull();
+    });
+
+    it("keeps the notice (the location ask) on the screen", async () => {
+      const tree = await render(
+        <WeatherPage
+          weather={harareWeather()}
+          name="Harare"
+          inTabs
+          fixed
+          notice={<Text>Use my location</Text>}
+        />,
+      );
+      expect(tree.getByText("Use my location")).toBeTruthy();
+    });
   });
 
   it("says the country's name, not its ISO code, as the web does", () => {

@@ -33,6 +33,7 @@ import {
   RefreshControl,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -60,6 +61,13 @@ export type WeatherScrollProps = {
   refreshing?: boolean;
   /** True inside the tab bar, which already clears the home indicator. */
   inTabs?: boolean;
+  /**
+   * A single fixed screen, the home: no scrolling and no pull to refresh. The
+   * column fills the space between the status bar and the floating bottom
+   * bar (its clearance), so nothing is ever drawn under the bar; the children
+   * share that height and clip rather than overflow.
+   */
+  fixed?: boolean;
 };
 
 /**
@@ -87,8 +95,10 @@ export function WeatherScroll({
   onRefresh,
   refreshing = false,
   inTabs = false,
+  fixed = false,
 }: WeatherScrollProps) {
   const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const { clearance, swipe, inShell, noSwipe } = useShell();
   const { colors, dark } = usePageColors();
   const [scrollY] = useState(() => new Animated.Value(0));
@@ -147,7 +157,22 @@ export function WeatherScroll({
     extrapolate: "clamp",
   });
 
-  const scroll = (
+  const fixedPage = (
+    <View style={styles.fixed}>
+      {/* Tall enough that the sky's fade into the page colour is off screen. */}
+      <WeatherSky family={family} minReach={screenHeight + SKY_REACH.fade} />
+      <View
+        testID="weather-fixed"
+        style={[styles.fixedContent, pagePadding(insets, inTabs, clearance)]}
+      >
+        <View style={styles.fixedColumn}>{children}</View>
+      </View>
+    </View>
+  );
+
+  const scroll = fixed ? (
+    fixedPage
+  ) : (
     <Animated.ScrollView
       onScroll={onScroll}
       scrollEventThrottle={16}
@@ -181,7 +206,7 @@ export function WeatherScroll({
       </View>
     </Animated.ScrollView>
   );
-  const scrim = (
+  const scrim = fixed ? null : (
     <Animated.View
       pointerEvents="none"
       style={[
@@ -226,6 +251,16 @@ const styles = StyleSheet.create({
     height: SIZE.overscrollCap,
   },
   column: {
+    width: "100%",
+    maxWidth: SIZE.contentMax,
+    alignSelf: "center",
+    gap: SPACE.section,
+  },
+  fixed: { flex: 1 },
+  fixedContent: { flex: 1, minHeight: 0 },
+  fixedColumn: {
+    flex: 1,
+    minHeight: 0,
     width: "100%",
     maxWidth: SIZE.contentMax,
     alignSelf: "center",

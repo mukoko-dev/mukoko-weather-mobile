@@ -11,7 +11,8 @@
  *      GET /v1/geo (the API answers a `{name}--{geohash}` place; nothing is
  *      stored).
  *   3. Fetch /v1/weather?lat=&lon= and show it, and keep it on the phone.
- *   4. Pull to refresh re-runs the weather fetch (it does not re-locate).
+ *   4. The screen is fixed (no scrolling), so there is no pull to refresh; a
+ *      saved copy offers "Try again", and the weather reloads on its own.
  *
  * When the Worker cannot be reached (offline, timed out, the source down) the
  * forecast kept from the last good load is shown with its age and the cause
@@ -101,7 +102,6 @@ type LoadState =
 export default function WeatherHome() {
   const [coords, setCoords] = useState<Coords | null>(null);
   const [state, setState] = useState<LoadState>({ kind: "loading" });
-  const [refreshing, setRefreshing] = useState(false);
 
   // The location ask (the web's LocationPromptCard): shown over the default
   // city, never on the first frame as a system alert.
@@ -396,31 +396,6 @@ export default function WeatherHome() {
     void putOffLocationAsk();
   }, []);
 
-  const onRefresh = useCallback(async () => {
-    if (!coords) return;
-    setRefreshing(true);
-    // A fix the lookup could not name (slow, failed) gets another try.
-    const naming =
-      coords.settled && !coords.place && !coords.fallback
-        ? resolvePlace(coords).then((found) => {
-            if (found) {
-              setCoords((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      label: found.name,
-                      slug: found.slug,
-                      place: found,
-                    }
-                  : prev,
-              );
-            }
-          })
-        : Promise.resolve();
-    await Promise.all([load(coords), naming]);
-    setRefreshing(false);
-  }, [coords, load, resolvePlace]);
-
   const onRetry = useCallback(() => {
     if (!coords) return;
     // The kept copy stays on screen while it tries again.
@@ -463,17 +438,16 @@ export default function WeatherHome() {
   }
   if (state.kind === "stored") {
     const { view } = state;
-    // The refresh is on its way: the pull spinner says so, and no banner
-    // speaks of a failure that has not happened.
+    // The refresh is on its way, and no banner speaks of a failure that has
+    // not happened.
     return (
       <WeatherPage
         weather={view.weather}
         name={view.name ?? view.weather.location?.name ?? "Your last place"}
         slug={view.slug}
         leading={brand}
-        onRefresh={onRefresh}
-        refreshing
         inTabs
+        fixed
         notice={notice}
       />
     );
@@ -486,9 +460,8 @@ export default function WeatherHome() {
         name={view.name ?? view.weather.location?.name ?? "Your last place"}
         slug={view.slug}
         leading={brand}
-        onRefresh={onRefresh}
-        refreshing={refreshing}
         inTabs
+        fixed
         notice={notice}
         saved={{
           fetchedAt: view.fetchedAt,
@@ -506,6 +479,7 @@ export default function WeatherHome() {
         onRetry={onRetry}
         leading={brand}
         inTabs
+        fixed
         notice={notice}
       />
     );
@@ -520,9 +494,8 @@ export default function WeatherHome() {
       slug={coords?.slug}
       isCurrentLocation={Boolean(coords && !coords.fallback)}
       leading={brand}
-      onRefresh={onRefresh}
-      refreshing={refreshing}
       inTabs
+      fixed
       notice={notice}
     />
   );
