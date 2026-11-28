@@ -158,7 +158,7 @@ describe("WeatherPage", () => {
     expect(router.push).toHaveBeenCalledWith("/menu");
   });
 
-  it("builds the trail the web's way: Home, country, province, place", () => {
+  it("builds a trail of the actual place alone (no Home, country or province)", () => {
     expect(
       trailText(
         trailOf(
@@ -166,8 +166,7 @@ describe("WeatherPage", () => {
           "Marondera",
         ),
       ),
-    ).toBe("Home / Zimbabwe / Mashonaland East / Marondera");
-    // The province is skipped when it is the place's own name.
+    ).toBe("Marondera");
     expect(
       trailText(
         trailOf(
@@ -175,10 +174,10 @@ describe("WeatherPage", () => {
           "Harare",
         ),
       ),
-    ).toBe("Home / Zimbabwe / Harare");
+    ).toBe("Harare");
     // A place that is not known yet still has a trail.
     expect(trailText(trailOf(undefined, "Current location"))).toBe(
-      "Home / Current location",
+      "Current location",
     );
   });
 
