@@ -50,6 +50,7 @@ import { ConditionsCard } from "./ConditionsCard";
 import { EnsoCard } from "./EnsoCard";
 import { ForecastExtras } from "./ForecastExtras";
 import { MapPreviewCard } from "./MapPreviewCard";
+import { HomeHourlyStrip } from "./HomeHourlyStrip";
 import { goHome, openAgriculture, openSettings } from "./navigation";
 
 import { RoundControl } from "./RoundControl";
@@ -98,19 +99,14 @@ export function BackControl({
 }
 
 /**
- * The trail under the top row, the web's rules: Home / Country / Province /
- * Place, the province left out when it is the place's own name, the country by
- * name and never its ISO code.
+ * The trail under the top row: only the place (the owner wants the place and
+ * nothing before it). The location argument is kept so callers need not change.
  */
 export function trailOf(
-  location: WeatherResponse["location"],
+  _location: WeatherResponse["location"],
   name: string,
 ): TrailItem[] {
-  return placeTrail({
-    name,
-    countryName: countryLabel(location?.country),
-    province: location?.province,
-  });
+  return placeTrail({ name }).filter((item) => item.kind === "current");
 }
 
 /**
@@ -172,6 +168,12 @@ export type WeatherPageProps = {
   saved?: SavedNotice;
   /** A notice under the hero (the home's location ask). */
   notice?: ReactNode;
+  /**
+   * The home: one fixed screen, no scrolling and no pull to refresh. Only the
+   * place, the temperature, the conditions with High and Low and the hourly
+   * strip are shown (plus the notices); every other card is left off.
+   */
+  fixed?: boolean;
 };
 
 export type SavedNotice = {
@@ -193,6 +195,7 @@ export function WeatherPage({
   inTabs,
   saved,
   notice,
+  fixed = false,
 }: WeatherPageProps) {
   const now = useNow();
   const { activities } = usePreferences();
@@ -238,6 +241,42 @@ export function WeatherPage({
   }, [slug, weather, name]);
 
   const onShare = () => shareWeather(name, current.temperature, info.label);
+
+  if (fixed) {
+    return (
+      <WeatherScroll family={family} inTabs={inTabs} fixed>
+        <SkyHero
+          name={name}
+          temperature={current.temperature}
+          weatherCode={code}
+          isDay={isDay}
+          high={daily[0]?.tempMax}
+          low={daily[0]?.tempMin}
+          utcOffsetSeconds={weather.utcOffsetSeconds}
+          now={now}
+          isCurrentLocation={isCurrentLocation}
+          isHome={isHome}
+          trail={trailOf(weather.location, name)}
+          onHome={goHome}
+          leading={leading}
+          onShare={onShare}
+          onSettings={openSettings}
+          fill
+        />
+        {notice}
+        {saved ? (
+          <SavedForecastBanner
+            placeName={name}
+            updated={updatedAgoLabel(saved.fetchedAt, now.getTime())}
+            forecastOnly={saved.forecastOnly}
+            reason={saved.reason}
+            onRetry={saved.onRetry}
+          />
+        ) : null}
+        {forecast ? <HomeHourlyStrip forecast={forecast} now={now} /> : null}
+      </WeatherScroll>
+    );
+  }
 
   return (
     <ActivitySheetsProvider forecast={forecast} now={now}>
@@ -372,6 +411,8 @@ export type WeatherErrorProps = {
   inTabs?: boolean;
   /** A notice under the message (the home's location ask). */
   notice?: ReactNode;
+  /** Fixed, non-scrolling (the home). */
+  fixed?: boolean;
 };
 
 /**
@@ -386,11 +427,12 @@ export function WeatherError({
   leading,
   inTabs,
   notice,
+  fixed,
 }: WeatherErrorProps) {
   const { dark } = usePageColors();
   const stops = skyStops(NEUTRAL_SKY, dark);
   return (
-    <WeatherScroll family={NEUTRAL_SKY} inTabs={inTabs}>
+    <WeatherScroll family={NEUTRAL_SKY} inTabs={inTabs} fixed={fixed}>
       <HeroTopRow
         name="this place"
         leading={leading}

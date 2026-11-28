@@ -8,7 +8,7 @@
 import { act, fireEvent, render } from "@testing-library/react-native";
 import * as Location from "expo-location";
 import { router } from "expo-router";
-import { Linking } from "react-native";
+import { AppState, Linking } from "react-native";
 
 import { fetchWeatherRecord } from "@/api/weather";
 import WeatherHome from "@/app/(tabs)/index";
@@ -29,6 +29,7 @@ jest.mock("expo-location", () => ({
   getForegroundPermissionsAsync: jest.fn(),
   requestForegroundPermissionsAsync: jest.fn(),
   getCurrentPositionAsync: jest.fn(),
+  getLastKnownPositionAsync: jest.fn(),
 }));
 jest.mock("@/api/weather", () => ({
   ...jest.requireActual("@/api/weather"),
@@ -179,4 +180,73 @@ it("goes back to the default city, saying why, when the person's place does not 
   expect(tree.getByText(LOCATION_PROBLEM_COPY["no-weather"])).toBeTruthy();
   expect(tree.getByText("Showing weather for Harare")).toBeTruthy();
   expect(tree.queryByTestId("weather-error")).toBeNull();
+});
+
+it("shows the ask, saying there is no location, when allowed but the GPS never answers", async () => {
+  jest.useFakeTimers();
+  try {
+    loc.getForegroundPermissionsAsync.mockResolvedValue(
+      permission("granted") as never,
+    );
+    // A phone with no GPS location: the request never settles.
+    loc.getCurrentPositionAsync.mockReturnValue(new Promise(() => {}) as never);
+    loc.getLastKnownPositionAsync.mockResolvedValue(null as never);
+    const tree = await render(<WeatherHome />);
+    await settle();
+    expect(tree.queryByTestId("location-prompt")).toBeNull();
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(16_000);
+    });
+    await settle();
+    expect(tree.getByText(LOCATION_PROBLEM_COPY["no-location"])).toBeTruthy();
+    expect(tree.getByText("Showing weather for Harare")).toBeTruthy();
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
+it("uses the last known position when the GPS gives no fresh fix", async () => {
+  loc.getForegroundPermissionsAsync.mockResolvedValue(
+    permission("granted") as never,
+  );
+  loc.getCurrentPositionAsync.mockRejectedValue(new Error("unavailable"));
+  loc.getLastKnownPositionAsync.mockResolvedValue({
+    coords: { latitude: -17.83, longitude: 31.05 },
+  } as never);
+  const tree = await render(<WeatherHome />);
+  await settle();
+  expect(weatherMock).toHaveBeenLastCalledWith(
+    { lat: -17.83, lon: 31.05 },
+    expect.anything(),
+  );
+  expect(tree.queryByTestId("location-prompt")).toBeNull();
+});
+
+it("takes the fix when location is turned on in Settings and the app returns", async () => {
+  let onChange: (s: string) => void = () => undefined;
+  jest
+    .spyOn(AppState, "addEventListener")
+    .mockImplementation((_t, fn) => {
+      onChange = fn as (s: string) => void;
+      return { remove: jest.fn() } as never;
+    });
+  loc.getForegroundPermissionsAsync.mockResolvedValue(
+    permission("denied", false) as never,
+  );
+  const tree = await render(<WeatherHome />);
+  await settle();
+  expect(tree.getByText(LOCATION_PROBLEM_COPY.denied)).toBeTruthy();
+  loc.getForegroundPermissionsAsync.mockResolvedValue(
+    permission("granted") as never,
+  );
+  loc.getCurrentPositionAsync.mockResolvedValue({
+    coords: { latitude: -17.83, longitude: 31.05 },
+  } as never);
+  await act(async () => onChange("active"));
+  await settle();
+  expect(weatherMock).toHaveBeenLastCalledWith(
+    { lat: -17.83, lon: 31.05 },
+    expect.anything(),
+  );
+  expect(tree.queryByTestId("location-prompt")).toBeNull();
 });

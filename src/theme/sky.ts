@@ -97,6 +97,23 @@ export function skyStops(family: SkyFamily, dark: boolean): SkyStops {
   return (dark ? DARK : LIGHT)[family];
 }
 
+/** Relative luminance (WCAG) of a #rrggbb colour, 0 (black) to 1 (white). */
+function luminance(hex: string): number {
+  const c = [1, 3, 5].map((i) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+
+/**
+ * The status bar text that reads on a colour: white on a dark one, black on a
+ * light one (the crossover is where white and black text contrast equally).
+ */
+export function statusBarStyleOn(background: string): "light" | "dark" {
+  return luminance(background) > 0.179 ? "dark" : "light";
+}
+
 /** A neutral overcast day, for a place whose weather has not arrived yet. */
 export const NEUTRAL_SKY: SkyFamily = "cloudy-day";
 

@@ -75,6 +75,12 @@ export type SkyHeroProps = {
    * Absent when nothing is picked or its rules have not loaded.
    */
   activityLine?: HeroActivityLine | null;
+  /**
+   * Fill the height the page gives it (the fixed home): the top row stays,
+   * the name, temperature and conditions are centred in what is left and
+   * clipped, never pushed past it.
+   */
+  fill?: boolean;
 };
 
 export type HeroActivityLine = {
@@ -170,6 +176,7 @@ export function SkyHero({
   onShare,
   onSettings,
   activityLine,
+  fill = false,
 }: SkyHeroProps) {
   const info = weatherCodeToInfo(weatherCode);
   const badges = heroEyebrowBadges(isCurrentLocation, isHome);
@@ -181,7 +188,7 @@ export function SkyHero({
   const { fontScale } = useWindowDimensions();
 
   return (
-    <View testID="sky-hero">
+    <View testID="sky-hero" style={fill ? styles.fill : undefined}>
       <HeroTopRow
         name={name}
         trail={trail}
@@ -191,7 +198,7 @@ export function SkyHero({
         onSettings={onSettings}
       />
 
-      <View style={styles.stack}>
+      <View style={[styles.stack, fill ? styles.stackFill : undefined]}>
         <View style={styles.eyebrow}>
           {badges.length > 0 ? (
             badges.map((badge, i) => (
@@ -332,6 +339,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: SPACE.heroTop,
     paddingBottom: SPACE.heroBottom,
+  },
+  fill: { flex: 1, minHeight: 0 },
+  stackFill: {
+    flex: 1,
+    minHeight: 0,
+    justifyContent: "center",
+    overflow: "hidden",
   },
   eyebrow: {
     minHeight: lineHeightOf("caption"),

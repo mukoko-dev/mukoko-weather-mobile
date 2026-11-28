@@ -39,6 +39,7 @@ export function routerMock() {
     Stack: { Screen: () => null },
     useLocalSearchParams: () =>
       (globalThis as { __params?: object }).__params ?? {},
+    useIsFocused: () => true,
     useFocusEffect: (cb: () => void | (() => void)) => {
       React.useEffect(cb, [cb]);
     },
@@ -54,7 +55,7 @@ export function safeAreaMock() {
 }
 
 export function statusBarMock() {
-  return { setStatusBarStyle: jest.fn(), StatusBar: () => null };
+  return { setStatusBarStyle: jest.fn(), StatusBar: jest.fn(() => null) };
 }
 
 /** Make `useWindowDimensions` report this window (a phone width and text size). */

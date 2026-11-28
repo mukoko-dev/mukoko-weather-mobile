@@ -11,7 +11,8 @@
  *      GET /v1/geo (the API answers a `{name}--{geohash}` place; nothing is
  *      stored).
  *   3. Fetch /v1/weather?lat=&lon= and show it, and keep it on the phone.
- *   4. Pull to refresh re-runs the weather fetch (it does not re-locate).
+ *   4. The screen is fixed (no scrolling), so there is no pull to refresh; a
+ *      saved copy offers "Try again", and the weather reloads on its own.
  *
  * When the Worker cannot be reached (offline, timed out, the source down) the
  * forecast kept from the last good load is shown with its age and the cause
@@ -67,6 +68,8 @@ import { locationAskPutOff, putOffLocationAsk } from "@/state/location-ask";
 
 /** Harare, Mukoko's editorial default, used when there is no location fix. */
 const FALLBACK = HARARE_DEFAULT;
+/** How long to wait for the phone's GPS fix before treating it as none. */
+const FIX_TIMEOUT_MS = 15_000;
 const DEFAULT_PLACE_NAME = FALLBACK.label ?? "Harare";
 
 type Coords = {
@@ -101,7 +104,6 @@ type LoadState =
 export default function WeatherHome() {
   const [coords, setCoords] = useState<Coords | null>(null);
   const [state, setState] = useState<LoadState>({ kind: "loading" });
-  const [refreshing, setRefreshing] = useState(false);
 
   // The location ask (the web's LocationPromptCard): shown over the default
   // city, never on the first frame as a system alert.
@@ -114,15 +116,40 @@ export default function WeatherHome() {
   // ask waits for it, so it never flashes over a person who has said yes.
   const [locating, setLocating] = useState(true);
 
-  /** A fine fix, or null when the phone could not give one. */
+  /**
+   * A fine fix, or null when the phone could not give one. A phone with no GPS
+   * location (a simulator with none set, indoors with location services
+   * struggling) can leave `getCurrentPositionAsync` pending for ever, which
+   * would hold the ask back for good: give up after `FIX_TIMEOUT_MS`, and take
+   * the phone's last known position if it has one.
+   */
   const takeFix = useCallback(async (): Promise<Coords | null> => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       // High accuracy so the API can name a road, shop or suburb rather than
       // the nearest city centre.
-      const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
+      const timeout = new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), FIX_TIMEOUT_MS);
       });
-      return { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      const pos = await Promise.race([
+        Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        }),
+        timeout,
+      ]);
+      if (pos) {
+        return { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      }
+    } catch {
+      /* fall through to the last known position */
+    } finally {
+      clearTimeout(timer);
+    }
+    try {
+      const last = await Location.getLastKnownPositionAsync();
+      return last
+        ? { lat: last.coords.latitude, lon: last.coords.longitude }
+        : null;
     } catch {
       return null;
     }
@@ -396,31 +423,6 @@ export default function WeatherHome() {
     void putOffLocationAsk();
   }, []);
 
-  const onRefresh = useCallback(async () => {
-    if (!coords) return;
-    setRefreshing(true);
-    // A fix the lookup could not name (slow, failed) gets another try.
-    const naming =
-      coords.settled && !coords.place && !coords.fallback
-        ? resolvePlace(coords).then((found) => {
-            if (found) {
-              setCoords((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      label: found.name,
-                      slug: found.slug,
-                      place: found,
-                    }
-                  : prev,
-              );
-            }
-          })
-        : Promise.resolve();
-    await Promise.all([load(coords), naming]);
-    setRefreshing(false);
-  }, [coords, load, resolvePlace]);
-
   const onRetry = useCallback(() => {
     if (!coords) return;
     // The kept copy stays on screen while it tries again.
@@ -463,17 +465,16 @@ export default function WeatherHome() {
   }
   if (state.kind === "stored") {
     const { view } = state;
-    // The refresh is on its way: the pull spinner says so, and no banner
-    // speaks of a failure that has not happened.
+    // The refresh is on its way, and no banner speaks of a failure that has
+    // not happened.
     return (
       <WeatherPage
         weather={view.weather}
         name={view.name ?? view.weather.location?.name ?? "Your last place"}
         slug={view.slug}
         leading={brand}
-        onRefresh={onRefresh}
-        refreshing
         inTabs
+        fixed
         notice={notice}
       />
     );
@@ -486,9 +487,8 @@ export default function WeatherHome() {
         name={view.name ?? view.weather.location?.name ?? "Your last place"}
         slug={view.slug}
         leading={brand}
-        onRefresh={onRefresh}
-        refreshing={refreshing}
         inTabs
+        fixed
         notice={notice}
         saved={{
           fetchedAt: view.fetchedAt,
@@ -506,6 +506,7 @@ export default function WeatherHome() {
         onRetry={onRetry}
         leading={brand}
         inTabs
+        fixed
         notice={notice}
       />
     );
@@ -520,9 +521,8 @@ export default function WeatherHome() {
       slug={coords?.slug}
       isCurrentLocation={Boolean(coords && !coords.fallback)}
       leading={brand}
-      onRefresh={onRefresh}
-      refreshing={refreshing}
       inTabs
+      fixed
       notice={notice}
     />
   );
