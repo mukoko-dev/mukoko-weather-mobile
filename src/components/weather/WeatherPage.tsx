@@ -98,19 +98,15 @@ export function BackControl({
 }
 
 /**
- * The trail under the top row, the web's rules: Home / Country / Province /
- * Place, the province left out when it is the place's own name, the country by
- * name and never its ISO code.
+ * The trail under the top row: the actual place alone, so it always fits on one
+ * line. Home, country and province are left out here (the sub-page trails keep
+ * the full web trail).
  */
 export function trailOf(
-  location: WeatherResponse["location"],
+  _location: WeatherResponse["location"],
   name: string,
 ): TrailItem[] {
-  return placeTrail({
-    name,
-    countryName: countryLabel(location?.country),
-    province: location?.province,
-  });
+  return placeTrail({ name }).filter((item) => item.kind === "current");
 }
 
 /**
